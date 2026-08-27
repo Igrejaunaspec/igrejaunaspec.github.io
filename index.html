@@ -1265,7 +1265,7 @@ async function enviarLogin(){
     avisoLogin(e.message);
   }finally{
     btn.disabled = false;
-    trocarModoLogin(modoLogin);
+    btn.textContent = modoLogin === 'criar' ? 'Criar meu acesso' : 'Entrar';
   }
 }
 
