@@ -1201,6 +1201,19 @@ async function tokenValido(){
   return sessao.access_token;
 }
 
+// Le o "id" (e outros dados) do usuario direto de dentro do token de acesso,
+// sem precisar de nenhuma chamada de rede -- um token JWT do Supabase ja
+// carrega essas informacoes no meio dele (a parte "payload"). Isso evita ter
+// que perguntar pro servidor "quem eu sou" toda vez que a pessoa entra no
+// app, o que deixava o carregamento mais lento.
+function decodificarToken(token){
+  try{
+    const meio = token.split('.')[1];
+    const base64 = meio.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(escape(atob(base64))));
+  }catch(e){ return null; }
+}
+
 function trocarModoLogin(modo){
   modoLogin = modo;
   document.getElementById('abaEntrar').classList.toggle('on', modo === 'entrar');
@@ -1861,13 +1874,13 @@ async function entrarNoApp(){
   // linha de TODO MUNDO (nao so a dele) -- sem filtrar por id aqui, um
   // admin podia acabar com o perfil de outra pessoa (a primeira que o
   // Postgres devolvesse), perdendo seu proprio acesso de admin na tela.
+  // O id vem direto do token (sem chamada de rede) para nao deixar o
+  // carregamento mais lento.
   let meuId = null;
   try{
     const token = await tokenValido();
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token }
-    });
-    if(r.ok) meuId = (await r.json()).id;
+    const dados = decodificarToken(token);
+    meuId = dados && dados.sub;
   }catch(e){ /* segue sem meuId -- cai no fallback sem filtro abaixo */ }
 
   try{
@@ -1885,11 +1898,17 @@ async function entrarNoApp(){
     // a aparecer na aba Pessoas e um admin poder liberar o acesso de novo.
     try{
       const token = await tokenValido();
-      const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-        headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token }
-      });
-      if(r.ok){
-        const usuario = await r.json();
+      // O token ja tem id/e-mail/nome dentro dele -- so recorre ao servidor
+      // se por algum motivo o token nao puder ser lido.
+      let usuario = decodificarToken(token);
+      if(usuario){ usuario = { id: usuario.sub, email: usuario.email, user_metadata: usuario.user_metadata }; }
+      if(!usuario){
+        const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token }
+        });
+        if(r.ok) usuario = await r.json();
+      }
+      if(usuario){
         await api('perfis', { method:'POST', body:{
           id: usuario.id,
           email: usuario.email,
