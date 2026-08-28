@@ -1856,8 +1856,22 @@ function desenharDetalheDiaCalendario(porDia){
    ENTRADA NO APP
 ===================================================================== */
 async function entrarNoApp(){
+  // Descobre o id do usuario logado ANTES de buscar o perfil. Isso e
+  // essencial porque a policy de SELECT em "perfis" deixa um admin ver a
+  // linha de TODO MUNDO (nao so a dele) -- sem filtrar por id aqui, um
+  // admin podia acabar com o perfil de outra pessoa (a primeira que o
+  // Postgres devolvesse), perdendo seu proprio acesso de admin na tela.
+  let meuId = null;
   try{
-    const linhas = await api('perfis?select=*');
+    const token = await tokenValido();
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token }
+    });
+    if(r.ok) meuId = (await r.json()).id;
+  }catch(e){ /* segue sem meuId -- cai no fallback sem filtro abaixo */ }
+
+  try{
+    const linhas = await api(meuId ? `perfis?select=*&id=eq.${meuId}` : 'perfis?select=*');
     perfil = linhas && linhas[0] ? linhas[0] : null;
   }catch(e){
     avisoLogin(e.message); mostrarLogin(); return;
@@ -1881,7 +1895,7 @@ async function entrarNoApp(){
           email: usuario.email,
           nome: (usuario.user_metadata && usuario.user_metadata.nome) || usuario.email
         }});
-        const linhas2 = await api('perfis?select=*');
+        const linhas2 = await api(`perfis?select=*&id=eq.${usuario.id}`);
         perfil = linhas2 && linhas2[0] ? linhas2[0] : null;
       }
     }catch(e){ /* nao conseguiu recriar sozinho -- cai no aviso abaixo */ }
