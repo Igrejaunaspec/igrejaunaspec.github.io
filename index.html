@@ -451,6 +451,51 @@
     .pdf-pagina2{ page-break-before:always; padding-top:6mm; }
   }
 
+  /* ---------- roteiro do convidado no celular: tabela vira lista de cartoes ----------
+     A tabela do roteiro (sexta ou sabado) tem colunas demais pra caber na tela de um
+     celular -- em vez de so rolar pro lado (ruim de usar), abaixo de 700px cada linha
+     vira um cartao, com o horario+duracao em destaque no topo e o resto empilhado como
+     "rotulo: valor" (usando o data-label que cada <td> carrega). So vale pra tela --
+     a impressao/PDF (@media print, acima) continua sempre com a tabela normal. */
+  @media screen and (max-width:700px){
+    .convidado-wrap{padding:16px 10px 50px;}
+    .convidado-card{padding:16px 14px;}
+    .convidado-topo{flex-wrap:wrap;}
+    .folha-sexta .nome-culto{font-size:34px;}
+    .folha-sexta .convidado-topo{max-width:calc(100% - 20px);}
+    .folha-sexta .convidado-topo .btn,
+    .convidado-topo .btn{font-size:12px;padding:7px 10px;}
+
+    #convidadoConteudo .tabela-wrap{overflow-x:visible;border:0;}
+    #convidadoConteudo table{min-width:0;width:100%;border-collapse:separate;border-spacing:0;}
+    #convidadoConteudo thead{display:none;}
+    #convidadoConteudo tbody{display:block;}
+    #convidadoConteudo tr{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;
+      background:var(--panel);border:1px solid var(--border);border-radius:12px;
+      padding:12px 14px;margin-bottom:10px;}
+    #convidadoConteudo tr.linha-fim{background:#EA9950;border-color:#EA9950;}
+    #convidadoConteudo tr.linha-fim td{background:none;}
+    #convidadoConteudo td{display:block;border:0 !important;padding:2px 0;}
+    #convidadoConteudo td:empty{display:none;}
+    #convidadoConteudo td::before{content:attr(data-label);display:block;
+      font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+      color:var(--muted2);margin-bottom:1px;}
+    /* Horario e duracao formam um "selo" no topo do cartao, lado a lado */
+    #convidadoConteudo td.col-hora,
+    #convidadoConteudo td.col-dur{width:auto;order:-1;}
+    #convidadoConteudo td.col-hora::before,
+    #convidadoConteudo td.col-dur::before{display:none;}
+    #convidadoConteudo td.col-hora{font-size:16px;}
+    #convidadoConteudo td.col-dur{color:var(--muted);font-size:12.5px;}
+    #convidadoConteudo td.col-dur::before{content:'· ';display:inline;}
+    /* Roteiro/Momento ocupa a linha toda, como titulo do cartao */
+    #convidadoConteudo td.col-roteiro{width:100%;order:0;font-size:15px;font-weight:700;}
+    #convidadoConteudo td.col-roteiro::before{display:none;}
+    #convidadoConteudo td:not(.col-hora):not(.col-dur):not(.col-roteiro){width:100%;font-size:13.5px;}
+    #convidadoConteudo tr.linha-fim td:not(.col-hora){font-weight:700;letter-spacing:.4px;}
+    #convidadoConteudo tr.linha-fim td:not(.col-hora)::before{display:none;}
+  }
+
   /* ---------- Agenda (arte semanal para Instagram Stories) ---------- */
   .agenda-editor-grid{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
   .agenda-secoes-col{flex:1 1 420px;min-width:320px;display:flex;flex-direction:column;gap:14px;}
@@ -4334,10 +4379,10 @@ async function abrirVisualizacaoConvidado(id, autoImprimir, contextoLogado){
             <thead><tr>${cols.map(c => `<th>${escapar(c.t)}</th>`).join('')}</tr></thead>
             <tbody>
               ${linhas.length ? linhas.map(l =>
-                `<tr>${cols.map(c => `<td class="${classeCol[c.k] || ''}">${escapar(l[c.k] || '')}</td>`).join('')}</tr>`).join('')
+                `<tr>${cols.map(c => `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}">${escapar(l[c.k] || '')}</td>`).join('')}</tr>`).join('')
                 : `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted2);">Sem itens.</td></tr>`}
               ${linhas.length ? `<tr class="linha-fim">
-                <td class="col-hora">${escapar(calcularFimProgramacao(linhas) || '')}</td>
+                <td class="col-hora" data-label="Horário">${escapar(calcularFimProgramacao(linhas) || '')}</td>
                 <td colspan="${cols.length - 1}">FIM DA PROGRAMAÇÃO</td>
               </tr>` : ''}
             </tbody>
@@ -4361,7 +4406,7 @@ async function abrirVisualizacaoConvidado(id, autoImprimir, contextoLogado){
                 ${linhas.length ? linhas.map(l => {
                   const leg = roteiro.culto === 'sabado' ? LEGENDA_COR_SABADO.find(o => o.v && o.v === l.color) : null;
                   const estiloLinha = leg ? ` style="background:${leg.v};color:${leg.texto};"` : '';
-                  return `<tr${estiloLinha}>${cols.map(c => `<td>${escapar(l[c.k] || '')}</td>`).join('')}</tr>`;
+                  return `<tr${estiloLinha}>${cols.map(c => `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}">${escapar(l[c.k] || '')}</td>`).join('')}</tr>`;
                 }).join('')
                   : `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted2);">Sem itens.</td></tr>`}
               </tbody>
