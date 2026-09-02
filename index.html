@@ -2575,11 +2575,19 @@ function desenharTabela(){
       pintarSelect();
       tdCor.appendChild(sel);
     }else{
+      // Sexta: cor livre, mas aqui ela pinta o TEXTO da linha inteira (todas as
+      // palavras -- horario, tempo, roteiro, obs, GC, audio), tipo a cor de
+      // fonte do Excel. Nao mexe no fundo da linha, so nas letras.
       const cor = document.createElement('input');
       cor.type = 'color'; cor.className = 'cor-dot';
       cor.value = linha.color || '#ffffff';
-      cor.title = 'Cor de destaque desta linha';
-      cor.oninput = () => { iniciarSessaoDesfazer(cor); linha.color = cor.value === '#ffffff' ? '' : cor.value; marcarSujo(); };
+      cor.title = 'Cor do texto desta linha (aplica em todas as palavras)';
+      cor.oninput = () => {
+        iniciarSessaoDesfazer(cor);
+        linha.color = cor.value === '#ffffff' ? '' : cor.value;
+        marcarSujo();
+        pintarTextoDaLinha(tr, linha.color);
+      };
       tdCor.appendChild(cor);
     }
     tr.appendChild(tdCor);
@@ -2613,6 +2621,7 @@ function desenharTabela(){
       campo.value = linha[c.k] || '';
       if(c.k === 'horario') { campo.placeholder = '19:30'; inputsHorario[i] = campo; }
       if(c.k === 'tempo')   { campo.placeholder = '5 min';  inputsTempo[i]   = campo; }
+      if(emEdicao.culto === 'sexta' && linha.color) campo.style.color = linha.color;
       td.appendChild(campo);
       tr.appendChild(td);
       if(c.area) setTimeout(() => autoAltura(campo), 0);
@@ -2640,6 +2649,14 @@ function desenharTabela(){
   });
 
   atualizarTotal();
+}
+
+// Sexta: aplica (ou tira, se cor for vazia) a cor do texto em todos os campos
+// digitaveis de uma linha ja desenhada, sem precisar redesenhar a tabela
+// inteira -- assim o campo que a pessoa esta arrastando no seletor de cor
+// pinta na hora, sem travar/piscar.
+function pintarTextoDaLinha(tr, cor){
+  tr.querySelectorAll('input[type="text"], textarea').forEach(el => { el.style.color = cor || ''; });
 }
 
 function hexParaRgba(hex, alpha){
@@ -4378,8 +4395,10 @@ async function abrirVisualizacaoConvidado(id, autoImprimir, contextoLogado){
           <table>
             <thead><tr>${cols.map(c => `<th>${escapar(c.t)}</th>`).join('')}</tr></thead>
             <tbody>
-              ${linhas.length ? linhas.map(l =>
-                `<tr>${cols.map(c => `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}">${escapar(l[c.k] || '')}</td>`).join('')}</tr>`).join('')
+              ${linhas.length ? linhas.map(l => {
+                const estiloTexto = l.color ? ` style="color:${escapar(l.color)};"` : '';
+                return `<tr>${cols.map(c => `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}"${estiloTexto}>${escapar(l[c.k] || '')}</td>`).join('')}</tr>`;
+              }).join('')
                 : `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted2);">Sem itens.</td></tr>`}
               ${linhas.length ? `<tr class="linha-fim">
                 <td class="col-hora" data-label="Horário">${escapar(calcularFimProgramacao(linhas) || '')}</td>
