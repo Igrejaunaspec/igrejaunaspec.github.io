@@ -2733,13 +2733,13 @@ function desenharLegendaCores(){
   });
 }
 
-// Desenha o quadro "Legenda escrita" (tambem so no roteiro de sabado): dois
-// campos de texto livre, lado a lado, iguais aos blocos de baixo do PDF
-// (instrumental, microfones, regente, contatos etc.), sem nenhuma cor.
+// Desenha o quadro "Legenda escrita" (Sexta e Sabado): dois campos de texto
+// livre, lado a lado, iguais aos blocos de baixo do PDF (instrumental,
+// microfones, regente, contatos etc.), sem nenhuma cor.
 function desenharLegendaEscrita(){
   const card = document.getElementById('cardLegendaEscrita');
   if(!card) return;
-  if(!emEdicao || emEdicao.culto !== 'sabado'){ card.classList.add('hidden'); return; }
+  if(!emEdicao){ card.classList.add('hidden'); return; }
   card.classList.remove('hidden');
 
   const esq = document.getElementById('notaEsquerda');
@@ -4397,34 +4397,42 @@ async function abrirVisualizacaoConvidado(id, autoImprimir, contextoLogado){
 
   alvo.innerHTML = (roteiro.culto === 'sexta')
     ? `<div class="folha-sexta">
-        <div class="faixa-topo">
-          <div class="convidado-topo no-print">${botoesContexto}
-            <button class="btn primary" onclick="window.print()">🖨️ Gerar PDF</button>
+        <div class="pdf-pagina1" id="pdfPagina1">
+          <div class="faixa-topo">
+            <div class="convidado-topo no-print">${botoesContexto}
+              <button class="btn primary" onclick="window.print()">🖨️ Gerar PDF</button>
+            </div>
+            <div class="rotulo-culto">Culto</div>
+            <div class="nome-culto">de Sexta</div>
           </div>
-          <div class="rotulo-culto">Culto</div>
-          <div class="nome-culto">de Sexta</div>
+          <div class="faixa-data">${escapar(fraseDataSexta(roteiro.nome))}</div>
+          ${roteiro.titulo ? `<p class="subtitulo-folha">${escapar(roteiro.titulo)}</p>` : ''}
+          <div class="tabela-wrap">
+            <table>
+              <thead><tr>${cols.map(c => `<th>${escapar(c.t)}</th>`).join('')}</tr></thead>
+              <tbody>
+                ${linhas.length ? linhas.map(l => {
+                  return `<tr>${cols.map(c => {
+                    const corCampo = l.cores && l.cores[c.k];
+                    const estiloTexto = corCampo ? ` style="color:${escapar(corCampo)};"` : '';
+                    return `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}"${estiloTexto}>${escapar(l[c.k] || '')}</td>`;
+                  }).join('')}</tr>`;
+                }).join('')
+                  : `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted2);">Sem itens.</td></tr>`}
+                ${linhas.length ? `<tr class="linha-fim">
+                  <td class="col-hora" data-label="Horário">${escapar(calcularFimProgramacao(linhas) || '')}</td>
+                  <td colspan="${cols.length - 1}">FIM DA PROGRAMAÇÃO</td>
+                </tr>` : ''}
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="faixa-data">${escapar(fraseDataSexta(roteiro.nome))}</div>
-        ${roteiro.titulo ? `<p class="subtitulo-folha">${escapar(roteiro.titulo)}</p>` : ''}
-        <div class="tabela-wrap">
-          <table>
-            <thead><tr>${cols.map(c => `<th>${escapar(c.t)}</th>`).join('')}</tr></thead>
-            <tbody>
-              ${linhas.length ? linhas.map(l => {
-                return `<tr>${cols.map(c => {
-                  const corCampo = l.cores && l.cores[c.k];
-                  const estiloTexto = corCampo ? ` style="color:${escapar(corCampo)};"` : '';
-                  return `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}"${estiloTexto}>${escapar(l[c.k] || '')}</td>`;
-                }).join('')}</tr>`;
-              }).join('')
-                : `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted2);">Sem itens.</td></tr>`}
-              ${linhas.length ? `<tr class="linha-fim">
-                <td class="col-hora" data-label="Horário">${escapar(calcularFimProgramacao(linhas) || '')}</td>
-                <td colspan="${cols.length - 1}">FIM DA PROGRAMAÇÃO</td>
-              </tr>` : ''}
-            </tbody>
-          </table>
-        </div>
+        ${(roteiro.dados && (roteiro.dados.notasEsquerda || roteiro.dados.notasDireita)) ? `<div class="pdf-pagina2">
+          <div class="convidado-legenda-escrita">
+            <div>${escapar(roteiro.dados.notasEsquerda || '')}</div>
+            <div>${escapar(roteiro.dados.notasDireita || '')}</div>
+          </div>
+        </div>` : ''}
         <p class="folha-sexta-rodape no-print" style="color:var(--muted2);font-size:12px;padding-bottom:14px;">Gerado por Roteiro ao Vivo — IGREJA UNASP EC</p>
       </div>`
     : `<div class="convidado-card">
@@ -4484,11 +4492,10 @@ function ajustarImpressaoParaUmaPagina(){
   const tela = document.getElementById('telaConvidado');
   if(!tela || tela.classList.contains('hidden')) return;
 
-  // Roteiro de sabado: so a pagina 1 (cabecalho + tabela de horarios) precisa
-  // caber sozinha numa folha -- a legenda (pdf-pagina2) ja comeca numa pagina
-  // nova por conta propria (page-break-before no CSS de impressao) e no tamanho
-  // normal, sem precisar encolher junto. Roteiro de sexta nao tem essa divisao
-  // (nao tem legenda separada), entao usa o conteudo inteiro como antes.
+  // So a pagina 1 (cabecalho + tabela de horarios, tanto em sexta quanto em
+  // sabado) precisa caber sozinha numa folha -- a legenda (pdf-pagina2, quando
+  // existe) ja comeca numa pagina nova por conta propria (page-break-before no
+  // CSS de impressao) e no tamanho normal, sem precisar encolher junto.
   const alvo = document.getElementById('pdfPagina1') || document.getElementById('convidadoConteudo');
   if(!alvo) return;
 
