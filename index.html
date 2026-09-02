@@ -139,10 +139,22 @@
   tbody tr.linha-alvo-acima{box-shadow:inset 0 2px 0 0 var(--accent);}
   tbody tr.linha-alvo-abaixo{box-shadow:inset 0 -2px 0 0 var(--accent);}
   textarea.auto{resize:none;overflow:hidden;min-height:36px;line-height:1.45;}
-  .cor-dot{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);
-    cursor:pointer;padding:0;display:block;}
   .cor-legenda{width:112px;border-radius:7px;border:1px solid var(--border);
     cursor:pointer;padding:5px 6px;font-size:12px;font-weight:600;}
+  /* Sexta: bolinha de cor individual no canto de cada celula (horario, tempo,
+     roteiro, obs, GC, audio) -- cada palavra tem sua propria cor de texto,
+     tipo a cor de fonte do Excel, em vez de uma cor so pra linha inteira. */
+  .celula-com-cor{position:relative;}
+  .celula-com-cor input[type="text"],
+  .celula-com-cor textarea{padding-right:18px;}
+  .cor-dot-campo{position:absolute;top:5px;right:4px;z-index:2;
+    -webkit-appearance:none;appearance:none;width:12px;height:12px;padding:0;
+    border:1px solid rgba(0,0,0,.28);border-radius:50%;cursor:pointer;
+    background:none;opacity:.5;}
+  .cor-dot-campo:hover{opacity:1;}
+  .cor-dot-campo::-webkit-color-swatch-wrapper{padding:0;}
+  .cor-dot-campo::-webkit-color-swatch{border:none;border-radius:50%;}
+  .cor-dot-campo::-moz-color-swatch{border:none;border-radius:50%;}
   .legenda-cores-caixa{display:flex;flex-direction:column;gap:0;
     border:1px solid var(--border);border-radius:8px;overflow:hidden;
     max-width:320px;width:100%;box-sizing:border-box;}
@@ -2530,7 +2542,7 @@ function desenharTabela(){
   const cols = COLUNAS[emEdicao.culto];
   document.getElementById('cabecalhoTabela').innerHTML =
     '<th style="width:26px;"></th>' +
-    `<th style="width:${emEdicao.culto === 'sabado' ? '124px' : '34px'};"></th>` +
+    (emEdicao.culto === 'sabado' ? '<th style="width:124px;"></th>' : '') +
     cols.map(c => `<th${c.larg ? ` style="width:${c.larg};"` : ''}>${c.t}</th>`).join('') +
     '<th style="width:120px;"></th>';
 
@@ -2574,23 +2586,11 @@ function desenharTabela(){
       sel.onchange = () => { guardarParaDesfazer(); linha.color = sel.value; pintarSelect(); marcarSujo(); desenharTabela(); };
       pintarSelect();
       tdCor.appendChild(sel);
-    }else{
-      // Sexta: cor livre, mas aqui ela pinta o TEXTO da linha inteira (todas as
-      // palavras -- horario, tempo, roteiro, obs, GC, audio), tipo a cor de
-      // fonte do Excel. Nao mexe no fundo da linha, so nas letras.
-      const cor = document.createElement('input');
-      cor.type = 'color'; cor.className = 'cor-dot';
-      cor.value = linha.color || '#ffffff';
-      cor.title = 'Cor do texto desta linha (aplica em todas as palavras)';
-      cor.oninput = () => {
-        iniciarSessaoDesfazer(cor);
-        linha.color = cor.value === '#ffffff' ? '' : cor.value;
-        marcarSujo();
-        pintarTextoDaLinha(tr, linha.color);
-      };
-      tdCor.appendChild(cor);
+      tr.appendChild(tdCor);
     }
-    tr.appendChild(tdCor);
+    // Sexta nao usa a coluna de cor por linha -- a cor e individual por
+    // palavra/campo (ver o seletorzinho dentro de cada celula, logo abaixo),
+    // entao essa coluna simplesmente nao existe pra esse tipo de culto.
 
     cols.forEach(c => {
       const td = document.createElement('td');
@@ -2621,8 +2621,31 @@ function desenharTabela(){
       campo.value = linha[c.k] || '';
       if(c.k === 'horario') { campo.placeholder = '19:30'; inputsHorario[i] = campo; }
       if(c.k === 'tempo')   { campo.placeholder = '5 min';  inputsTempo[i]   = campo; }
-      if(emEdicao.culto === 'sexta' && linha.color) campo.style.color = linha.color;
       td.appendChild(campo);
+
+      // Sexta: cada palavra/campo tem sua propria cor de texto, tipo a cor de
+      // fonte do Excel -- uma bolinha pequena no canto da celula que abre o
+      // seletor de cor soh pra aquele campo especifico (nao a linha inteira).
+      if(emEdicao.culto === 'sexta'){
+        td.classList.add('celula-com-cor');
+        linha.cores = linha.cores || {};
+        if(linha.cores[c.k]) campo.style.color = linha.cores[c.k];
+        const corCampo = document.createElement('input');
+        corCampo.type = 'color';
+        corCampo.className = 'cor-dot-campo';
+        corCampo.value = linha.cores[c.k] || '#ffffff';
+        corCampo.title = `Cor do texto — ${c.t}`;
+        corCampo.oninput = () => {
+          iniciarSessaoDesfazer(corCampo);
+          linha.cores = linha.cores || {};
+          if(corCampo.value === '#ffffff'){ delete linha.cores[c.k]; }
+          else{ linha.cores[c.k] = corCampo.value; }
+          marcarSujo();
+          campo.style.color = linha.cores[c.k] || '';
+        };
+        td.appendChild(corCampo);
+      }
+
       tr.appendChild(td);
       if(c.area) setTimeout(() => autoAltura(campo), 0);
     });
@@ -2649,14 +2672,6 @@ function desenharTabela(){
   });
 
   atualizarTotal();
-}
-
-// Sexta: aplica (ou tira, se cor for vazia) a cor do texto em todos os campos
-// digitaveis de uma linha ja desenhada, sem precisar redesenhar a tabela
-// inteira -- assim o campo que a pessoa esta arrastando no seletor de cor
-// pinta na hora, sem travar/piscar.
-function pintarTextoDaLinha(tr, cor){
-  tr.querySelectorAll('input[type="text"], textarea').forEach(el => { el.style.color = cor || ''; });
 }
 
 function hexParaRgba(hex, alpha){
@@ -4396,8 +4411,11 @@ async function abrirVisualizacaoConvidado(id, autoImprimir, contextoLogado){
             <thead><tr>${cols.map(c => `<th>${escapar(c.t)}</th>`).join('')}</tr></thead>
             <tbody>
               ${linhas.length ? linhas.map(l => {
-                const estiloTexto = l.color ? ` style="color:${escapar(l.color)};"` : '';
-                return `<tr>${cols.map(c => `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}"${estiloTexto}>${escapar(l[c.k] || '')}</td>`).join('')}</tr>`;
+                return `<tr>${cols.map(c => {
+                  const corCampo = l.cores && l.cores[c.k];
+                  const estiloTexto = corCampo ? ` style="color:${escapar(corCampo)};"` : '';
+                  return `<td class="${classeCol[c.k] || ''}" data-label="${escapar(c.t)}"${estiloTexto}>${escapar(l[c.k] || '')}</td>`;
+                }).join('')}</tr>`;
               }).join('')
                 : `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted2);">Sem itens.</td></tr>`}
               ${linhas.length ? `<tr class="linha-fim">
