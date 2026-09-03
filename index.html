@@ -410,6 +410,8 @@
     font-weight:400;text-transform:none;letter-spacing:normal;color:var(--muted);cursor:pointer;}
   .editor-form-campo-obrigatorio input{width:15px;height:15px;accent-color:var(--accent);}
   .editor-form-campo-acoes{display:flex;gap:6px;}
+  .editor-etiqueta-linha{flex-direction:row;align-items:center;}
+  .editor-etiqueta-ico{flex:0 0 56px;text-align:center;font-size:16px;padding:8px 4px;}
   .agendar-sucesso p{color:var(--muted);line-height:1.6;max-width:440px;margin:0 auto 22px;}
 
   /* ---------- folha no estilo do roteiro impresso (culto de sexta) ---------- */
@@ -847,6 +849,7 @@
           </div>
           <button class="btn" onclick="abrirAgendamentosLista()">↻ Atualizar</button>
           <button class="btn" onclick="abrirEditorFormularioAgendamento()">✏️ Editar formulário</button>
+          <button class="btn" onclick="abrirEditorEtiquetasAgendamento()">🏷️ Editar etiquetas</button>
           <button class="btn primary" onclick="abrirModalLinkFormulario()">
             🔗 Link do formulário
           </button>
@@ -861,6 +864,7 @@
       </div>
       <div id="listaAgendamentos"></div>
       <div id="editorFormularioAgendamento" class="hidden"></div>
+      <div id="editorEtiquetasAgendamento" class="hidden"></div>
     </div>
 
     <!-- ---------- calendario (agendamentos com status "Agendado") ---------- -->
@@ -1778,6 +1782,7 @@ async function abrirEditorFormularioAgendamento(){
   schemaEmEdicaoForm = JSON.parse(JSON.stringify(schemaAgendamentoAtual));
   document.getElementById('cardTopoAgendamentos').classList.add('hidden');
   document.getElementById('listaAgendamentos').classList.add('hidden');
+  document.getElementById('editorEtiquetasAgendamento').classList.add('hidden');
   document.getElementById('editorFormularioAgendamento').classList.remove('hidden');
   desenharEditorFormularioAgendamento();
   window.scrollTo(0, 0);
@@ -1993,6 +1998,132 @@ function desenharEditorFormularioAgendamento(){
 }
 
 /* =====================================================================
+   EDITOR DE ETIQUETAS DO AGENDAMENTO (aba Agendamentos > "Editar etiquetas")
+   Mesmo espirito do editor de formulario acima: edita um RASCUNHO em
+   "etiquetasEmEdicao", so vira valendo pra valer com "Salvar etiquetas"
+   (grava na mesma tabela "formulario_schema", linha id "etiquetas_agendamento").
+===================================================================== */
+let etiquetasEmEdicao = null;
+
+function idEtiquetaFormularioNova(){
+  return 'tag_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+async function abrirEditorEtiquetasAgendamento(){
+  await carregarEtiquetasAgendamento();
+  etiquetasEmEdicao = JSON.parse(JSON.stringify(etiquetasAgendamentoAtual));
+  document.getElementById('cardTopoAgendamentos').classList.add('hidden');
+  document.getElementById('listaAgendamentos').classList.add('hidden');
+  document.getElementById('editorFormularioAgendamento').classList.add('hidden');
+  document.getElementById('editorEtiquetasAgendamento').classList.remove('hidden');
+  desenharEditorEtiquetasAgendamento();
+  window.scrollTo(0, 0);
+}
+
+function fecharEditorEtiquetasAgendamento(semAviso){
+  if(!semAviso && JSON.stringify(etiquetasEmEdicao) !== JSON.stringify(etiquetasAgendamentoAtual)){
+    if(!confirm('Você tem alterações nas etiquetas que ainda não foram salvas. Sair mesmo assim?')) return;
+  }
+  document.getElementById('editorEtiquetasAgendamento').classList.add('hidden');
+  document.getElementById('cardTopoAgendamentos').classList.remove('hidden');
+  document.getElementById('listaAgendamentos').classList.remove('hidden');
+}
+
+function restaurarEtiquetasPadraoAgendamento(){
+  if(!confirm('Isso substitui TODAS as etiquetas atuais (aqui no rascunho) pelas etiquetas originais. Só vale de verdade se você clicar em "Salvar etiquetas" depois. Continuar?')) return;
+  etiquetasEmEdicao = TAGS_AGENDAMENTO_PADRAO.map(t => Object.assign({}, t));
+  desenharEditorEtiquetasAgendamento();
+}
+
+async function salvarEtiquetasAgendamento(){
+  for(const t of etiquetasEmEdicao){
+    if(!t.label || !t.label.trim()){
+      toast('Tem uma etiqueta sem nome preenchido.', 'err');
+      return;
+    }
+  }
+  const btn = document.getElementById('btnSalvarEtiquetas');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  try{
+    await api('formulario_schema', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: { id: 'etiquetas_agendamento', dados: { tags: etiquetasEmEdicao }, atualizado_em: new Date().toISOString(), atualizado_por: sessao.email }
+    });
+    etiquetasAgendamentoAtual = JSON.parse(JSON.stringify(etiquetasEmEdicao));
+    montarFiltrosEtiquetasAgendamentos();
+    desenharListaAgendamentos();
+    toast('Etiquetas salvas!', 'ok');
+    fecharEditorEtiquetasAgendamento(true);
+  }catch(e){
+    toast('Não consegui salvar: ' + e.message, 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar etiquetas';
+  }
+}
+
+function moverEtiquetaFormulario(i, delta){
+  const alvo = i + delta;
+  if(alvo < 0 || alvo >= etiquetasEmEdicao.length) return;
+  [etiquetasEmEdicao[i], etiquetasEmEdicao[alvo]] = [etiquetasEmEdicao[alvo], etiquetasEmEdicao[i]];
+  desenharEditorEtiquetasAgendamento();
+}
+function excluirEtiquetaFormulario(i){
+  const t = etiquetasEmEdicao[i];
+  if(!confirm(`Excluir a etiqueta "${t.label || 'sem nome'}"? Pedidos que já tinham essa etiqueta marcada simplesmente deixam de mostrar ela — nada mais é apagado.`)) return;
+  etiquetasEmEdicao.splice(i, 1);
+  desenharEditorEtiquetasAgendamento();
+}
+function adicionarEtiquetaFormulario(){
+  etiquetasEmEdicao.push({ key: idEtiquetaFormularioNova(), label: 'Nova etiqueta', ico: '🏷️' });
+  desenharEditorEtiquetasAgendamento();
+}
+
+function etiquetaEditorHTML(t, i, total){
+  return `<div class="editor-form-campo editor-etiqueta-linha">
+    <input type="text" class="editor-etiqueta-ico" maxlength="4" placeholder="🏷️"
+      value="${escapar(t.ico || '')}"
+      oninput="etiquetasEmEdicao[${i}].ico=this.value">
+    <input type="text" class="editor-form-campo-rotulo" placeholder="Nome da etiqueta"
+      value="${escapar(t.label || '')}"
+      oninput="etiquetasEmEdicao[${i}].label=this.value">
+    <div class="editor-form-campo-acoes">
+      <button class="btn icon" title="Mover para cima"${i === 0 ? ' disabled' : ''} onclick="moverEtiquetaFormulario(${i},-1)">▲</button>
+      <button class="btn icon" title="Mover para baixo"${i === total - 1 ? ' disabled' : ''} onclick="moverEtiquetaFormulario(${i},1)">▼</button>
+      <button class="btn icon" title="Excluir etiqueta" onclick="excluirEtiquetaFormulario(${i})">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function desenharEditorEtiquetasAgendamento(){
+  const el = document.getElementById('editorEtiquetasAgendamento');
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <h2>Editor de etiquetas</h2>
+          <p class="hint" style="margin:4px 0 0;">
+            Crie, renomeie, reordene ou apague as etiquetas usadas para marcar os pedidos (tipo
+            "Urgente" ou "Grupo externo"). Cada uma tem um emoji e um nome.
+          </p>
+        </div>
+        <button class="btn" onclick="restaurarEtiquetasPadraoAgendamento()">↺ Restaurar original</button>
+        <button class="btn" onclick="fecharEditorEtiquetasAgendamento()">Voltar para os pedidos</button>
+        <button class="btn primary" id="btnSalvarEtiquetas" onclick="salvarEtiquetasAgendamento()">💾 Salvar etiquetas</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="editor-form-campos">
+        ${etiquetasEmEdicao.map((t, i) => etiquetaEditorHTML(t, i, etiquetasEmEdicao.length)).join('')}
+      </div>
+      <button class="btn small" style="margin-top:12px;" onclick="adicionarEtiquetaFormulario()">+ Adicionar etiqueta</button>
+    </div>
+  `;
+}
+
+/* =====================================================================
    ADMIN: AGENDAMENTOS (pedidos de uso da igreja)
 ===================================================================== */
 const STATUS_AGENDAMENTO = [
@@ -2028,12 +2159,28 @@ let etiquetasDropdownAbertos = new Set(); // ids com a lista suspensa de etiquet
 
 // Etiquetas que podem ser marcadas num pedido, alem do status. Cada
 // agendamento guarda uma lista dessas chaves na coluna "etiquetas" (array).
-const TAGS_AGENDAMENTO = [
+// A lista em si e editavel (aba Agendamentos > "Editar etiquetas") e fica
+// guardada na mesma tabela "formulario_schema" do editor de formulario,
+// numa linha separada (id "etiquetas_agendamento") -- por isso o array
+// abaixo e so o PADRAO/fallback, igual o SCHEMA_PADRAO_AGENDAMENTO.
+const TAGS_AGENDAMENTO_PADRAO = [
   { key:'urgente',    label:'Urgente',           ico:'⚠️' },
   { key:'recorrente', label:'Evento recorrente', ico:'🔁' },
   { key:'externo',    label:'Grupo externo',     ico:'🌐' },
 ];
-let filtroEtiquetasAtivas = new Set(); // chaves de TAGS_AGENDAMENTO marcadas no filtro
+let etiquetasAgendamentoAtual = TAGS_AGENDAMENTO_PADRAO.slice(); // valendo AGORA (comeca no padrao ate carregar)
+let filtroEtiquetasAtivas = new Set(); // chaves marcadas no filtro
+
+async function carregarEtiquetasAgendamento(){
+  try{
+    const linhas = await apiPublico('formulario_schema?id=eq.etiquetas_agendamento&select=dados');
+    if(linhas && linhas[0] && linhas[0].dados && Array.isArray(linhas[0].dados.tags) && linhas[0].dados.tags.length){
+      etiquetasAgendamentoAtual = linhas[0].dados.tags;
+      return;
+    }
+  }catch(e){ /* segue pro padrao */ }
+  etiquetasAgendamentoAtual = TAGS_AGENDAMENTO_PADRAO.slice();
+}
 
 async function abrirAgendamentosLista(){
   cultoAtual = 'agendamentos';
@@ -2041,11 +2188,13 @@ async function abrirAgendamentosLista(){
   mostrarPagina('agendamentos');
   document.getElementById('listaAgendamentos').innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
   document.getElementById('editorFormularioAgendamento').classList.add('hidden');
+  document.getElementById('editorEtiquetasAgendamento').classList.add('hidden');
   document.getElementById('cardTopoAgendamentos').classList.remove('hidden');
   document.getElementById('listaAgendamentos').classList.remove('hidden');
   garantirFechamentoEtiquetaDropdown();
   try{
     if(!schemaAgendamentoAtual) await carregarSchemaAgendamento();
+    await carregarEtiquetasAgendamento();
     agendamentos = await api('agendamentos?select=*&order=criado_em.desc');
     montarFiltrosAgendamentos();
     montarFiltroAnoAgendamentos();
@@ -2080,7 +2229,7 @@ function toggleEtiquetaDropdown(id){
 
 function montarFiltrosEtiquetasAgendamentos(){
   const el = document.getElementById('filtrosEtiquetasAgendamentos');
-  el.innerHTML = TAGS_AGENDAMENTO.map(t =>
+  el.innerHTML = etiquetasAgendamentoAtual.map(t =>
     `<button class="chip-filtro${filtroEtiquetasAtivas.has(t.key) ? ' on' : ''}"
        onclick="toggleFiltroEtiqueta('${t.key}')">${t.ico} ${escapar(t.label)}</button>`
   ).join('');
@@ -2186,7 +2335,7 @@ function etiquetasBadgesHTML(a){
   const etiquetas = a.etiquetas || [];
   if(!etiquetas.length) return '';
   return `<div class="agendamento-etiquetas">` +
-    TAGS_AGENDAMENTO.filter(t => etiquetas.includes(t.key)).map(t =>
+    etiquetasAgendamentoAtual.filter(t => etiquetas.includes(t.key)).map(t =>
       `<span class="etiqueta-badge" data-tag="${t.key}">${t.ico} ${escapar(t.label)}</span>`
     ).join('') + `</div>`;
 }
@@ -2231,7 +2380,7 @@ function agendamentoItemHTML(a){
         <div class="etiqueta-dropdown-wrap">
           <button class="btn small" onclick="toggleEtiquetaDropdown('${a.id}')">🏷️ Etiquetas${etiquetas.length ? ` (${etiquetas.length})` : ''}</button>
           ${dropdownAberto ? `<div class="etiqueta-dropdown-menu">
-            ${TAGS_AGENDAMENTO.map(t => `<label class="etiqueta-dropdown-item">
+            ${etiquetasAgendamentoAtual.map(t => `<label class="etiqueta-dropdown-item">
                <input type="checkbox" ${etiquetas.includes(t.key) ? 'checked' : ''} onchange="toggleEtiquetaAgendamento('${a.id}','${t.key}')">
                <span>${t.ico} ${escapar(t.label)}</span>
              </label>`).join('')}
@@ -2341,6 +2490,7 @@ async function abrirCalendario(){
   if(calendarioAno === null){ calendarioAno = hoje.getFullYear(); calendarioMes = hoje.getMonth(); }
   document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
+    await carregarEtiquetasAgendamento();
     const dados = await api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc');
     calendarioAgendamentos = dados || [];
     desenharCalendario();
