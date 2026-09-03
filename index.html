@@ -46,7 +46,7 @@
   .btn:disabled{opacity:.45;cursor:not-allowed;}
 
   /* ---------- campos ---------- */
-  input[type=text],input[type=email],input[type=password],input[type=number],input[type=time],textarea,select{
+  input[type=text],input[type=email],input[type=password],input[type=number],input[type=time],input[type=date],textarea,select{
     border:1px solid var(--border);border-radius:8px;padding:9px 11px;
     font-size:15px;font-family:inherit;background:var(--panel);color:var(--text);width:100%;}
   input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;}
@@ -366,6 +366,19 @@
   .checkbox-linha input[type=checkbox]{width:18px;height:18px;flex:none;margin-top:1px;accent-color:var(--accent);}
   .checkbox-linha label{margin:0;font-size:13.5px;font-weight:400;text-transform:none;
     letter-spacing:normal;color:var(--text);line-height:1.5;}
+  /* Grupo de opcoes (checkbox ou radio) do formulario de agendamento -- espelha
+     as perguntas de "Caixas de selecao"/"Multipla escolha" do Google Forms
+     original, uma opcao por linha. */
+  .opcoes-grupo{display:flex;flex-direction:column;gap:7px;margin-top:2px;}
+  .opcoes-grupo label{display:flex;align-items:center;gap:9px;margin:0;padding:9px 12px;
+    background:var(--panel2);border-radius:8px;font-size:13.5px;font-weight:400;
+    text-transform:none;letter-spacing:normal;color:var(--text);cursor:pointer;}
+  .opcoes-grupo input[type=checkbox],.opcoes-grupo input[type=radio]{width:17px;height:17px;
+    flex:none;accent-color:var(--accent);}
+  /* Par data + horario (campos "Data" do Google Forms), lado a lado. */
+  .data-hora-par{display:flex;gap:10px;flex-wrap:wrap;}
+  .data-hora-par input[type=date]{flex:1 1 160px;}
+  .data-hora-par input[type=time]{flex:0 1 120px;}
   .agendar-sucesso{text-align:center;padding:50px 20px;}
   .agendar-sucesso .emoji{font-size:44px;margin-bottom:14px;}
   .agendar-sucesso h2{margin:0 0 10px;}
@@ -1005,6 +1018,7 @@
           </div>
           <div class="field">
             <label for="agResponsavel">Nome responsável / Departamento / Instituição *</label>
+            <p class="hint" style="margin:-2px 0 8px;">Informar respectivamente os três dados acima.</p>
             <input type="text" id="agResponsavel" required>
           </div>
           <div class="field">
@@ -1017,104 +1031,147 @@
           </div>
           <div class="field">
             <label for="agDescricao">Descrição detalhada do evento *</label>
-            <p class="hint" style="margin:-2px 0 8px;">No que consiste o evento, qual a proposta, para qual público, qual a duração e outras informações relevantes para a reserva.</p>
+            <p class="hint" style="margin:-2px 0 8px;">Detalhar no que consiste o evento, qual é a proposta, para qual público, qual a duração e outras informações relevantes para ser feita a reserva.</p>
             <textarea id="agDescricao" required rows="4"></textarea>
           </div>
           <div class="field">
-            <label for="agQuantidade">Quantidade de pessoas esperadas *</label>
+            <label for="agQuantidade">Quantidade de pessoas *</label>
+            <p class="hint" style="margin:-2px 0 8px;">Número de pessoas esperados para o evento.</p>
             <input type="text" id="agQuantidade" required>
           </div>
         </div>
 
         <div class="card">
-          <h2><span class="agendar-secao-n">2</span> Datas e horários</h2>
+          <h2><span class="agendar-secao-n">2</span> Datas e Horários</h2>
+          <p class="hint" style="margin:-6px 0 14px;">Preencha as datas e horários de utilização da igreja.</p>
           <div class="field">
-            <label for="agDataInicio">Data e horário de início do evento *</label>
-            <input type="text" id="agDataInicio" required placeholder="ex.: 14/06/2026 20:00">
+            <label for="agDataInicioData">Data e horário de início do Evento *</label>
+            <p class="hint" style="margin:-2px 0 8px;">Data e horário que o evento irá acontecer (data e horário de início do evento).</p>
+            <div class="data-hora-par">
+              <input type="date" id="agDataInicioData" required>
+              <input type="time" id="agDataInicioHora" required>
+            </div>
           </div>
           <div class="field">
             <label for="agHorarios">Horários do evento *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Caso o evento dure mais de um dia, informe abaixo todos os horários da programação.</p>
+            <p class="hint" style="margin:-2px 0 8px;">Caso o evento durar mais de um dia, informar abaixo todos os horários da programação.</p>
             <textarea id="agHorarios" required rows="3"></textarea>
           </div>
           <div class="field">
             <label for="agEntrada">Data e horário de entrada (montagem, passagem de som, decoração, preparativos) *</label>
+            <p class="hint" style="margin:-2px 0 8px;">Datas e horários informando a entrada para montagem do evento, e passagem de som.</p>
             <textarea id="agEntrada" required rows="2"></textarea>
           </div>
           <div class="field">
-            <label for="agSaida">Data de saída (entrega da igreja com o evento 100% desmontado) *</label>
-            <textarea id="agSaida" required rows="2"></textarea>
+            <label for="agSaidaData">Data de Saída (Entrega da igreja com o evento 100% desmontado) *</label>
+            <p class="hint" style="margin:-2px 0 8px;">Datas e horários informando a saída do evento, e quando se pretende fazer a desmontagem.</p>
+            <div class="data-hora-par">
+              <input type="date" id="agSaidaData" required>
+              <input type="time" id="agSaidaHora" required>
+            </div>
           </div>
           <div class="field">
             <label for="agCenario">Cenário e decoração *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Informe se haverá montagem de cenário ou decoração, como será e onde será (Igreja, Hall, Prédio Infantil).</p>
+            <p class="hint" style="margin:-2px 0 8px;">Informar se haverá algum tipo de montagem de cenário ou decoração, como será e aonde será (Igreja, Hall, Prédio Infantil).</p>
             <textarea id="agCenario" required rows="3"></textarea>
           </div>
           <div class="field">
             <label for="agObservacoes">Observações *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Detalhe a entrada das equipes de montagem (quem estará responsável) e informações sobre a desmontagem.</p>
+            <p class="hint" style="margin:-2px 0 8px;">Informar com detalhes a entrada das equipes de montagem (quem estará responsável), e informações sobre desmontagem.</p>
             <textarea id="agObservacoes" required rows="3"></textarea>
           </div>
         </div>
 
         <div class="card">
-          <h2><span class="agendar-secao-n">3</span> Uso de infraestrutura</h2>
+          <h2><span class="agendar-secao-n">3</span> Uso de Infraestrutura</h2>
+          <p class="hint" style="margin:-6px 0 14px;">Preencha aqui os espaços que serão utilizados, além de informações técnicas e lista de equipamentos.</p>
+
           <div class="field">
-            <label for="agEspacos">Quais espaços da igreja serão utilizados? *</label>
-            <textarea id="agEspacos" required rows="2"></textarea>
+            <label>Quais espaços da igreja serão utilizados? *</label>
+            <div class="opcoes-grupo" id="agEspacosOpcoes">
+              <label><input type="checkbox" value="Auditório da Igreja"> Auditório da Igreja</label>
+              <label><input type="checkbox" value="Hall da Igreja"> Hall da Igreja</label>
+              <label><input type="checkbox" value="Sala de Reuniões (Anexo do Hall da Igreja)"> Sala de Reuniões (Anexo do Hall da Igreja)</label>
+              <label><input type="checkbox" value="Sala Pastoral (Camarim do Auditório da Igreja)"> Sala Pastoral (Camarim do Auditório da Igreja)</label>
+              <label><input type="checkbox" value="Enfermaria"> Enfermaria</label>
+              <label><input type="checkbox" value="Prédio Infantil (Espaço comum do prédio e banheiros)"> Prédio Infantil (Espaço comum do prédio e banheiros)</label>
+              <label><input type="checkbox" value="Salas do Prédio Infantil"> Salas do Prédio Infantil</label>
+              <label><input type="checkbox" value="Auditório do Prédio Infantil (apenas aos sábados)"> Auditório do Prédio Infantil (apenas aos sábados)</label>
+            </div>
           </div>
+
           <div class="field">
-            <label for="agNecessidades">Quais serão as necessidades do evento? *</label>
-            <textarea id="agNecessidades" required rows="2"></textarea>
+            <label>Quais serão as necessidades do evento? *</label>
+            <div class="opcoes-grupo" id="agNecessidadesOpcoes">
+              <label><input type="checkbox" value="Som"> Som</label>
+              <label><input type="checkbox" value="Painel de LED"> Painel de LED</label>
+              <label><input type="checkbox" value="Passador"> Passador</label>
+              <label><input type="checkbox" value="Iluminação Cênica"> Iluminação Cênica</label>
+              <label><input type="checkbox" value="Fotografia"> Fotografia</label>
+              <label><input type="checkbox" value="Transmissão"> Transmissão</label>
+            </div>
           </div>
+
           <div class="field">
-            <label for="agEquipamentos">Lista detalhada de equipamentos (input de áudio, vídeo, etc.) *</label>
+            <label for="agEquipamentos">Descreva a lista detalhada de equipamentos que deseja utilizar: (Input de áudio, Vídeo, Etc) *</label>
             <p class="hint" style="margin:-2px 0 8px;">É obrigatória a lista de equipamentos para que a data seja confirmada!</p>
             <textarea id="agEquipamentos" required rows="3"></textarea>
           </div>
           <div class="field">
             <label for="agEstruturaExterna">Utilização de estrutura externa *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Ex.: uso da malha para cobrir o fundo, estrutura externa de iluminação, mesa de som a ser montada, etc. Se não houver, escreva "Não haverá".</p>
+            <p class="hint" style="margin:-2px 0 8px;">Se alguma infraestrutura externa for montada, descreva aqui com detalhes. (Ex.: Uso da malha para cobrir o fundo / Estrutura externa de iluminação/ Mesa de som a ser montada, etc).</p>
             <textarea id="agEstruturaExterna" required rows="2"></textarea>
           </div>
+
           <div class="field">
-            <label for="agQuemOpera">Quem irá operar os equipamentos? *</label>
+            <label>Quem irá operar os equipamentos? *</label>
             <p class="hint" style="margin:-2px 0 8px;">
-              O preenchimento não garante que a equipe solicitada esteja confirmada. Equipes do UNASP
-              (PROTEC, AICOM) precisam de confirmação direta com os respectivos departamentos. A equipe da
-              Igreja (Comunicação — Gilson | Sonoplastia — Sopper) também precisa ser combinada à parte
-              com os líderes dos ministérios.
+              O preenchimento desta informação não garante que a equipe solicitada esteja confirmada. Caso sejam
+              solicitadas equipes do UNASP, como PROTEC e AICOM é necessário a confirmação direta com os
+              respectivos departamentos. Caso seja solicitada a equipe da Igreja (Comunicação/Sonoplastia), além
+              da confirmação do espaço solicitado da Igreja, é necessário que seja feito o pedido de participação
+              da equipe para os respectivos líderes dos ministérios. (Comunicação - Gilson | Sonoplastia - Sopper).
             </p>
-            <textarea id="agQuemOpera" required rows="2"></textarea>
+            <div class="opcoes-grupo" id="agQuemOperaOpcoes">
+              <label><input type="checkbox" value="PROTEC"> PROTEC</label>
+              <label><input type="checkbox" value="AICOM"> AICOM</label>
+              <label><input type="checkbox" value="Equipe Externa"> Equipe Externa</label>
+              <label><input type="checkbox" value="Equipe da Igreja"> Equipe da Igreja</label>
+            </div>
           </div>
+
           <div class="field">
-            <label for="agForro">Será necessária alguma montagem de estrutura/decoração no forro? *</label>
-            <p class="hint" style="margin:-2px 0 8px;">⚠️ É proibido o acesso ao forro sem prévia autorização e acompanhamento do técnico indicado pela igreja.</p>
-            <input type="text" id="agForro" required placeholder="Sim / Não — se sim, descreva">
+            <label>Será necessário alguma montagem de estrutura/decoração no forro? *</label>
+            <p class="hint" style="margin:-2px 0 8px;">⚠️ É proibido o acesso ao forro sem prévia autorização e acompanhamento do técnico indicado pela Igreja.</p>
+            <div class="opcoes-grupo">
+              <label><input type="radio" name="agForro" value="Sim" required> Sim</label>
+              <label><input type="radio" name="agForro" value="Não" required> Não</label>
+            </div>
           </div>
 
           <div class="checkbox-linha">
             <input type="checkbox" id="agEnfermaria" required>
-            <label for="agEnfermaria">Estou ciente que a igreja cede uma sala de enfermaria, porém não disponibiliza a
+            <label for="agEnfermaria"><strong>Sobre a Enfermaria.</strong> Estou ciente que a Igreja cede uma sala de enfermaria, porém não disponibiliza a
               equipe de saúde, nem medicamentos, nem instrumentos/equipamentos. Esta demanda é de total
               responsabilidade da direção do evento. *</label>
           </div>
           <div class="checkbox-linha">
             <input type="checkbox" id="agTermo" required>
-            <label for="agTermo">Fica aqui firmado o comprometimento de cumprir com os horários solicitados e a
+            <label for="agTermo"><strong>Termo de Responsabilidade.</strong> Fica aqui firmado o comprometimento de cumprir com os horários solicitados e a
               responsabilidade por qualquer dano causado dentro das dependências da igreja. Havendo qualquer
               danificação ao espaço e/ou equipamentos cedidos, é de total responsabilidade do solicitante o
               ressarcimento do item/local danificado. *</label>
           </div>
           <div class="field">
-            <label for="agAssinatura">Assinatura (nome completo) *</label>
+            <label for="agAssinatura">Assinatura (Nome Completo) *</label>
             <input type="text" id="agAssinatura" required>
           </div>
         </div>
 
         <div class="card">
           <p class="hint" style="margin:0 0 14px;">
-            Dúvidas? Fale direto com a secretaria: (19) 99813-1606 — Aline.
+            Para finalizar o seu pedido, entre em contato com a secretaria da Igreja, informando a solicitação.
+            Mande uma mensagem para: (19) 99813-1606 — Falar com Aline.
           </p>
           <div id="agendarErro"></div>
           <button class="btn primary" id="btnEnviarAgendamento" style="width:100%;padding:13px;font-size:15.5px;"
@@ -1548,6 +1605,26 @@ async function apiPublico(caminho, opcoes){
 /* =====================================================================
    FORMULARIO PUBLICO DE AGENDAMENTO (?agendar=1, sem login)
 ===================================================================== */
+// Junta os valores marcados de um grupo de checkboxes (uma das perguntas de
+// "Caixas de selecao" -- Espacos, Necessidades, Quem opera) numa unica string
+// separada por virgula, do jeito que a coluna no banco ja espera (era texto
+// livre desde o formulario antigo).
+function valoresMarcados(idGrupo){
+  return Array.from(document.querySelectorAll(`#${idGrupo} input:checked`))
+    .map(el => el.value).join(', ');
+}
+
+// Junta um par de campos <input type="date"> + <input type="time"> no mesmo
+// formato "DD/MM/AAAA HH:MM" que o resto do app (parseDataBR, o calendario,
+// a lista de agendamentos) ja espera dessas colunas.
+function dataHoraParaTexto(idData, idHora){
+  const d = document.getElementById(idData).value; // "AAAA-MM-DD"
+  const h = document.getElementById(idHora).value; // "HH:MM"
+  if(!d) return '';
+  const [ano, mes, dia] = d.split('-');
+  return `${dia}/${mes}/${ano}${h ? ' ' + h : ''}`;
+}
+
 async function enviarAgendamento(){
   const form = document.getElementById('formAgendar');
   if(!form.reportValidity()) return; // usa a validacao nativa do HTML (campos "required")
@@ -1558,6 +1635,23 @@ async function enviarAgendamento(){
   const btn = document.getElementById('btnEnviarAgendamento');
   const erroEl = document.getElementById('agendarErro');
   erroEl.innerHTML = '';
+
+  // Os grupos de checkbox nao tem uma validacao nativa de "pelo menos um
+  // marcado" -- confere isso na mao antes de enviar, igual o Google Forms
+  // exigia nessas mesmas perguntas.
+  const gruposObrigatorios = [
+    { id:'agEspacosOpcoes',    rotulo:'Quais espaços da igreja serão utilizados' },
+    { id:'agNecessidadesOpcoes', rotulo:'Quais serão as necessidades do evento' },
+    { id:'agQuemOperaOpcoes',  rotulo:'Quem irá operar os equipamentos' },
+  ];
+  for(const g of gruposObrigatorios){
+    if(!document.querySelector(`#${g.id} input:checked`)){
+      erroEl.innerHTML = `<div class="aviso erro">Marque pelo menos uma opção em "${escapar(g.rotulo)}".</div>`;
+      document.getElementById(g.id).scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
+  }
+
   btn.disabled = true;
   btn.textContent = 'Enviando...';
 
@@ -1573,18 +1667,18 @@ async function enviarAgendamento(){
         nome_evento: v('agNomeEvento'),
         descricao: v('agDescricao'),
         quantidade_pessoas: v('agQuantidade'),
-        data_inicio: v('agDataInicio'),
+        data_inicio: dataHoraParaTexto('agDataInicioData', 'agDataInicioHora'),
         horarios_evento: v('agHorarios'),
         data_entrada: v('agEntrada'),
-        data_saida: v('agSaida'),
+        data_saida: dataHoraParaTexto('agSaidaData', 'agSaidaHora'),
         cenario_decoracao: v('agCenario'),
         observacoes: v('agObservacoes'),
-        espacos_utilizados: v('agEspacos'),
-        necessidades: v('agNecessidades'),
+        espacos_utilizados: valoresMarcados('agEspacosOpcoes'),
+        necessidades: valoresMarcados('agNecessidadesOpcoes'),
         lista_equipamentos: v('agEquipamentos'),
         estrutura_externa: v('agEstruturaExterna'),
-        quem_opera: v('agQuemOpera'),
-        montagem_forro: v('agForro'),
+        quem_opera: valoresMarcados('agQuemOperaOpcoes'),
+        montagem_forro: (document.querySelector('input[name=agForro]:checked') || {}).value || '',
         termo_enfermaria: marcado('agEnfermaria') ? 'Sim, estou ciente.' : '',
         termo_responsabilidade: marcado('agTermo') ? 'Concordo com o termo de responsabilidade.' : '',
         assinatura: v('agAssinatura'),
