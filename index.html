@@ -382,6 +382,34 @@
   .agendar-sucesso{text-align:center;padding:50px 20px;}
   .agendar-sucesso .emoji{font-size:44px;margin-bottom:14px;}
   .agendar-sucesso h2{margin:0 0 10px;}
+
+  /* ---------- editor do formulario de agendamento (aba Agendamentos) ---------- */
+  .editor-form-secao{display:flex;flex-direction:column;gap:10px;}
+  .editor-form-secao-cab{display:flex;align-items:center;gap:10px;}
+  .editor-form-secao-titulo{flex:1;font-size:16px;font-weight:700;border:1px solid transparent;
+    background:transparent;padding:6px 8px;border-radius:8px;}
+  .editor-form-secao-titulo:hover,.editor-form-secao-titulo:focus{border-color:var(--border);background:var(--panel2);}
+  .editor-form-secao-acoes{display:flex;gap:6px;flex:none;}
+  .editor-form-secao-dica{width:100%;resize:vertical;font-size:12.5px;color:var(--muted);
+    background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+  .editor-form-campos{display:flex;flex-direction:column;gap:12px;}
+  .editor-form-campo{border:1px solid var(--border);border-radius:12px;padding:12px;
+    background:var(--panel2);display:flex;flex-direction:column;gap:8px;}
+  .editor-form-campo-topo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .editor-form-campo-rotulo{flex:1 1 260px;font-weight:650;font-size:13.5px;}
+  .editor-form-campo-tipo{flex:0 0 auto;font-size:12.5px;padding:8px 10px;}
+  .editor-form-cadeado{flex:none;font-size:15px;}
+  .editor-form-campo-dica{width:100%;font-size:12.5px;color:var(--muted);}
+  .editor-form-opcoes{display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--panel);
+    border:1px dashed var(--border);border-radius:9px;}
+  .editor-form-opcao-linha{display:flex;gap:6px;align-items:center;}
+  .editor-form-opcao-linha input{flex:1;}
+  .editor-form-campo-rodape{display:flex;align-items:center;justify-content:space-between;
+    gap:10px;flex-wrap:wrap;}
+  .editor-form-campo-obrigatorio{display:flex;align-items:center;gap:6px;margin:0;font-size:12.5px;
+    font-weight:400;text-transform:none;letter-spacing:normal;color:var(--muted);cursor:pointer;}
+  .editor-form-campo-obrigatorio input{width:15px;height:15px;accent-color:var(--accent);}
+  .editor-form-campo-acoes{display:flex;gap:6px;}
   .agendar-sucesso p{color:var(--muted);line-height:1.6;max-width:440px;margin:0 auto 22px;}
 
   /* ---------- folha no estilo do roteiro impresso (culto de sexta) ---------- */
@@ -807,7 +835,7 @@
 
     <!-- ---------- agendamentos (pedidos de uso da igreja) ---------- -->
     <div id="paginaAgendamentos" class="hidden">
-      <div class="card">
+      <div id="cardTopoAgendamentos" class="card">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
             <h2>Agendamentos</h2>
@@ -818,6 +846,7 @@
             </p>
           </div>
           <button class="btn" onclick="abrirAgendamentosLista()">↻ Atualizar</button>
+          <button class="btn" onclick="abrirEditorFormularioAgendamento()">✏️ Editar formulário</button>
           <button class="btn primary" onclick="abrirModalLinkFormulario()">
             🔗 Link do formulário
           </button>
@@ -831,6 +860,7 @@
         <div class="agendamento-filtros" id="filtrosEtiquetasAgendamentos"></div>
       </div>
       <div id="listaAgendamentos"></div>
+      <div id="editorFormularioAgendamento" class="hidden"></div>
     </div>
 
     <!-- ---------- calendario (agendamentos com status "Agendado") ---------- -->
@@ -1010,162 +1040,8 @@
       </div>
 
       <form id="formAgendar" onsubmit="return false;">
-        <div class="card">
-          <h2><span class="agendar-secao-n">1</span> Sobre você e o evento</h2>
-          <div class="field">
-            <label for="agEmail">E-mail *</label>
-            <input type="email" id="agEmail" required autocomplete="email" placeholder="voce@email.com">
-          </div>
-          <div class="field">
-            <label for="agResponsavel">Nome responsável / Departamento / Instituição *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Informar respectivamente os três dados acima.</p>
-            <input type="text" id="agResponsavel" required>
-          </div>
-          <div class="field">
-            <label for="agContato">Contato (telefone) *</label>
-            <input type="text" id="agContato" required placeholder="(19) 99999-9999">
-          </div>
-          <div class="field">
-            <label for="agNomeEvento">Nome do evento *</label>
-            <input type="text" id="agNomeEvento" required>
-          </div>
-          <div class="field">
-            <label for="agDescricao">Descrição detalhada do evento *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Detalhar no que consiste o evento, qual é a proposta, para qual público, qual a duração e outras informações relevantes para ser feita a reserva.</p>
-            <textarea id="agDescricao" required rows="4"></textarea>
-          </div>
-          <div class="field">
-            <label for="agQuantidade">Quantidade de pessoas *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Número de pessoas esperados para o evento.</p>
-            <input type="text" id="agQuantidade" required>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2><span class="agendar-secao-n">2</span> Datas e Horários</h2>
-          <p class="hint" style="margin:-6px 0 14px;">Preencha as datas e horários de utilização da igreja.</p>
-          <div class="field">
-            <label for="agDataInicioData">Data e horário de início do Evento *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Data e horário que o evento irá acontecer (data e horário de início do evento).</p>
-            <div class="data-hora-par">
-              <input type="date" id="agDataInicioData" required>
-              <input type="time" id="agDataInicioHora" required>
-            </div>
-          </div>
-          <div class="field">
-            <label for="agHorarios">Horários do evento *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Caso o evento durar mais de um dia, informar abaixo todos os horários da programação.</p>
-            <textarea id="agHorarios" required rows="3"></textarea>
-          </div>
-          <div class="field">
-            <label for="agEntrada">Data e horário de entrada (montagem, passagem de som, decoração, preparativos) *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Datas e horários informando a entrada para montagem do evento, e passagem de som.</p>
-            <textarea id="agEntrada" required rows="2"></textarea>
-          </div>
-          <div class="field">
-            <label for="agSaidaData">Data de Saída (Entrega da igreja com o evento 100% desmontado) *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Datas e horários informando a saída do evento, e quando se pretende fazer a desmontagem.</p>
-            <div class="data-hora-par">
-              <input type="date" id="agSaidaData" required>
-              <input type="time" id="agSaidaHora" required>
-            </div>
-          </div>
-          <div class="field">
-            <label for="agCenario">Cenário e decoração *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Informar se haverá algum tipo de montagem de cenário ou decoração, como será e aonde será (Igreja, Hall, Prédio Infantil).</p>
-            <textarea id="agCenario" required rows="3"></textarea>
-          </div>
-          <div class="field">
-            <label for="agObservacoes">Observações *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Informar com detalhes a entrada das equipes de montagem (quem estará responsável), e informações sobre desmontagem.</p>
-            <textarea id="agObservacoes" required rows="3"></textarea>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2><span class="agendar-secao-n">3</span> Uso de Infraestrutura</h2>
-          <p class="hint" style="margin:-6px 0 14px;">Preencha aqui os espaços que serão utilizados, além de informações técnicas e lista de equipamentos.</p>
-
-          <div class="field">
-            <label>Quais espaços da igreja serão utilizados? *</label>
-            <div class="opcoes-grupo" id="agEspacosOpcoes">
-              <label><input type="checkbox" value="Auditório da Igreja"> Auditório da Igreja</label>
-              <label><input type="checkbox" value="Hall da Igreja"> Hall da Igreja</label>
-              <label><input type="checkbox" value="Sala de Reuniões (Anexo do Hall da Igreja)"> Sala de Reuniões (Anexo do Hall da Igreja)</label>
-              <label><input type="checkbox" value="Sala Pastoral (Camarim do Auditório da Igreja)"> Sala Pastoral (Camarim do Auditório da Igreja)</label>
-              <label><input type="checkbox" value="Enfermaria"> Enfermaria</label>
-              <label><input type="checkbox" value="Prédio Infantil (Espaço comum do prédio e banheiros)"> Prédio Infantil (Espaço comum do prédio e banheiros)</label>
-              <label><input type="checkbox" value="Salas do Prédio Infantil"> Salas do Prédio Infantil</label>
-              <label><input type="checkbox" value="Auditório do Prédio Infantil (apenas aos sábados)"> Auditório do Prédio Infantil (apenas aos sábados)</label>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Quais serão as necessidades do evento? *</label>
-            <div class="opcoes-grupo" id="agNecessidadesOpcoes">
-              <label><input type="checkbox" value="Som"> Som</label>
-              <label><input type="checkbox" value="Painel de LED"> Painel de LED</label>
-              <label><input type="checkbox" value="Passador"> Passador</label>
-              <label><input type="checkbox" value="Iluminação Cênica"> Iluminação Cênica</label>
-              <label><input type="checkbox" value="Fotografia"> Fotografia</label>
-              <label><input type="checkbox" value="Transmissão"> Transmissão</label>
-            </div>
-          </div>
-
-          <div class="field">
-            <label for="agEquipamentos">Descreva a lista detalhada de equipamentos que deseja utilizar: (Input de áudio, Vídeo, Etc) *</label>
-            <p class="hint" style="margin:-2px 0 8px;">É obrigatória a lista de equipamentos para que a data seja confirmada!</p>
-            <textarea id="agEquipamentos" required rows="3"></textarea>
-          </div>
-          <div class="field">
-            <label for="agEstruturaExterna">Utilização de estrutura externa *</label>
-            <p class="hint" style="margin:-2px 0 8px;">Se alguma infraestrutura externa for montada, descreva aqui com detalhes. (Ex.: Uso da malha para cobrir o fundo / Estrutura externa de iluminação/ Mesa de som a ser montada, etc).</p>
-            <textarea id="agEstruturaExterna" required rows="2"></textarea>
-          </div>
-
-          <div class="field">
-            <label>Quem irá operar os equipamentos? *</label>
-            <p class="hint" style="margin:-2px 0 8px;">
-              O preenchimento desta informação não garante que a equipe solicitada esteja confirmada. Caso sejam
-              solicitadas equipes do UNASP, como PROTEC e AICOM é necessário a confirmação direta com os
-              respectivos departamentos. Caso seja solicitada a equipe da Igreja (Comunicação/Sonoplastia), além
-              da confirmação do espaço solicitado da Igreja, é necessário que seja feito o pedido de participação
-              da equipe para os respectivos líderes dos ministérios. (Comunicação - Gilson | Sonoplastia - Sopper).
-            </p>
-            <div class="opcoes-grupo" id="agQuemOperaOpcoes">
-              <label><input type="checkbox" value="PROTEC"> PROTEC</label>
-              <label><input type="checkbox" value="AICOM"> AICOM</label>
-              <label><input type="checkbox" value="Equipe Externa"> Equipe Externa</label>
-              <label><input type="checkbox" value="Equipe da Igreja"> Equipe da Igreja</label>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>Será necessário alguma montagem de estrutura/decoração no forro? *</label>
-            <p class="hint" style="margin:-2px 0 8px;">⚠️ É proibido o acesso ao forro sem prévia autorização e acompanhamento do técnico indicado pela Igreja.</p>
-            <div class="opcoes-grupo">
-              <label><input type="radio" name="agForro" value="Sim" required> Sim</label>
-              <label><input type="radio" name="agForro" value="Não" required> Não</label>
-            </div>
-          </div>
-
-          <div class="checkbox-linha">
-            <input type="checkbox" id="agEnfermaria" required>
-            <label for="agEnfermaria"><strong>Sobre a Enfermaria.</strong> Estou ciente que a Igreja cede uma sala de enfermaria, porém não disponibiliza a
-              equipe de saúde, nem medicamentos, nem instrumentos/equipamentos. Esta demanda é de total
-              responsabilidade da direção do evento. *</label>
-          </div>
-          <div class="checkbox-linha">
-            <input type="checkbox" id="agTermo" required>
-            <label for="agTermo"><strong>Termo de Responsabilidade.</strong> Fica aqui firmado o comprometimento de cumprir com os horários solicitados e a
-              responsabilidade por qualquer dano causado dentro das dependências da igreja. Havendo qualquer
-              danificação ao espaço e/ou equipamentos cedidos, é de total responsabilidade do solicitante o
-              ressarcimento do item/local danificado. *</label>
-          </div>
-          <div class="field">
-            <label for="agAssinatura">Assinatura (Nome Completo) *</label>
-            <input type="text" id="agAssinatura" required>
-          </div>
+        <div id="agendarCamposDinamicos">
+          <div class="card"><div class="vazio">Carregando formulário...</div></div>
         </div>
 
         <div class="card">
@@ -1604,14 +1480,199 @@ async function apiPublico(caminho, opcoes){
 
 /* =====================================================================
    FORMULARIO PUBLICO DE AGENDAMENTO (?agendar=1, sem login)
+   A partir daqui o formulario NAO e mais HTML fixo: as perguntas (secoes,
+   campos, opcoes) vem de "schemaAgendamentoAtual", carregado da tabela
+   "formulario_schema" no Supabase (ou do SCHEMA_PADRAO_AGENDAMENTO abaixo,
+   se ainda nao existir nenhuma edicao salva). Isso e o que permite o editor
+   de formulario (aba Agendamentos, botao "Editar formulário") mudar tudo
+   sem precisar mexer em codigo.
 ===================================================================== */
-// Junta os valores marcados de um grupo de checkboxes (uma das perguntas de
-// "Caixas de selecao" -- Espacos, Necessidades, Quem opera) numa unica string
-// separada por virgula, do jeito que a coluna no banco ja espera (era texto
-// livre desde o formulario antigo).
-function valoresMarcados(idGrupo){
-  return Array.from(document.querySelectorAll(`#${idGrupo} input:checked`))
-    .map(el => el.value).join(', ');
+
+// Tipos de campo que o editor de formulario oferece.
+const TIPOS_CAMPO_FORM = [
+  { v:'texto',       t:'Texto curto' },
+  { v:'texto_longo', t:'Texto longo (parágrafo)' },
+  { v:'numero',      t:'Número' },
+  { v:'email',       t:'E-mail' },
+  { v:'data',        t:'Data' },
+  { v:'data_hora',   t:'Data e hora' },
+  { v:'radio',       t:'Múltipla escolha (uma opção)' },
+  { v:'checkbox',    t:'Caixas de seleção (várias opções)' },
+  { v:'concordo',    t:'Caixa de concordância (única, tipo "estou ciente")' },
+];
+function rotuloTipoCampo(tipo){
+  const t = TIPOS_CAMPO_FORM.find(x => x.v === tipo);
+  return t ? t.t : tipo;
+}
+
+// Formulario original (identico ao Google Forms que a Igreja usava antes).
+// Cada campo com "coluna" preenchida grava direto numa coluna fixa da
+// tabela "agendamentos" (compatibilidade com todo o resto do app -- calendario,
+// busca, mensagens de WhatsApp). Campos criados depois pelo editor (sem
+// "coluna") vao para a coluna "respostas_extra" (JSON), guardados pelo id.
+// "fixo:true" marca os poucos campos que o calendario/WhatsApp realmente
+// precisam que continuem existindo -- o editor nao deixa apagar nem trocar
+// o tipo desses, mas o texto (pergunta, dica, obrigatorio) continua livre.
+const SCHEMA_PADRAO_AGENDAMENTO = {
+  secoes: [
+    {
+      titulo: 'Sobre você e o evento', dica: '',
+      campos: [
+        { id:'email', coluna:'email', fixo:true, tipo:'email', rotulo:'E-mail', dica:'', obrigatorio:true },
+        { id:'nome_responsavel', coluna:'nome_responsavel', fixo:true, tipo:'texto',
+          rotulo:'Nome responsável / Departamento / Instituição',
+          dica:'Informar respectivamente os três dados acima.', obrigatorio:true },
+        { id:'contato', coluna:'contato', fixo:true, tipo:'texto', rotulo:'Contato (telefone)', dica:'', obrigatorio:true },
+        { id:'nome_evento', coluna:'nome_evento', fixo:true, tipo:'texto', rotulo:'Nome do evento', dica:'', obrigatorio:true },
+        { id:'descricao', coluna:'descricao', fixo:false, tipo:'texto_longo', rotulo:'Descrição detalhada do evento',
+          dica:'Detalhar no que consiste o evento, qual é a proposta, para qual público, qual a duração e outras informações relevantes para ser feita a reserva.',
+          obrigatorio:true },
+        { id:'quantidade_pessoas', coluna:'quantidade_pessoas', fixo:false, tipo:'texto', rotulo:'Quantidade de pessoas',
+          dica:'Número de pessoas esperados para o evento.', obrigatorio:true },
+      ]
+    },
+    {
+      titulo: 'Datas e Horários', dica: 'Preencha as datas e horários de utilização da igreja.',
+      campos: [
+        { id:'data_inicio', coluna:'data_inicio', fixo:true, tipo:'data_hora', rotulo:'Data e horário de início do Evento',
+          dica:'Data e horário que o evento irá acontecer (data e horário de início do evento).', obrigatorio:true },
+        { id:'horarios_evento', coluna:'horarios_evento', fixo:false, tipo:'texto_longo', rotulo:'Horários do evento',
+          dica:'Caso o evento durar mais de um dia, informar abaixo todos os horários da programação.', obrigatorio:true },
+        { id:'data_entrada', coluna:'data_entrada', fixo:false, tipo:'texto_longo',
+          rotulo:'Data e horário de entrada (montagem, passagem de som, decoração, preparativos)',
+          dica:'Datas e horários informando a entrada para montagem do evento, e passagem de som.', obrigatorio:true },
+        { id:'data_saida', coluna:'data_saida', fixo:false, tipo:'data_hora',
+          rotulo:'Data de Saída (Entrega da igreja com o evento 100% desmontado)',
+          dica:'Datas e horários informando a saída do evento, e quando se pretende fazer a desmontagem.', obrigatorio:true },
+        { id:'cenario_decoracao', coluna:'cenario_decoracao', fixo:false, tipo:'texto_longo', rotulo:'Cenário e decoração',
+          dica:'Informar se haverá algum tipo de montagem de cenário ou decoração, como será e aonde será (Igreja, Hall, Prédio Infantil).',
+          obrigatorio:true },
+        { id:'observacoes', coluna:'observacoes', fixo:false, tipo:'texto_longo', rotulo:'Observações',
+          dica:'Informar com detalhes a entrada das equipes de montagem (quem estará responsável), e informações sobre desmontagem.',
+          obrigatorio:true },
+      ]
+    },
+    {
+      titulo: 'Uso de Infraestrutura',
+      dica: 'Preencha aqui os espaços que serão utilizados, além de informações técnicas e lista de equipamentos.',
+      campos: [
+        { id:'espacos_utilizados', coluna:'espacos_utilizados', fixo:false, tipo:'checkbox',
+          rotulo:'Quais espaços da igreja serão utilizados?', dica:'', obrigatorio:true,
+          opcoes:['Auditório da Igreja','Hall da Igreja','Sala de Reuniões (Anexo do Hall da Igreja)',
+            'Sala Pastoral (Camarim do Auditório da Igreja)','Enfermaria',
+            'Prédio Infantil (Espaço comum do prédio e banheiros)','Salas do Prédio Infantil',
+            'Auditório do Prédio Infantil (apenas aos sábados)'] },
+        { id:'necessidades', coluna:'necessidades', fixo:false, tipo:'checkbox',
+          rotulo:'Quais serão as necessidades do evento?', dica:'', obrigatorio:true,
+          opcoes:['Som','Painel de LED','Passador','Iluminação Cênica','Fotografia','Transmissão'] },
+        { id:'lista_equipamentos', coluna:'lista_equipamentos', fixo:false, tipo:'texto_longo',
+          rotulo:'Descreva a lista detalhada de equipamentos que deseja utilizar: (Input de áudio, Vídeo, Etc)',
+          dica:'É obrigatória a lista de equipamentos para que a data seja confirmada!', obrigatorio:true },
+        { id:'estrutura_externa', coluna:'estrutura_externa', fixo:false, tipo:'texto_longo',
+          rotulo:'Utilização de estrutura externa',
+          dica:'Se alguma infraestrutura externa for montada, descreva aqui com detalhes. (Ex.: Uso da malha para cobrir o fundo / Estrutura externa de iluminação/ Mesa de som a ser montada, etc).',
+          obrigatorio:true },
+        { id:'quem_opera', coluna:'quem_opera', fixo:false, tipo:'checkbox', rotulo:'Quem irá operar os equipamentos?',
+          dica:'O preenchimento desta informação não garante que a equipe solicitada esteja confirmada. Caso sejam solicitadas equipes do UNASP, como PROTEC e AICOM é necessário a confirmação direta com os respectivos departamentos. Caso seja solicitada a equipe da Igreja (Comunicação/Sonoplastia), além da confirmação do espaço solicitado da Igreja, é necessário que seja feito o pedido de participação da equipe para os respectivos líderes dos ministérios. (Comunicação - Gilson | Sonoplastia - Sopper).',
+          obrigatorio:true, opcoes:['PROTEC','AICOM','Equipe Externa','Equipe da Igreja'] },
+        { id:'montagem_forro', coluna:'montagem_forro', fixo:false, tipo:'radio',
+          rotulo:'Será necessário alguma montagem de estrutura/decoração no forro?',
+          dica:'⚠️ É proibido o acesso ao forro sem prévia autorização e acompanhamento do técnico indicado pela Igreja.',
+          obrigatorio:true, opcoes:['Sim','Não'] },
+        { id:'termo_enfermaria', coluna:'termo_enfermaria', fixo:false, tipo:'concordo',
+          rotulo:'**Sobre a Enfermaria.** Estou ciente que a Igreja cede uma sala de enfermaria, porém não disponibiliza a equipe de saúde, nem medicamentos, nem instrumentos/equipamentos. Esta demanda é de total responsabilidade da direção do evento.',
+          dica:'', obrigatorio:true, valorConcordo:'Sim, estou ciente.' },
+        { id:'termo_responsabilidade', coluna:'termo_responsabilidade', fixo:false, tipo:'concordo',
+          rotulo:'**Termo de Responsabilidade.** Fica aqui firmado o comprometimento de cumprir com os horários solicitados e a responsabilidade por qualquer dano causado dentro das dependências da igreja. Havendo qualquer danificação ao espaço e/ou equipamentos cedidos, é de total responsabilidade do solicitante o ressarcimento do item/local danificado.',
+          dica:'', obrigatorio:true, valorConcordo:'Concordo com o termo de responsabilidade.' },
+        { id:'assinatura', coluna:'assinatura', fixo:false, tipo:'texto', rotulo:'Assinatura (Nome Completo)',
+          dica:'', obrigatorio:true },
+      ]
+    },
+  ]
+};
+
+let schemaAgendamentoAtual = null; // { secoes:[...] } -- o que esta valendo AGORA (publicado)
+
+// Carrega o schema do formulario (tabela publica de leitura "formulario_schema").
+// Se ainda nao existir nenhuma linha salva (ninguem editou o formulario ainda),
+// ou se der qualquer erro de rede, cai pro formulario padrao -- assim o
+// formulario publico NUNCA fica quebrado por causa disso.
+async function carregarSchemaAgendamento(){
+  try{
+    const linhas = await apiPublico('formulario_schema?id=eq.agendamento&select=dados');
+    if(linhas && linhas[0] && linhas[0].dados && Array.isArray(linhas[0].dados.secoes) && linhas[0].dados.secoes.length){
+      schemaAgendamentoAtual = linhas[0].dados;
+      return;
+    }
+  }catch(e){ /* segue pro padrao */ }
+  schemaAgendamentoAtual = JSON.parse(JSON.stringify(SCHEMA_PADRAO_AGENDAMENTO));
+}
+
+// Deixa escrever **negrito** nas perguntas/dicas do editor sem precisar de HTML.
+function formatarTextoCampo(txt){
+  return escapar(txt || '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
+function inputIdCampo(campo){ return 'campo_' + campo.id; }
+
+function renderizarCampoFormulario(campo){
+  const req = !!campo.obrigatorio;
+  const rotuloHtml = formatarTextoCampo(campo.rotulo) + (req ? ' *' : '');
+  const dicaHtml = campo.dica ? `<p class="hint" style="margin:-2px 0 8px;">${formatarTextoCampo(campo.dica)}</p>` : '';
+  const id = inputIdCampo(campo);
+  switch(campo.tipo){
+    case 'texto_longo':
+      return `<div class="field"><label for="${id}">${rotuloHtml}</label>${dicaHtml}
+        <textarea id="${id}" rows="3"${req ? ' required' : ''}></textarea></div>`;
+    case 'numero':
+      return `<div class="field"><label for="${id}">${rotuloHtml}</label>${dicaHtml}
+        <input type="number" id="${id}"${req ? ' required' : ''}></div>`;
+    case 'email':
+      return `<div class="field"><label for="${id}">${rotuloHtml}</label>${dicaHtml}
+        <input type="email" id="${id}" autocomplete="email" placeholder="voce@email.com"${req ? ' required' : ''}></div>`;
+    case 'data':
+      return `<div class="field"><label for="${id}">${rotuloHtml}</label>${dicaHtml}
+        <input type="date" id="${id}"${req ? ' required' : ''}></div>`;
+    case 'data_hora':
+      return `<div class="field"><label for="${id}_data">${rotuloHtml}</label>${dicaHtml}
+        <div class="data-hora-par">
+          <input type="date" id="${id}_data"${req ? ' required' : ''}>
+          <input type="time" id="${id}_hora"${req ? ' required' : ''}>
+        </div></div>`;
+    case 'radio':
+      return `<div class="field"><label>${rotuloHtml}</label>${dicaHtml}
+        <div class="opcoes-grupo" id="${id}">
+          ${(campo.opcoes || []).map(op => `<label><input type="radio" name="${id}" value="${escapar(op)}"> ${escapar(op)}</label>`).join('')}
+        </div></div>`;
+    case 'checkbox':
+      return `<div class="field"><label>${rotuloHtml}</label>${dicaHtml}
+        <div class="opcoes-grupo" id="${id}">
+          ${(campo.opcoes || []).map(op => `<label><input type="checkbox" value="${escapar(op)}"> ${escapar(op)}</label>`).join('')}
+        </div></div>`;
+    case 'concordo':
+      return `<div class="checkbox-linha">
+        <input type="checkbox" id="${id}"${req ? ' required' : ''}>
+        <label for="${id}">${rotuloHtml}</label></div>`;
+    case 'texto':
+    default:
+      return `<div class="field"><label for="${id}">${rotuloHtml}</label>${dicaHtml}
+        <input type="text" id="${id}"${req ? ' required' : ''}></div>`;
+  }
+}
+
+function renderizarSecaoFormulario(secao, indice){
+  return `<div class="card">
+    <h2><span class="agendar-secao-n">${indice}</span> ${escapar(secao.titulo || '')}</h2>
+    ${secao.dica ? `<p class="hint" style="margin:-6px 0 14px;">${formatarTextoCampo(secao.dica)}</p>` : ''}
+    ${(secao.campos || []).map(renderizarCampoFormulario).join('')}
+  </div>`;
+}
+
+function renderizarFormularioAgendamento(){
+  const el = document.getElementById('agendarCamposDinamicos');
+  if(!el || !schemaAgendamentoAtual) return;
+  el.innerHTML = schemaAgendamentoAtual.secoes.map((s, i) => renderizarSecaoFormulario(s, i + 1)).join('');
 }
 
 // Junta um par de campos <input type="date"> + <input type="time"> no mesmo
@@ -1624,66 +1685,70 @@ function dataHoraParaTexto(idData, idHora){
   const [ano, mes, dia] = d.split('-');
   return `${dia}/${mes}/${ano}${h ? ' ' + h : ''}`;
 }
+function dataParaTexto(idData){
+  const d = document.getElementById(idData).value; // "AAAA-MM-DD"
+  if(!d) return '';
+  const [ano, mes, dia] = d.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+// Junta os valores marcados de um grupo de checkboxes (uma das perguntas de
+// "Caixas de selecao") numa unica string separada por virgula, do jeito que
+// a coluna no banco ja espera (era texto livre desde o formulario antigo).
+function valoresMarcados(idGrupo){
+  return Array.from(document.querySelectorAll(`#${idGrupo} input:checked`))
+    .map(el => el.value).join(', ');
+}
+
+// Le o valor respondido de UM campo, do jeito certo pro tipo dele.
+function lerValorCampo(campo){
+  const id = inputIdCampo(campo);
+  switch(campo.tipo){
+    case 'data_hora': return dataHoraParaTexto(id + '_data', id + '_hora');
+    case 'data':      return dataParaTexto(id);
+    case 'radio':     { const sel = document.querySelector(`input[name="${id}"]:checked`); return sel ? sel.value : ''; }
+    case 'checkbox':  return valoresMarcados(id);
+    case 'concordo':  { const el = document.getElementById(id); return (el && el.checked) ? (campo.valorConcordo || 'Sim, estou ciente.') : ''; }
+    default:          { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  }
+}
+function campoRespondido(campo){
+  const v = lerValorCampo(campo);
+  return !!(v && String(v).trim());
+}
 
 async function enviarAgendamento(){
-  const form = document.getElementById('formAgendar');
-  if(!form.reportValidity()) return; // usa a validacao nativa do HTML (campos "required")
-
-  const v = id => document.getElementById(id).value.trim();
-  const marcado = id => document.getElementById(id).checked;
+  if(!schemaAgendamentoAtual) return;
+  const todosCampos = schemaAgendamentoAtual.secoes.flatMap(s => s.campos || []);
 
   const btn = document.getElementById('btnEnviarAgendamento');
   const erroEl = document.getElementById('agendarErro');
   erroEl.innerHTML = '';
 
-  // Os grupos de checkbox nao tem uma validacao nativa de "pelo menos um
-  // marcado" -- confere isso na mao antes de enviar, igual o Google Forms
-  // exigia nessas mesmas perguntas.
-  const gruposObrigatorios = [
-    { id:'agEspacosOpcoes',    rotulo:'Quais espaços da igreja serão utilizados' },
-    { id:'agNecessidadesOpcoes', rotulo:'Quais serão as necessidades do evento' },
-    { id:'agQuemOperaOpcoes',  rotulo:'Quem irá operar os equipamentos' },
-  ];
-  for(const g of gruposObrigatorios){
-    if(!document.querySelector(`#${g.id} input:checked`)){
-      erroEl.innerHTML = `<div class="aviso erro">Marque pelo menos uma opção em "${escapar(g.rotulo)}".</div>`;
-      document.getElementById(g.id).scrollIntoView({ behavior:'smooth', block:'center' });
-      return;
-    }
+  // Confere os obrigatorios na mao (cobre tambem os grupos de checkbox/radio,
+  // que nao tem uma validacao nativa de "pelo menos um marcado").
+  for(const campo of todosCampos){
+    if(!campo.obrigatorio || campoRespondido(campo)) continue;
+    erroEl.innerHTML = `<div class="aviso erro">Preencha "${escapar(campo.rotulo || 'este campo')}".</div>`;
+    const id = inputIdCampo(campo);
+    const alvo = document.getElementById(id) || document.getElementById(id + '_data');
+    if(alvo) alvo.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
   }
 
   btn.disabled = true;
   btn.textContent = 'Enviando...';
 
+  const corpo = { origem: 'app' };
+  const extras = {};
+  todosCampos.forEach(campo => {
+    const valor = lerValorCampo(campo);
+    if(campo.coluna) corpo[campo.coluna] = valor;
+    else extras[campo.id] = valor;
+  });
+  corpo.respostas_extra = extras;
+
   try{
-    await apiPublico('agendamentos', {
-      method: 'POST',
-      prefer: 'return=minimal',
-      body: {
-        origem: 'app',
-        email: v('agEmail'),
-        nome_responsavel: v('agResponsavel'),
-        contato: v('agContato'),
-        nome_evento: v('agNomeEvento'),
-        descricao: v('agDescricao'),
-        quantidade_pessoas: v('agQuantidade'),
-        data_inicio: dataHoraParaTexto('agDataInicioData', 'agDataInicioHora'),
-        horarios_evento: v('agHorarios'),
-        data_entrada: v('agEntrada'),
-        data_saida: dataHoraParaTexto('agSaidaData', 'agSaidaHora'),
-        cenario_decoracao: v('agCenario'),
-        observacoes: v('agObservacoes'),
-        espacos_utilizados: valoresMarcados('agEspacosOpcoes'),
-        necessidades: valoresMarcados('agNecessidadesOpcoes'),
-        lista_equipamentos: v('agEquipamentos'),
-        estrutura_externa: v('agEstruturaExterna'),
-        quem_opera: valoresMarcados('agQuemOperaOpcoes'),
-        montagem_forro: (document.querySelector('input[name=agForro]:checked') || {}).value || '',
-        termo_enfermaria: marcado('agEnfermaria') ? 'Sim, estou ciente.' : '',
-        termo_responsabilidade: marcado('agTermo') ? 'Concordo com o termo de responsabilidade.' : '',
-        assinatura: v('agAssinatura'),
-      }
-    });
+    await apiPublico('agendamentos', { method: 'POST', prefer: 'return=minimal', body: corpo });
     document.getElementById('agendarFormulario').classList.add('hidden');
     document.getElementById('agendarSucesso').classList.remove('hidden');
     window.scrollTo(0, 0);
@@ -1694,6 +1759,237 @@ async function enviarAgendamento(){
     btn.disabled = false;
     btn.textContent = 'Enviar pedido de agendamento';
   }
+}
+
+/* =====================================================================
+   EDITOR DO FORMULARIO DE AGENDAMENTO (aba Agendamentos > "Editar formulário")
+   Edita um RASCUNHO em "schemaEmEdicaoForm" -- so vira valendo pra valer
+   quando clica em "Salvar formulário" (grava em "formulario_schema" no
+   Supabase). Sair sem salvar descarta o rascunho.
+===================================================================== */
+let schemaEmEdicaoForm = null;
+
+function idCampoFormularioNovo(){
+  return 'extra_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+async function abrirEditorFormularioAgendamento(){
+  if(!schemaAgendamentoAtual) await carregarSchemaAgendamento();
+  schemaEmEdicaoForm = JSON.parse(JSON.stringify(schemaAgendamentoAtual));
+  document.getElementById('cardTopoAgendamentos').classList.add('hidden');
+  document.getElementById('listaAgendamentos').classList.add('hidden');
+  document.getElementById('editorFormularioAgendamento').classList.remove('hidden');
+  desenharEditorFormularioAgendamento();
+  window.scrollTo(0, 0);
+}
+
+function fecharEditorFormularioAgendamento(semAviso){
+  if(!semAviso && JSON.stringify(schemaEmEdicaoForm) !== JSON.stringify(schemaAgendamentoAtual)){
+    if(!confirm('Você tem alterações no formulário que ainda não foram salvas. Sair mesmo assim?')) return;
+  }
+  document.getElementById('editorFormularioAgendamento').classList.add('hidden');
+  document.getElementById('cardTopoAgendamentos').classList.remove('hidden');
+  document.getElementById('listaAgendamentos').classList.remove('hidden');
+}
+
+function restaurarSchemaPadraoAgendamento(){
+  if(!confirm('Isso substitui TODAS as perguntas atuais (aqui no rascunho) pelas perguntas originais do formulário. Só vale de verdade se você clicar em "Salvar formulário" depois. Os pedidos já recebidos não são afetados. Continuar?')) return;
+  schemaEmEdicaoForm = JSON.parse(JSON.stringify(SCHEMA_PADRAO_AGENDAMENTO));
+  desenharEditorFormularioAgendamento();
+}
+
+async function salvarSchemaFormularioAgendamento(){
+  for(const s of schemaEmEdicaoForm.secoes){
+    for(const c of (s.campos || [])){
+      if(!c.rotulo || !c.rotulo.trim()){
+        toast('Tem um campo sem pergunta/rótulo preenchido.', 'err');
+        return;
+      }
+      if((c.tipo === 'radio' || c.tipo === 'checkbox') && (!c.opcoes || c.opcoes.filter(o => o.trim()).length < 1)){
+        toast(`O campo "${c.rotulo}" precisa de pelo menos uma opção.`, 'err');
+        return;
+      }
+    }
+  }
+  const btn = document.getElementById('btnSalvarSchemaForm');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  try{
+    await api('formulario_schema', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: { id: 'agendamento', dados: schemaEmEdicaoForm, atualizado_em: new Date().toISOString(), atualizado_por: sessao.email }
+    });
+    schemaAgendamentoAtual = JSON.parse(JSON.stringify(schemaEmEdicaoForm));
+    toast('Formulário salvo!', 'ok');
+    fecharEditorFormularioAgendamento(true);
+  }catch(e){
+    toast('Não consegui salvar: ' + e.message, 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar formulário';
+  }
+}
+
+function moverSecaoFormulario(si, delta){
+  const arr = schemaEmEdicaoForm.secoes;
+  const alvo = si + delta;
+  if(alvo < 0 || alvo >= arr.length) return;
+  [arr[si], arr[alvo]] = [arr[alvo], arr[si]];
+  desenharEditorFormularioAgendamento();
+}
+function excluirSecaoFormulario(si){
+  const secao = schemaEmEdicaoForm.secoes[si];
+  if((secao.campos || []).some(c => c.fixo)){
+    toast('Essa seção tem um campo 🔒 usado pelo calendário/WhatsApp — mova o campo pra outra seção antes de excluir.', 'err');
+    return;
+  }
+  if(!confirm(`Excluir a seção "${secao.titulo || 'sem título'}" e todos os seus campos?`)) return;
+  schemaEmEdicaoForm.secoes.splice(si, 1);
+  desenharEditorFormularioAgendamento();
+}
+function adicionarSecaoFormulario(){
+  schemaEmEdicaoForm.secoes.push({ titulo: 'Nova seção', dica: '', campos: [] });
+  desenharEditorFormularioAgendamento();
+}
+
+function adicionarCampoFormulario(si){
+  schemaEmEdicaoForm.secoes[si].campos.push({
+    id: idCampoFormularioNovo(), coluna: null, fixo: false,
+    tipo: 'texto', rotulo: 'Nova pergunta', dica: '', obrigatorio: false
+  });
+  desenharEditorFormularioAgendamento();
+}
+function excluirCampoFormulario(si, ci){
+  const campo = schemaEmEdicaoForm.secoes[si].campos[ci];
+  if(campo.fixo){
+    toast('Esse campo 🔒 é usado pelo calendário/WhatsApp e não pode ser excluído.', 'err');
+    return;
+  }
+  if(!confirm(`Excluir o campo "${campo.rotulo || 'sem título'}"?`)) return;
+  schemaEmEdicaoForm.secoes[si].campos.splice(ci, 1);
+  desenharEditorFormularioAgendamento();
+}
+function moverCampoFormulario(si, ci, delta){
+  const arr = schemaEmEdicaoForm.secoes[si].campos;
+  const alvo = ci + delta;
+  if(alvo < 0 || alvo >= arr.length) return;
+  [arr[ci], arr[alvo]] = [arr[alvo], arr[ci]];
+  desenharEditorFormularioAgendamento();
+}
+function mudarTipoCampoFormulario(si, ci, novoTipo){
+  const campo = schemaEmEdicaoForm.secoes[si].campos[ci];
+  if(campo.fixo) return; // o <select> ja fica desabilitado, isso e so uma defesa extra
+  campo.tipo = novoTipo;
+  if((novoTipo === 'radio' || novoTipo === 'checkbox') && !Array.isArray(campo.opcoes)) campo.opcoes = ['Opção 1'];
+  if(novoTipo === 'concordo' && !campo.valorConcordo) campo.valorConcordo = 'Sim, estou ciente.';
+  desenharEditorFormularioAgendamento();
+}
+function adicionarOpcaoFormulario(si, ci){
+  const campo = schemaEmEdicaoForm.secoes[si].campos[ci];
+  if(!Array.isArray(campo.opcoes)) campo.opcoes = [];
+  campo.opcoes.push('Nova opção');
+  desenharEditorFormularioAgendamento();
+}
+function excluirOpcaoFormulario(si, ci, oi){
+  schemaEmEdicaoForm.secoes[si].campos[ci].opcoes.splice(oi, 1);
+  desenharEditorFormularioAgendamento();
+}
+
+function opcoesEditorHTML(campo, si, ci){
+  const opcoes = campo.opcoes || [];
+  return `<div class="editor-form-opcoes">
+    ${opcoes.map((op, oi) => `<div class="editor-form-opcao-linha">
+      <input type="text" value="${escapar(op)}"
+        oninput="schemaEmEdicaoForm.secoes[${si}].campos[${ci}].opcoes[${oi}]=this.value">
+      <button class="btn icon" title="Excluir opção" onclick="excluirOpcaoFormulario(${si},${ci},${oi})">✕</button>
+    </div>`).join('')}
+    <button class="btn small" onclick="adicionarOpcaoFormulario(${si},${ci})">+ Adicionar opção</button>
+  </div>`;
+}
+
+function campoEditorHTML(campo, si, ci, total){
+  const bloqueado = !!campo.fixo;
+  const precisaOpcoes = campo.tipo === 'radio' || campo.tipo === 'checkbox';
+  return `<div class="editor-form-campo">
+    <div class="editor-form-campo-topo">
+      <input type="text" class="editor-form-campo-rotulo" placeholder="Pergunta / rótulo do campo"
+        value="${escapar(campo.rotulo || '')}"
+        oninput="schemaEmEdicaoForm.secoes[${si}].campos[${ci}].rotulo=this.value">
+      <select class="editor-form-campo-tipo"${bloqueado ? ' disabled title="Este campo precisa continuar sendo deste tipo"' : ''}
+        onchange="mudarTipoCampoFormulario(${si},${ci},this.value)">
+        ${TIPOS_CAMPO_FORM.map(t => `<option value="${t.v}"${campo.tipo === t.v ? ' selected' : ''}>${escapar(t.t)}</option>`).join('')}
+      </select>
+      ${bloqueado ? '<span class="editor-form-cadeado" title="Campo usado pelo calendário/WhatsApp — não pode ser apagado">🔒</span>' : ''}
+    </div>
+    <input type="text" class="editor-form-campo-dica" placeholder="Texto de ajuda (opcional)"
+      value="${escapar(campo.dica || '')}"
+      oninput="schemaEmEdicaoForm.secoes[${si}].campos[${ci}].dica=this.value">
+    ${precisaOpcoes ? opcoesEditorHTML(campo, si, ci) : ''}
+    ${campo.tipo === 'concordo' ? `<input type="text" class="editor-form-campo-dica"
+      placeholder="Texto salvo quando a pessoa marcar (ex: Sim, estou ciente.)"
+      value="${escapar(campo.valorConcordo || '')}"
+      oninput="schemaEmEdicaoForm.secoes[${si}].campos[${ci}].valorConcordo=this.value">` : ''}
+    <div class="editor-form-campo-rodape">
+      <label class="editor-form-campo-obrigatorio">
+        <input type="checkbox"${campo.obrigatorio ? ' checked' : ''}
+          onchange="schemaEmEdicaoForm.secoes[${si}].campos[${ci}].obrigatorio=this.checked"> Obrigatório
+      </label>
+      <div class="editor-form-campo-acoes">
+        <button class="btn icon" title="Mover para cima"${ci === 0 ? ' disabled' : ''} onclick="moverCampoFormulario(${si},${ci},-1)">▲</button>
+        <button class="btn icon" title="Mover para baixo"${ci === total - 1 ? ' disabled' : ''} onclick="moverCampoFormulario(${si},${ci},1)">▼</button>
+        <button class="btn icon" title="${bloqueado ? 'Este campo não pode ser excluído' : 'Excluir campo'}"${bloqueado ? ' disabled' : ''} onclick="excluirCampoFormulario(${si},${ci})">🗑️</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function secaoEditorHTML(secao, si, totalSecoes){
+  return `<div class="card editor-form-secao">
+    <div class="editor-form-secao-cab">
+      <span class="agendar-secao-n">${si + 1}</span>
+      <input type="text" class="editor-form-secao-titulo" placeholder="Título da seção"
+        value="${escapar(secao.titulo || '')}"
+        oninput="schemaEmEdicaoForm.secoes[${si}].titulo=this.value">
+      <div class="editor-form-secao-acoes">
+        <button class="btn icon" title="Mover seção para cima"${si === 0 ? ' disabled' : ''} onclick="moverSecaoFormulario(${si},-1)">▲</button>
+        <button class="btn icon" title="Mover seção para baixo"${si === totalSecoes - 1 ? ' disabled' : ''} onclick="moverSecaoFormulario(${si},1)">▼</button>
+        <button class="btn icon" title="Excluir seção" onclick="excluirSecaoFormulario(${si})">🗑️</button>
+      </div>
+    </div>
+    <textarea class="editor-form-secao-dica" rows="2" placeholder="Texto de apoio da seção (opcional)"
+      oninput="schemaEmEdicaoForm.secoes[${si}].dica=this.value">${escapar(secao.dica || '')}</textarea>
+    <div class="editor-form-campos">
+      ${(secao.campos || []).map((c, ci) => campoEditorHTML(c, si, ci, (secao.campos || []).length)).join('')}
+    </div>
+    <button class="btn small" onclick="adicionarCampoFormulario(${si})">+ Adicionar campo</button>
+  </div>`;
+}
+
+function desenharEditorFormularioAgendamento(){
+  const el = document.getElementById('editorFormularioAgendamento');
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <h2>Editor do formulário de agendamento</h2>
+          <p class="hint" style="margin:4px 0 0;">
+            Mude os textos, as perguntas, os tipos de campo e as opções do formulário público de
+            agendamento. Os campos marcados com 🔒 são usados pelo calendário e pelas mensagens de
+            WhatsApp e por isso não podem ser apagados nem trocar de tipo — mas o texto deles pode
+            ser editado normalmente.
+          </p>
+        </div>
+        <button class="btn" onclick="restaurarSchemaPadraoAgendamento()">↺ Restaurar original</button>
+        <button class="btn" onclick="fecharEditorFormularioAgendamento()">Voltar para os pedidos</button>
+        <button class="btn primary" id="btnSalvarSchemaForm" onclick="salvarSchemaFormularioAgendamento()">💾 Salvar formulário</button>
+      </div>
+    </div>
+    ${schemaEmEdicaoForm.secoes.map((s, i) => secaoEditorHTML(s, i, schemaEmEdicaoForm.secoes.length)).join('')}
+    <div class="card" style="text-align:center;">
+      <button class="btn" onclick="adicionarSecaoFormulario()">+ Adicionar seção</button>
+    </div>
+  `;
 }
 
 /* =====================================================================
@@ -1744,8 +2040,12 @@ async function abrirAgendamentosLista(){
   marcarAba('agendamentos');
   mostrarPagina('agendamentos');
   document.getElementById('listaAgendamentos').innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
+  document.getElementById('editorFormularioAgendamento').classList.add('hidden');
+  document.getElementById('cardTopoAgendamentos').classList.remove('hidden');
+  document.getElementById('listaAgendamentos').classList.remove('hidden');
   garantirFechamentoEtiquetaDropdown();
   try{
+    if(!schemaAgendamentoAtual) await carregarSchemaAgendamento();
     agendamentos = await api('agendamentos?select=*&order=criado_em.desc');
     montarFiltrosAgendamentos();
     montarFiltroAnoAgendamentos();
@@ -1891,25 +2191,23 @@ function etiquetasBadgesHTML(a){
     ).join('') + `</div>`;
 }
 
-const CAMPOS_DETALHE_AGENDAMENTO = [
-  { k:'email',                  t:'E-mail' },
-  { k:'contato',                t:'Contato' },
-  { k:'quantidade_pessoas',     t:'Quantidade de pessoas' },
-  { k:'data_inicio',            t:'Início do evento' },
-  { k:'horarios_evento',        t:'Horários do evento' },
-  { k:'data_entrada',           t:'Entrada (montagem)' },
-  { k:'data_saida',             t:'Saída (desmontagem)' },
-  { k:'descricao',              t:'Descrição do evento' },
-  { k:'cenario_decoracao',      t:'Cenário e decoração' },
-  { k:'observacoes',            t:'Observações' },
-  { k:'espacos_utilizados',     t:'Espaços utilizados' },
-  { k:'necessidades',           t:'Necessidades do evento' },
-  { k:'lista_equipamentos',     t:'Lista de equipamentos' },
-  { k:'estrutura_externa',      t:'Estrutura externa' },
-  { k:'quem_opera',             t:'Quem opera os equipamentos' },
-  { k:'montagem_forro',         t:'Montagem no forro' },
-  { k:'assinatura',             t:'Assinatura' },
-];
+// Lista de campos mostrados no "Ver tudo" de cada pedido. Vem do schema ATUAL
+// do formulario (o que esta valendo agora no editor), pra acompanhar as
+// perguntas/opcoes que a Igreja configurou -- por isso nome_evento,
+// nome_responsavel e data_inicio ficam de fora (ja aparecem no cabecalho do
+// pedido). Campos com "coluna" leem direto da coluna fixa (funciona igual
+// pra pedidos antigos e novos); campos sem "coluna" (criados no editor depois
+// que o pedido foi enviado) so tem resposta se o pedido ja foi enviado com
+// essa pergunta no ar.
+function camposDetalheAgendamento(){
+  const schema = schemaAgendamentoAtual || SCHEMA_PADRAO_AGENDAMENTO;
+  const ocultos = ['nome_evento', 'nome_responsavel', 'data_inicio'];
+  return schema.secoes.flatMap(s => s.campos || []).filter(c => !ocultos.includes(c.coluna));
+}
+function valorDetalheAgendamento(a, campo){
+  if(campo.coluna) return a[campo.coluna] || '';
+  return (a.respostas_extra && a.respostas_extra[campo.id]) || '';
+}
 
 function agendamentoItemHTML(a){
   const aberto = agendamentosAbertos.has(a.id);
@@ -1945,7 +2243,7 @@ function agendamentoItemHTML(a){
       </div>
     </div>
     ${aberto ? `<dl class="agendamento-detalhe">
-      ${CAMPOS_DETALHE_AGENDAMENTO.map(c => `<div class="agendamento-campo"><dt>${escapar(c.t)}</dt><dd>${escapar(a[c.k] || '')}</dd></div>`).join('')}
+      ${camposDetalheAgendamento().map(c => `<div class="agendamento-campo"><dt>${escapar(c.rotulo || '')}</dt><dd>${escapar(valorDetalheAgendamento(a, c))}</dd></div>`).join('')}
     </dl>` : ''}
   </div>`;
 }
@@ -4836,6 +5134,8 @@ document.addEventListener('keydown', ev => {
     document.getElementById('telaLogin').classList.add('hidden');
     document.getElementById('telaApp').classList.add('hidden');
     document.getElementById('telaAgendar').classList.remove('hidden');
+    await carregarSchemaAgendamento();
+    renderizarFormularioAgendamento();
     return;
   }
 
