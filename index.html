@@ -307,9 +307,6 @@
   .etiqueta-toggle[data-tag="externo"].on{background:#ccfbf1;color:#0f766e;border-color:#99f6e4;}
   .etiqueta-badge{display:inline-flex;align-items:center;gap:4px;border-radius:20px;padding:3px 10px;
     font-size:11.5px;font-weight:700;}
-  .etiqueta-badge[data-tag="urgente"]{background:#fee2e2;color:#b91c1c;}
-  .etiqueta-badge[data-tag="recorrente"]{background:#ede9fe;color:#6d28d9;}
-  .etiqueta-badge[data-tag="externo"]{background:#ccfbf1;color:#0f766e;}
 
   /* ---------- lista suspensa de etiquetas (dentro de cada pedido) ---------- */
   .etiqueta-dropdown-wrap{position:relative;display:inline-block;}
@@ -320,6 +317,7 @@
     border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:550;color:var(--text);}
   .etiqueta-dropdown-item:hover{background:var(--panel2);}
   .etiqueta-dropdown-item input[type=checkbox]{width:16px;height:16px;flex:none;margin:0;accent-color:var(--accent);}
+  .etiqueta-dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block;}
   .agendamento-detalhe{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px 20px;margin-bottom:6px;}
   .agendamento-campo dt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
     color:var(--muted2);margin-bottom:3px;}
@@ -412,6 +410,8 @@
   .editor-form-campo-acoes{display:flex;gap:6px;}
   .editor-etiqueta-linha{flex-direction:row;align-items:center;}
   .editor-etiqueta-ico{flex:0 0 56px;text-align:center;font-size:16px;padding:8px 4px;}
+  .editor-etiqueta-cor{flex:0 0 40px;height:38px;border:1px solid var(--border);border-radius:8px;
+    padding:2px;background:var(--panel2);cursor:pointer;}
   .agendar-sucesso p{color:var(--muted);line-height:1.6;max-width:440px;margin:0 auto 22px;}
 
   /* ---------- folha no estilo do roteiro impresso (culto de sexta) ---------- */
@@ -2077,12 +2077,16 @@ function excluirEtiquetaFormulario(i){
   desenharEditorEtiquetasAgendamento();
 }
 function adicionarEtiquetaFormulario(){
-  etiquetasEmEdicao.push({ key: idEtiquetaFormularioNova(), label: 'Nova etiqueta', ico: '🏷️' });
+  const cor = PALETA_CORES_ETIQUETA[etiquetasEmEdicao.length % PALETA_CORES_ETIQUETA.length];
+  etiquetasEmEdicao.push({ key: idEtiquetaFormularioNova(), label: 'Nova etiqueta', ico: '🏷️', cor });
   desenharEditorEtiquetasAgendamento();
 }
 
 function etiquetaEditorHTML(t, i, total){
   return `<div class="editor-form-campo editor-etiqueta-linha">
+    <input type="color" class="editor-etiqueta-cor" title="Cor da etiqueta"
+      value="${escapar(t.cor || '#666666')}"
+      oninput="etiquetasEmEdicao[${i}].cor=this.value">
     <input type="text" class="editor-etiqueta-ico" maxlength="4" placeholder="🏷️"
       value="${escapar(t.ico || '')}"
       oninput="etiquetasEmEdicao[${i}].ico=this.value">
@@ -2106,7 +2110,7 @@ function desenharEditorEtiquetasAgendamento(){
           <h2>Editor de etiquetas</h2>
           <p class="hint" style="margin:4px 0 0;">
             Crie, renomeie, reordene ou apague as etiquetas usadas para marcar os pedidos (tipo
-            "Urgente" ou "Grupo externo"). Cada uma tem um emoji e um nome.
+            "Urgente" ou "Grupo externo"). Cada uma tem uma cor, um emoji e um nome.
           </p>
         </div>
         <button class="btn" onclick="restaurarEtiquetasPadraoAgendamento()">↺ Restaurar original</button>
@@ -2164,18 +2168,37 @@ let etiquetasDropdownAbertos = new Set(); // ids com a lista suspensa de etiquet
 // numa linha separada (id "etiquetas_agendamento") -- por isso o array
 // abaixo e so o PADRAO/fallback, igual o SCHEMA_PADRAO_AGENDAMENTO.
 const TAGS_AGENDAMENTO_PADRAO = [
-  { key:'urgente',    label:'Urgente',           ico:'⚠️' },
-  { key:'recorrente', label:'Evento recorrente', ico:'🔁' },
-  { key:'externo',    label:'Grupo externo',     ico:'🌐' },
+  { key:'urgente',    label:'Urgente',           ico:'⚠️', cor:'#b91c1c' },
+  { key:'recorrente', label:'Evento recorrente', ico:'🔁', cor:'#6d28d9' },
+  { key:'externo',    label:'Grupo externo',     ico:'🌐', cor:'#0f766e' },
 ];
+// Paleta usada pra sugerir uma cor nova pra cada etiqueta criada (cicla por indice).
+const PALETA_CORES_ETIQUETA = ['#2563eb','#b91c1c','#0f766e','#a16207','#6d28d9','#be185d','#0369a1','#15803d'];
 let etiquetasAgendamentoAtual = TAGS_AGENDAMENTO_PADRAO.slice(); // valendo AGORA (comeca no padrao ate carregar)
 let filtroEtiquetasAtivas = new Set(); // chaves marcadas no filtro
+
+// Etiquetas salvas antes dessa funcionalidade existir nao tem "cor" -- preenche
+// com uma cor da paleta (deterministico pelo indice) pra nunca ficar sem cor.
+function comCorGarantida(tags){
+  return tags.map((t, i) => t.cor ? t : Object.assign({}, t, { cor: PALETA_CORES_ETIQUETA[i % PALETA_CORES_ETIQUETA.length] }));
+}
+
+// Decide se o texto sobre uma cor de fundo deve ser claro ou escuro, pelo
+// jeito simples de luminancia relativa (evita texto branco em cor clara).
+function corContrasteTexto(hex){
+  const h = (hex || '#666666').replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16) || 0;
+  const g = parseInt(h.substring(2, 4), 16) || 0;
+  const b = parseInt(h.substring(4, 6), 16) || 0;
+  const luminancia = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminancia > 0.62 ? '#1a1a1a' : '#ffffff';
+}
 
 async function carregarEtiquetasAgendamento(){
   try{
     const linhas = await apiPublico('formulario_schema?id=eq.etiquetas_agendamento&select=dados');
     if(linhas && linhas[0] && linhas[0].dados && Array.isArray(linhas[0].dados.tags) && linhas[0].dados.tags.length){
-      etiquetasAgendamentoAtual = linhas[0].dados.tags;
+      etiquetasAgendamentoAtual = comCorGarantida(linhas[0].dados.tags);
       return;
     }
   }catch(e){ /* segue pro padrao */ }
@@ -2229,10 +2252,15 @@ function toggleEtiquetaDropdown(id){
 
 function montarFiltrosEtiquetasAgendamentos(){
   const el = document.getElementById('filtrosEtiquetasAgendamentos');
-  el.innerHTML = etiquetasAgendamentoAtual.map(t =>
-    `<button class="chip-filtro${filtroEtiquetasAtivas.has(t.key) ? ' on' : ''}"
-       onclick="toggleFiltroEtiqueta('${t.key}')">${t.ico} ${escapar(t.label)}</button>`
-  ).join('');
+  el.innerHTML = etiquetasAgendamentoAtual.map(t => {
+    const on = filtroEtiquetasAtivas.has(t.key);
+    const cor = t.cor || '#666666';
+    const estilo = on
+      ? `background:${cor};border-color:${cor};color:${corContrasteTexto(cor)};`
+      : `border-color:${cor};color:${cor};`;
+    return `<button class="chip-filtro${on ? ' on' : ''}" style="${estilo}"
+       onclick="toggleFiltroEtiqueta('${t.key}')">${t.ico} ${escapar(t.label)}</button>`;
+  }).join('');
 }
 
 function toggleFiltroEtiqueta(key){
@@ -2335,9 +2363,10 @@ function etiquetasBadgesHTML(a){
   const etiquetas = a.etiquetas || [];
   if(!etiquetas.length) return '';
   return `<div class="agendamento-etiquetas">` +
-    etiquetasAgendamentoAtual.filter(t => etiquetas.includes(t.key)).map(t =>
-      `<span class="etiqueta-badge" data-tag="${t.key}">${t.ico} ${escapar(t.label)}</span>`
-    ).join('') + `</div>`;
+    etiquetasAgendamentoAtual.filter(t => etiquetas.includes(t.key)).map(t => {
+      const cor = t.cor || '#666666';
+      return `<span class="etiqueta-badge" data-tag="${t.key}" style="background:${cor}1f;color:${cor};">${t.ico} ${escapar(t.label)}</span>`;
+    }).join('') + `</div>`;
 }
 
 // Lista de campos mostrados no "Ver tudo" de cada pedido. Vem do schema ATUAL
@@ -2382,6 +2411,7 @@ function agendamentoItemHTML(a){
           ${dropdownAberto ? `<div class="etiqueta-dropdown-menu">
             ${etiquetasAgendamentoAtual.map(t => `<label class="etiqueta-dropdown-item">
                <input type="checkbox" ${etiquetas.includes(t.key) ? 'checked' : ''} onchange="toggleEtiquetaAgendamento('${a.id}','${t.key}')">
+               <span class="etiqueta-dot" style="background:${t.cor || '#666666'};"></span>
                <span>${t.ico} ${escapar(t.label)}</span>
              </label>`).join('')}
           </div>` : ''}
