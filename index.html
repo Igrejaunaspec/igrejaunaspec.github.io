@@ -2243,7 +2243,7 @@ function agendamentoItemHTML(a){
       </div>
     </div>
     ${aberto ? `<dl class="agendamento-detalhe">
-      ${camposDetalheAgendamento().map(c => `<div class="agendamento-campo"><dt>${escapar(c.rotulo || '')}</dt><dd>${escapar(valorDetalheAgendamento(a, c))}</dd></div>`).join('')}
+      ${camposDetalheAgendamento().map(c => `<div class="agendamento-campo"><dt>${formatarTextoCampo(c.rotulo || '')}</dt><dd>${escapar(valorDetalheAgendamento(a, c))}</dd></div>`).join('')}
     </dl>` : ''}
   </div>`;
 }
