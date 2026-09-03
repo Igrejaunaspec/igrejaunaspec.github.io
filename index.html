@@ -803,7 +803,8 @@
         <h2>Quem pode editar o quê</h2>
         <p class="hint">
           Toda pessoa que tiver um login aparece aqui, começando <strong>sem permissão nenhuma</strong>.
-          Marque abaixo quais cultos cada uma pode editar. As mudanças salvam sozinhas.
+          Marque abaixo quais cultos cada uma pode editar, e quais abas extras ela enxerga no topo
+          (Agendamentos, Calendário, Escala, YouTube). As mudanças salvam sozinhas.
         </p>
         <div id="listaPessoas"></div>
       </div>
@@ -1113,7 +1114,7 @@ const YOUTUBE_CHANNEL_ID = 'UCN2L7fsIApLM3gRwpgQpFDQ'; // @igrejaunasp
 ===================================================================== */
 const CHAVE_SESSAO = 'roteiroEditor.sessao';
 let sessao   = null;   // { access_token, refresh_token, expira_em, email }
-let perfil   = null;   // { acesso_sexta, acesso_sabado, admin }
+let perfil   = null;   // { acesso_sexta, acesso_sabado, acesso_agenda, acesso_agendamentos, acesso_calendario, acesso_escala, acesso_youtube, admin }
 let cultoAtual = null; // 'sexta' | 'sabado' | 'pessoas'
 let roteiros = [];     // lista do culto atual
 let pastas   = [];     // pastas do culto atual
@@ -2735,8 +2736,9 @@ function montarAbas(){
 
   // Atalho pra outro site (escala de voluntarios), abre numa aba nova --
   // nao e uma pagina deste app, entao nao mexe em nenhum roteiro/estado
-  // nem fica marcada como aba "ativa".
-  {
+  // nem fica marcada como aba "ativa". So aparece pra quem tem acesso liberado
+  // (aba Pessoas) ou e admin.
+  if(perfil.admin || perfil.acesso_escala){
     const b = document.createElement('button');
     b.textContent = 'Escala';
     b.title = 'Abre a Escala em outra aba';
@@ -2746,7 +2748,8 @@ function montarAbas(){
 
   // Aba com as transmissoes ao vivo pre-programadas do canal do YouTube --
   // essa sim e uma pagina deste app (busca na API do YouTube e mostra a lista).
-  {
+  // So aparece pra quem tem acesso liberado (aba Pessoas) ou e admin.
+  if(perfil.admin || perfil.acesso_youtube){
     const b = document.createElement('button');
     b.textContent = 'YouTube';
     b.title = 'Transmissões ao vivo pré-programadas do canal';
@@ -2767,14 +2770,22 @@ function montarAbas(){
     bv.onclick = () => abrirVisualizadores();
     bv.dataset.culto = 'visualizadores';
     abas.appendChild(bv);
+  }
 
+  // Agendamentos e Calendario: liberados pra admin OU pra quem tiver o
+  // acesso especifico marcado na aba Pessoas (acesso_agendamentos /
+  // acesso_calendario) -- o banco (RLS) tambem confere isso, entao mesmo
+  // sem a aba aparecer aqui ninguem sem acesso consegue ler/mudar nada.
+  if(perfil.admin || perfil.acesso_agendamentos){
     const ba = document.createElement('button');
     ba.textContent = 'Agendamentos';
     ba.title = 'Pedidos de uso da igreja (o antigo formulário de agendamento)';
     ba.onclick = () => abrirAgendamentosLista();
     ba.dataset.culto = 'agendamentos';
     abas.appendChild(ba);
+  }
 
+  if(perfil.admin || perfil.acesso_calendario){
     const bc = document.createElement('button');
     bc.textContent = 'Calendário';
     bc.title = 'Pedidos já agendados, em formato de calendário';
@@ -2791,17 +2802,25 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
-  if(permitidos.length === 0 && !podeEditarAgenda()){
-    // Sem acesso de edicao a nenhum culto nem a agenda: pode ser (a) um acesso
-    // novo, ainda sem nada liberado, ou (b) uma pessoa que so tem permissao de
-    // VER um ou mais roteiros especificos (aba Visualizadores de algum admin).
-    // Os dois casos sao diferenciados checando a tabela compartilhamentos.
+  // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
+  // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
+  // de quem nao tem nenhum culto/agenda liberado.
+  const temPaginaExtra = perfil.admin || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_youtube;
+
+  if(permitidos.length === 0 && !podeEditarAgenda() && !temPaginaExtra){
+    // Sem acesso de edicao a nenhum culto, agenda, ou aba extra: pode ser (a)
+    // um acesso novo, ainda sem nada liberado, ou (b) uma pessoa que so tem
+    // permissao de VER um ou mais roteiros especificos (aba Visualizadores de
+    // algum admin). Os dois casos sao diferenciados checando compartilhamentos.
     if(perfil.admin) abrirPessoas();
     else verificarAcessoRestrito();
     return;
   }
   if(permitidos.length > 0) abrirCulto(permitidos[0]);
-  else abrirAgendaLista(); // so tem acesso a Agenda
+  else if(podeEditarAgenda()) abrirAgendaLista();
+  else if(perfil.admin || perfil.acesso_agendamentos) abrirAgendamentosLista();
+  else if(perfil.admin || perfil.acesso_calendario) abrirCalendario();
+  else if(perfil.admin || perfil.acesso_youtube) abrirYoutubeLista();
 }
 
 function marcarAba(qual){
@@ -4695,6 +4714,10 @@ function desenharPessoas(pessoas){
       <label class="chk"><input type="checkbox" data-c="acesso_sexta"  ${p.acesso_sexta?'checked':''}> Sexta</label>
       <label class="chk"><input type="checkbox" data-c="acesso_sabado" ${p.acesso_sabado?'checked':''}> Sábado</label>
       <label class="chk"><input type="checkbox" data-c="acesso_agenda" ${p.acesso_agenda?'checked':''}> Agenda</label>
+      <label class="chk"><input type="checkbox" data-c="acesso_agendamentos" ${p.acesso_agendamentos?'checked':''}> Agendamentos</label>
+      <label class="chk"><input type="checkbox" data-c="acesso_calendario" ${p.acesso_calendario?'checked':''}> Calendário</label>
+      <label class="chk"><input type="checkbox" data-c="acesso_escala" ${p.acesso_escala?'checked':''}> Escala</label>
+      <label class="chk"><input type="checkbox" data-c="acesso_youtube" ${p.acesso_youtube?'checked':''}> YouTube</label>
       <label class="chk"><input type="checkbox" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}> Administrador</label>`;
     d.querySelectorAll('input[type=checkbox]').forEach(cx => {
       cx.onchange = async () => {
