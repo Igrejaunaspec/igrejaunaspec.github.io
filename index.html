@@ -337,12 +337,17 @@
   .calendario-cabecalho div{text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;
     letter-spacing:.4px;color:var(--muted2);padding:2px 0;}
   .calendario-dia{border:1px solid var(--border-soft);border-radius:10px;background:var(--panel);
-    height:134px;padding:7px;display:flex;flex-direction:column;gap:4px;cursor:default;min-width:0;}
+    height:134px;padding:7px;display:flex;flex-direction:column;gap:4px;cursor:pointer;min-width:0;position:relative;}
   .calendario-dia.fora{background:var(--panel2);opacity:.55;}
   .calendario-dia.hoje{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
   .calendario-dia.selecionado{background:#eef3f9;border-color:var(--accent);}
   .calendario-dia .numero{font-size:12.5px;font-weight:700;color:var(--muted);}
   .calendario-dia.hoje .numero{color:var(--accent);}
+  .calendario-dia-add{position:absolute;top:5px;right:5px;width:18px;height:18px;border-radius:6px;
+    border:0;background:var(--panel2);color:var(--muted);font-size:13px;font-weight:700;line-height:1;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;}
+  .calendario-dia:hover .calendario-dia-add{opacity:1;}
+  .calendario-dia-add:hover{background:var(--accent);color:var(--accent-ink);}
   .calendario-eventos{display:flex;flex-direction:column;gap:3px;overflow:hidden;}
   .calendario-evento-pill{background:#dcfce7;color:var(--green);border:0;border-radius:6px;
     padding:3px 6px;font-size:11px;font-weight:650;text-align:left;cursor:pointer;font-family:inherit;
@@ -352,6 +357,35 @@
     border:0;font-family:inherit;text-align:left;cursor:pointer;}
   .calendario-detalhe-dia{margin-top:18px;}
   .calendario-detalhe-dia h3{margin:0 0 12px;font-size:15px;text-transform:capitalize;}
+  .calendario-detalhe-dia .agendamento-item{cursor:pointer;}
+  .calendario-detalhe-dia .agendamento-item:hover{background:var(--panel2);}
+
+  /* ---------- modal de criar/editar evento do calendario ---------- */
+  .evento-modal-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .evento-modal-topo h3{margin:0;font-size:18px;}
+  .evento-modal-fechar{border:0;background:none;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 4px;}
+  .evento-dia-inteiro-linha{display:flex;align-items:center;gap:8px;margin:-2px 0 14px;font-size:13.5px;}
+  .evento-dia-inteiro-linha input{width:17px;height:17px;accent-color:var(--accent);}
+  .campo-2col{display:flex;gap:10px;flex-wrap:wrap;}
+  .campo-2col > .field{flex:1 1 200px;}
+  .paleta-cores-evento{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .cor-evento-opcao{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex:none;padding:0;}
+  .cor-evento-opcao.on{border-color:var(--text);box-shadow:0 0 0 2px var(--panel);}
+  .cor-evento-custom{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);padding:0;cursor:pointer;background:none;}
+  .evento-etiquetas-lista{display:flex;flex-wrap:wrap;gap:8px;}
+  .evento-etiquetas-lista label{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);
+    background:var(--panel2);border:1px solid var(--border-soft);border-radius:20px;padding:5px 10px 5px 8px;cursor:pointer;}
+  .evento-etiquetas-lista input{width:14px;height:14px;accent-color:var(--accent);}
+  .evento-recorrencia-linha{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .evento-recorrencia-linha > .field{flex:1 1 160px;margin-bottom:0;}
+  .evento-serie-aviso{background:var(--panel2);border:1px solid var(--border-soft);border-radius:10px;
+    padding:10px 12px;font-size:12.5px;color:var(--muted);margin:-2px 0 14px;}
+  .evento-modal-rodape{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:6px;padding-top:14px;border-top:1px solid var(--border-soft);}
+  .evento-modal-rodape-esq{display:flex;gap:8px;flex-wrap:wrap;}
+  .evento-modal-rodape-dir{display:flex;gap:8px;flex-wrap:wrap;}
+  .btn.perigo{color:#b91c1c;border-color:#fecaca;}
+  .btn.perigo:hover{background:#fef2f2;}
 
   /* ---------- formulario publico de agendamento ---------- */
   .agendar-wrap{max-width:720px;margin:0 auto;padding:24px 16px 90px;}
@@ -1076,6 +1110,11 @@
 
 <!-- ---------- menu de contexto (clique direito numa linha) ---------- -->
 <div id="menuContexto" class="menu-contexto hidden"></div>
+
+<!-- ---------- modal: criar/editar evento do calendario ---------- -->
+<div id="modalEvento" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalEvento()">
+  <div class="modal-caixa grande" id="modalEventoCaixa"></div>
+</div>
 
 <!-- ---------- modal: link gerado para convidados ---------- -->
 <div id="modalLink" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalLink()">
@@ -2580,11 +2619,17 @@ function desenharCalendario(){
     if(chave === hoje) classes += ' hoje';
     if(chave === calendarioDiaSelecionado) classes += ' selecionado';
 
-    html += `<div class="${classes}" onclick="selecionarDiaCalendario('${chave}')">
+    const cliqueVazio = eventosDoDia.length ? `selecionarDiaCalendario('${chave}')` : `abrirModalEventoNovo('${chave}')`;
+    html += `<div class="${classes}" onclick="${cliqueVazio}">
+      <button class="calendario-dia-add" title="Novo evento neste dia" onclick="event.stopPropagation();abrirModalEventoNovo('${chave}')">+</button>
       <div class="numero">${dia.getDate()}</div>
       <div class="calendario-eventos">
-        ${eventosDoDia.slice(0, MOSTRAR).map(a => `<button class="calendario-evento-pill" title="${escapar(a.nome_evento||'')}"
-          onclick="event.stopPropagation();selecionarDiaCalendario('${chave}')">${escapar(a.nome_evento || '(sem nome)')}</button>`).join('')}
+        ${eventosDoDia.slice(0, MOSTRAR).map(a => {
+          const cor = a.cor || '';
+          const estilo = cor ? ` style="background:${cor}1f;color:${cor};"` : '';
+          return `<button class="calendario-evento-pill" title="${escapar(a.nome_evento||'')}"${estilo}
+          onclick="event.stopPropagation();abrirModalEventoEditar('${a.id}')">${escapar(a.nome_evento || '(sem nome)')}</button>`;
+        }).join('')}
         ${eventosDoDia.length > MOSTRAR ? `<button class="calendario-mais" onclick="event.stopPropagation();selecionarDiaCalendario('${chave}')">+${eventosDoDia.length - MOSTRAR} mais</button>` : ''}
       </div>
     </div>`;
@@ -2612,12 +2657,16 @@ function desenharDetalheDiaCalendario(porDia){
   const dataFormatada = new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
 
   el.classList.remove('hidden');
+  const cabecalho = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+    <h3 style="margin:0;">${escapar(dataFormatada)}</h3>
+    <button class="btn small" onclick="abrirModalEventoNovo('${calendarioDiaSelecionado}')">+ Novo evento</button>
+  </div>`;
   if(!eventos.length){
-    el.innerHTML = `<h3>${escapar(dataFormatada)}</h3><div class="vazio">Nenhum agendamento confirmado neste dia.</div>`;
+    el.innerHTML = `${cabecalho}<div class="vazio">Nenhum agendamento confirmado neste dia.</div>`;
     return;
   }
-  el.innerHTML = `<h3>${escapar(dataFormatada)}</h3>` + eventos.map(a => `
-    <div class="agendamento-item">
+  el.innerHTML = cabecalho + eventos.map(a => `
+    <div class="agendamento-item" onclick="abrirModalEventoEditar('${a.id}')">
       <div class="agendamento-linha1">
         <div>
           <div class="agendamento-nome-linha">
@@ -2628,11 +2677,328 @@ function desenharDetalheDiaCalendario(porDia){
         </div>
         <div class="agendamento-linha2">
           <button class="btn small" title="Abrir WhatsApp com este contato"
-            onclick="window.open('${linkWhatsAppAgendamento(a, false)}', '_blank', 'noopener')">💬 WhatsApp</button>
+            onclick="event.stopPropagation();window.open('${linkWhatsAppAgendamento(a, false)}', '_blank', 'noopener')">💬 WhatsApp</button>
         </div>
       </div>
       ${etiquetasBadgesHTML(a)}
     </div>`).join('');
+}
+
+/* =====================================================================
+   MODAL: CRIAR / EDITAR EVENTO DO CALENDARIO
+   Clicar num dia vazio ou no "+" cria um evento novo; clicar num evento
+   (na grade ou na lista do dia) abre pra editar. Tudo grava direto na
+   mesma tabela "agendamentos" (nasce com status "Agendado" e
+   origem "app", exatamente como os pedidos que ja existem -- por isso
+   aparece igualzinho no resto do app). Repeticao (semanal/mensal) e
+   feita gerando uma linha por ocorrencia, todas compartilhando o mesmo
+   "recorrencia_grupo" (uuid), pra dar pra editar/excluir a serie inteira
+   depois.
+===================================================================== */
+let eventoModalId = null;         // id do agendamento em edicao, ou null se for criacao
+let eventoModalDados = null;      // linha original (edicao) -- usado pra saber a serie (recorrencia_grupo)
+
+function formatarDataISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function abrirModalEventoNovo(chaveDiaClicado){
+  eventoModalId = null;
+  eventoModalDados = null;
+  const [ano, mes, dia] = chaveDiaClicado.split('-').map(Number);
+  desenharModalEvento({
+    nome_evento:'', descricao:'', espacos_utilizados:'',
+    nome_responsavel: (sessao && sessao.email) || '', contato: (sessao && sessao.email) || '', email:'',
+    status:'Agendado', cor:'', etiquetas:[], diaInteiro:true,
+    dataInicioISO: formatarDataISO(new Date(ano, mes - 1, dia)), dataFimISO:'', horaInicio:'', horaFim:'',
+    recorrencia:'nenhuma', recorrenciaAteISO:''
+  });
+  document.getElementById('modalEvento').classList.remove('hidden');
+}
+
+function abrirModalEventoEditar(id){
+  const a = calendarioAgendamentos.find(x => x.id === id);
+  if(!a) return;
+  eventoModalId = id;
+  eventoModalDados = a;
+  const dIni = parseDataBR(a.data_inicio);
+  const dFim = parseDataBR(a.data_saida);
+  const temHora = !!(dIni && (dIni.getHours() !== 0 || dIni.getMinutes() !== 0));
+  const horaFimTexto = (a.horarios_evento || '').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+  desenharModalEvento({
+    nome_evento: a.nome_evento || '', descricao: a.descricao || '', espacos_utilizados: a.espacos_utilizados || '',
+    nome_responsavel: a.nome_responsavel || '', contato: a.contato || '', email: a.email || '',
+    status: a.status || 'Agendado', cor: a.cor || '', etiquetas: a.etiquetas || [],
+    diaInteiro: !temHora,
+    dataInicioISO: dIni ? formatarDataISO(dIni) : '',
+    dataFimISO: (dFim && !temHora) ? formatarDataISO(dFim) : '',
+    horaInicio: (temHora && dIni) ? `${String(dIni.getHours()).padStart(2,'0')}:${String(dIni.getMinutes()).padStart(2,'0')}` : '',
+    horaFim: horaFimTexto ? horaFimTexto[2] : '',
+    recorrencia: a.recorrencia_freq || 'nenhuma',
+    recorrenciaAteISO: ''
+  });
+  document.getElementById('modalEvento').classList.remove('hidden');
+}
+
+function fecharModalEvento(){
+  document.getElementById('modalEvento').classList.add('hidden');
+  eventoModalId = null;
+  eventoModalDados = null;
+}
+
+function desenharModalEvento(d){
+  const editando = !!eventoModalId;
+  const emSerie = !!(eventoModalDados && eventoModalDados.recorrencia_grupo);
+  const caixa = document.getElementById('modalEventoCaixa');
+  caixa.innerHTML = `
+    <div class="evento-modal-topo">
+      <h3>${editando ? 'Editar evento' : 'Novo evento'}</h3>
+      <button class="evento-modal-fechar" title="Fechar" onclick="fecharModalEvento()">✕</button>
+    </div>
+
+    <div class="field">
+      <label for="evTitulo">Título do evento *</label>
+      <input type="text" id="evTitulo" placeholder="Ex.: Ensaio do coral" value="${escapar(d.nome_evento)}">
+    </div>
+
+    <div class="evento-dia-inteiro-linha">
+      <input type="checkbox" id="evDiaInteiro" ${d.diaInteiro ? 'checked' : ''} onchange="alternarDiaInteiroEvento()">
+      <label for="evDiaInteiro" style="margin:0;">Dia inteiro</label>
+    </div>
+
+    <div id="evWrapDiaInteiro" class="campo-2col"${d.diaInteiro ? '' : ' style="display:none;"'}>
+      <div class="field"><label for="evDataInicio">Data</label><input type="date" id="evDataInicio" value="${d.dataInicioISO}"></div>
+      <div class="field"><label for="evDataFim">Até (opcional, se durar mais de 1 dia)</label><input type="date" id="evDataFim" value="${d.dataFimISO}"></div>
+    </div>
+
+    <div id="evWrapHorario" class="campo-2col"${d.diaInteiro ? ' style="display:none;"' : ''}>
+      <div class="field"><label for="evDataUnica">Data</label><input type="date" id="evDataUnica" value="${d.dataInicioISO}"></div>
+      <div class="field"><label for="evHoraInicio">Início</label><input type="time" id="evHoraInicio" value="${d.horaInicio}"></div>
+      <div class="field"><label for="evHoraFim">Fim</label><input type="time" id="evHoraFim" value="${d.horaFim}"></div>
+    </div>
+
+    <div class="field">
+      <label for="evLocal">Local</label>
+      <input type="text" id="evLocal" placeholder="Ex.: Auditório da Igreja" value="${escapar(d.espacos_utilizados)}">
+    </div>
+
+    <div class="field">
+      <label for="evDescricao">Descrição</label>
+      <textarea id="evDescricao" rows="3" placeholder="Detalhes, observações...">${escapar(d.descricao)}</textarea>
+    </div>
+
+    <div class="campo-2col">
+      <div class="field"><label for="evResponsavel">Responsável</label><input type="text" id="evResponsavel" value="${escapar(d.nome_responsavel)}"></div>
+      <div class="field"><label for="evContato">Contato</label><input type="text" id="evContato" value="${escapar(d.contato)}"></div>
+      <div class="field"><label for="evEmail">E-mail (opcional)</label><input type="email" id="evEmail" value="${escapar(d.email)}"></div>
+    </div>
+
+    <div class="field">
+      <label>Cor do evento</label>
+      <div class="paleta-cores-evento" id="evPaletaCores">
+        <button type="button" class="cor-evento-opcao${!d.cor ? ' on' : ''}" style="background:#22c55e;" title="Padrão (verde)" onclick="selecionarCorEvento('', this)"></button>
+        ${PALETA_CORES_ETIQUETA.map(c => `<button type="button" class="cor-evento-opcao${d.cor === c ? ' on' : ''}" style="background:${c};" onclick="selecionarCorEvento('${c}', this)"></button>`).join('')}
+        <input type="color" class="cor-evento-custom" id="evCorCustom" value="${d.cor || '#2563eb'}" title="Cor personalizada" oninput="selecionarCorEvento(this.value, null)">
+      </div>
+      <input type="hidden" id="evCor" value="${escapar(d.cor)}">
+    </div>
+
+    ${etiquetasAgendamentoAtual.length ? `<div class="field">
+      <label>Etiquetas</label>
+      <div class="evento-etiquetas-lista">
+        ${etiquetasAgendamentoAtual.map(t => `<label>
+          <input type="checkbox" class="evTagChk" value="${escapar(t.key)}" ${d.etiquetas.includes(t.key) ? 'checked' : ''}>
+          <span class="etiqueta-dot" style="background:${t.cor || '#666'};"></span>${t.ico} ${escapar(t.label)}
+        </label>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="field">
+      <label for="evStatus">Status</label>
+      <select id="evStatus">
+        ${STATUS_AGENDAMENTO.map(s => `<option value="${escapar(s)}"${s === d.status ? ' selected' : ''}>${escapar(s)}</option>`).join('')}
+      </select>
+    </div>
+
+    ${emSerie ? `<div class="evento-serie-aviso">🔁 Este evento faz parte de uma série recorrente.
+      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-weight:600;color:var(--text);">
+        <input type="checkbox" id="evAplicarSerie" style="width:15px;height:15px;accent-color:var(--accent);">
+        Aplicar as alterações a esta e às próximas ocorrências
+      </label>
+      <p style="margin:6px 0 0;">Marcando essa caixa, título, local, descrição, cor, etiquetas, responsável e status
+        valem pra esta e pras próximas ocorrências. Data e horário de cada ocorrência não mudam
+        (pra mexer neles, edite sem marcar a caixa — vale só pra esta ocorrência).</p>
+    </div>` : `
+    <div class="evento-recorrencia-linha">
+      <div class="field">
+        <label for="evRecorrencia">Repetir</label>
+        <select id="evRecorrencia" onchange="alternarRecorrenciaEvento()">
+          <option value="nenhuma"${d.recorrencia === 'nenhuma' ? ' selected' : ''}>Não repete</option>
+          <option value="semanal"${d.recorrencia === 'semanal' ? ' selected' : ''}>Toda semana</option>
+          <option value="mensal"${d.recorrencia === 'mensal' ? ' selected' : ''}>Todo mês</option>
+        </select>
+      </div>
+      <div class="field" id="evWrapRecorrenciaAte"${d.recorrencia === 'nenhuma' ? ' style="display:none;"' : ''}>
+        <label for="evRecorrenciaAte">Repetir até</label>
+        <input type="date" id="evRecorrenciaAte" value="${d.recorrenciaAteISO}">
+      </div>
+    </div>`}
+
+    <div class="evento-modal-rodape">
+      <div class="evento-modal-rodape-esq">
+        ${editando ? `<button class="btn perigo" onclick="excluirEventoModal(false)">🗑️ Excluir este evento</button>` : ''}
+        ${emSerie ? `<button class="btn perigo" onclick="excluirEventoModal(true)">🗑️ Excluir toda a série</button>` : ''}
+      </div>
+      <div class="evento-modal-rodape-dir">
+        <button class="btn" onclick="fecharModalEvento()">Cancelar</button>
+        <button class="btn primary" id="btnSalvarEvento" onclick="salvarEventoModal()">💾 Salvar</button>
+      </div>
+    </div>
+  `;
+}
+
+function alternarDiaInteiroEvento(){
+  const on = document.getElementById('evDiaInteiro').checked;
+  document.getElementById('evWrapDiaInteiro').style.display = on ? '' : 'none';
+  document.getElementById('evWrapHorario').style.display = on ? 'none' : '';
+}
+function alternarRecorrenciaEvento(){
+  const v = document.getElementById('evRecorrencia').value;
+  document.getElementById('evWrapRecorrenciaAte').style.display = v === 'nenhuma' ? 'none' : '';
+}
+function selecionarCorEvento(hex, btn){
+  document.getElementById('evCor').value = hex;
+  document.querySelectorAll('#evPaletaCores .cor-evento-opcao').forEach(b => b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+}
+
+// Soma dias/meses numa data preservando hora:minuto (usado pra gerar as
+// ocorrencias de um evento recorrente).
+function somarPeriodoData(d, freq){
+  return freq === 'semanal'
+    ? new Date(d.getFullYear(), d.getMonth(), d.getDate() + 7, d.getHours(), d.getMinutes())
+    : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes());
+}
+
+async function salvarEventoModal(){
+  const nome = document.getElementById('evTitulo').value.trim();
+  if(!nome){ toast('Dá um título pro evento.', 'err'); return; }
+
+  const diaInteiro = document.getElementById('evDiaInteiro').checked;
+  let dataInicio, dataSaida = null, horarios;
+  if(diaInteiro){
+    dataInicio = dataParaTexto('evDataInicio');
+    dataSaida = dataParaTexto('evDataFim') || null;
+    horarios = 'Dia inteiro';
+  } else {
+    dataInicio = dataHoraParaTexto('evDataUnica', 'evHoraInicio');
+    const horaIni = document.getElementById('evHoraInicio').value;
+    const horaFim = document.getElementById('evHoraFim').value;
+    horarios = (horaIni && horaFim) ? `${horaIni} - ${horaFim}` : '';
+  }
+  if(!dataInicio){ toast('Escolhe uma data pro evento.', 'err'); return; }
+
+  const responsavel = document.getElementById('evResponsavel').value.trim() || ((sessao && sessao.email) || 'Secretaria da Igreja');
+  const contato = document.getElementById('evContato').value.trim() || ((sessao && sessao.email) || '-');
+  const email = document.getElementById('evEmail').value.trim() || null;
+  const local = document.getElementById('evLocal').value.trim() || null;
+  const descricao = document.getElementById('evDescricao').value.trim() || null;
+  const cor = document.getElementById('evCor').value || null;
+  const status = document.getElementById('evStatus').value;
+  const etiquetas = Array.from(document.querySelectorAll('.evTagChk:checked')).map(c => c.value);
+
+  const btn = document.getElementById('btnSalvarEvento');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try{
+    if(eventoModalId){
+      const aplicarSerieEl = document.getElementById('evAplicarSerie');
+      if(aplicarSerieEl && aplicarSerieEl.checked && eventoModalDados.recorrencia_grupo){
+        const grupo = eventoModalDados.recorrencia_grupo;
+        const linhas = await api(`agendamentos?recorrencia_grupo=eq.${grupo}&select=id,data_inicio`);
+        const dEsta = parseDataBR(eventoModalDados.data_inicio);
+        const ids = (linhas || []).filter(l => {
+          const dl = parseDataBR(l.data_inicio);
+          return dl && dEsta && dl >= dEsta;
+        }).map(l => l.id);
+        if(ids.length){
+          await api(`agendamentos?id=in.(${ids.join(',')})`, { method:'PATCH', prefer:'return=minimal', body:{
+            nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email, cor, status, etiquetas
+          }});
+        }
+      } else {
+        await api(`agendamentos?id=eq.${eventoModalId}`, { method:'PATCH', prefer:'return=minimal', body:{
+          nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email,
+          data_inicio: dataInicio, data_saida: dataSaida, horarios_evento: horarios, cor, status, etiquetas
+        }});
+      }
+      toast('Evento atualizado!', 'ok');
+    } else {
+      const recorrencia = document.getElementById('evRecorrencia').value;
+      const linhaBase = {
+        nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email,
+        horarios_evento: horarios, status, cor, etiquetas, origem: 'app'
+      };
+      if(recorrencia === 'nenhuma'){
+        await api('agendamentos', { method:'POST', prefer:'return=minimal',
+          body: Object.assign({}, linhaBase, { data_inicio: dataInicio, data_saida: dataSaida }) });
+      } else {
+        const ateVal = document.getElementById('evRecorrenciaAte').value; // "AAAA-MM-DD"
+        if(!ateVal){
+          toast('Escolhe até quando o evento se repete.', 'err');
+          btn.disabled = false; btn.textContent = '💾 Salvar';
+          return;
+        }
+        const grupo = crypto.randomUUID();
+        const dFinal = parseDataBR(ateVal.split('-').reverse().join('/'));
+        let dAtual = parseDataBR(dataInicio);
+        const linhas = [];
+        let n = 0;
+        while(dAtual && dFinal && dAtual <= dFinal && n < 104){
+          const horaTxt = diaInteiro ? '' : ` ${String(dAtual.getHours()).padStart(2,'0')}:${String(dAtual.getMinutes()).padStart(2,'0')}`;
+          const diaTxt = `${String(dAtual.getDate()).padStart(2,'0')}/${String(dAtual.getMonth()+1).padStart(2,'0')}/${dAtual.getFullYear()}`;
+          linhas.push(Object.assign({}, linhaBase, {
+            data_inicio: diaTxt + horaTxt, data_saida: null,
+            recorrencia_grupo: grupo, recorrencia_freq: recorrencia
+          }));
+          dAtual = somarPeriodoData(dAtual, recorrencia);
+          n++;
+        }
+        if(!linhas.length){ toast('A data final precisa ser depois da data de início.', 'err'); btn.disabled=false; btn.textContent='💾 Salvar'; return; }
+        await api('agendamentos', { method:'POST', prefer:'return=minimal', body: linhas });
+      }
+      toast('Evento criado!', 'ok');
+    }
+    fecharModalEvento();
+    await abrirCalendario();
+  }catch(e){
+    toast('Não consegui salvar: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = '💾 Salvar';
+  }
+}
+
+async function excluirEventoModal(serieToda){
+  if(!eventoModalId) return;
+  const nomeEvento = document.getElementById('evTitulo').value.trim() || 'este evento';
+  if(serieToda){
+    if(!confirm(`Excluir TODA a série recorrente de "${nomeEvento}"? Isso apaga todas as ocorrências (passadas e futuras). Essa ação não pode ser desfeita.`)) return;
+    try{
+      await api(`agendamentos?recorrencia_grupo=eq.${eventoModalDados.recorrencia_grupo}`, { method:'DELETE', prefer:'return=minimal' });
+      toast('Série excluída.', 'ok');
+      fecharModalEvento();
+      await abrirCalendario();
+    }catch(e){ toast('Não consegui excluir: ' + e.message, 'err'); }
+  } else {
+    if(!confirm(`Excluir "${nomeEvento}"? Essa ação não pode ser desfeita.`)) return;
+    try{
+      await api(`agendamentos?id=eq.${eventoModalId}`, { method:'DELETE', prefer:'return=minimal' });
+      toast('Evento excluído.', 'ok');
+      fecharModalEvento();
+      await abrirCalendario();
+    }catch(e){ toast('Não consegui excluir: ' + e.message, 'err'); }
+  }
 }
 
 /* =====================================================================
