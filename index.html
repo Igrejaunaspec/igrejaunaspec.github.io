@@ -2591,13 +2591,24 @@ function desenharCalendario(){
   document.getElementById('calendarioTitulo').textContent = `${NOMES_MES[calendarioMes]} de ${calendarioAno}`;
 
   // agrupa os agendamentos (ja filtrados por status=Agendado na consulta)
-  // por dia, usando a data do evento (data_inicio).
+  // por dia. Quando o evento tem data_saida num dia posterior (evento de
+  // varios dias, tipo "Semana de oração"), ele aparece em TODOS os dias
+  // do intervalo -- nao só no primeiro -- igual a Agenda do Google.
   const porDia = {};
   calendarioAgendamentos.forEach(a => {
-    const d = parseDataBR(a.data_inicio);
-    if(!d) return;
-    const chave = chaveDia(d);
-    (porDia[chave] = porDia[chave] || []).push(a);
+    const dIni = parseDataBR(a.data_inicio);
+    if(!dIni) return;
+    const inicio = new Date(dIni.getFullYear(), dIni.getMonth(), dIni.getDate());
+    const dFimBruto = parseDataBR(a.data_saida);
+    let fim = dFimBruto ? new Date(dFimBruto.getFullYear(), dFimBruto.getMonth(), dFimBruto.getDate()) : inicio;
+    if(fim < inicio) fim = inicio;
+    const LIMITE_DIAS = 90; // trava de seguranca contra dado absurdo na planilha
+    const totalDias = Math.min(Math.round((fim - inicio) / 86400000), LIMITE_DIAS);
+    for(let i = 0; i <= totalDias; i++){
+      const dia = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+      const chave = chaveDia(dia);
+      (porDia[chave] = porDia[chave] || []).push(a);
+    }
   });
 
   const hoje = chaveDia(new Date());
