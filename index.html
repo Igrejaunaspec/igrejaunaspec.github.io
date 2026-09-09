@@ -1790,6 +1790,9 @@ async function enviarAgendamento(){
     else extras[campo.id] = valor;
   });
   corpo.respostas_extra = extras;
+  // pedido publico nao tem campo de cor -- ja preenche com a cor padrao pelo
+  // espaco escolhido, pra sincronizar colorido com a Agenda do Google desde já.
+  if(!corpo.cor) corpo.cor = corPadraoPorEspaco(corpo.espacos_utilizados) || null;
 
   try{
     await apiPublico('agendamentos', { method: 'POST', prefer: 'return=minimal', body: corpo });
@@ -2223,6 +2226,22 @@ function comCorGarantida(tags){
   return tags.map((t, i) => t.cor ? t : Object.assign({}, t, { cor: PALETA_CORES_ETIQUETA[i % PALETA_CORES_ETIQUETA.length] }));
 }
 
+// Cor padrao do evento pelo espaco principal (o primeiro da lista em
+// "espacos_utilizados"), usada quando ninguem escolheu uma cor a mao pro
+// evento -- assim os eventos ficam coloridos por local em vez de tudo igual,
+// tanto aqui no site quanto na Agenda do Google (que reflete a coluna "cor").
+// As cores batem exatamente com a paleta fixa do Google Calendar, pra tudo
+// ficar visualmente igual dos dois lados.
+function corPadraoPorEspaco(espacosUtilizados){
+  const principal = String(espacosUtilizados || '').split(',')[0].trim();
+  if(!principal) return '';
+  if(principal.startsWith('Auditório') || principal.startsWith('Auditorio')) return '#039be5'; // Peacock (azul)
+  if(principal.startsWith('Hall')) return '#f5511d'; // Tangerine (laranja)
+  if(principal.startsWith('Prédio Infantil') || principal.startsWith('Predio Infantil')) return '#f6c026'; // Banana (amarelo)
+  if(principal.startsWith('Enfermaria')) return '#e67c73'; // Flamingo (rosa)
+  return '';
+}
+
 // Decide se o texto sobre uma cor de fundo deve ser claro ou escuro, pelo
 // jeito simples de luminancia relativa (evita texto branco em cor clara).
 function corContrasteTexto(hex){
@@ -2636,7 +2655,7 @@ function desenharCalendario(){
       <div class="numero">${dia.getDate()}</div>
       <div class="calendario-eventos">
         ${eventosDoDia.slice(0, MOSTRAR).map(a => {
-          const cor = a.cor || '';
+          const cor = a.cor || corPadraoPorEspaco(a.espacos_utilizados);
           const estilo = cor ? ` style="background:${cor}1f;color:${cor};"` : '';
           return `<button class="calendario-evento-pill" title="${escapar(a.nome_evento||'')}"${estilo}
           onclick="event.stopPropagation();abrirModalEventoEditar('${a.id}')">${escapar(a.nome_evento || '(sem nome)')}</button>`;
@@ -2914,7 +2933,9 @@ async function salvarEventoModal(){
   const email = document.getElementById('evEmail').value.trim() || null;
   const local = document.getElementById('evLocal').value.trim() || null;
   const descricao = document.getElementById('evDescricao').value.trim() || null;
-  const cor = document.getElementById('evCor').value || null;
+  // se ninguem escolheu uma cor a mao, guarda a cor padrao pelo espaco --
+  // assim ela fica salva no banco e sincroniza certinho pra Agenda do Google.
+  const cor = document.getElementById('evCor').value || corPadraoPorEspaco(local) || null;
   const status = document.getElementById('evStatus').value;
   const etiquetas = Array.from(document.querySelectorAll('.evTagChk:checked')).map(c => c.value);
 
