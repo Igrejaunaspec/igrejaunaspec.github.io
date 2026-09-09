@@ -1805,6 +1805,7 @@ let roteiros = [];     // lista do culto atual
 let pastas   = [];     // pastas do culto atual
 let arrastandoRoteiroId = null; // id do roteiro sendo arrastado para uma pasta
 let pastasAbertas = new Set(); // ids das pastas expandidas (fechadas por padrao)
+let subpastaFormAbertaEm = null; // id da pasta onde o form "+ nova subpasta" esta aberto (ou null)
 let emEdicao = null;   // roteiro aberto no editor
 let modoLogin = 'entrar';
 let sujo = false;      // tem alteracao nao salva?
@@ -4033,7 +4034,7 @@ function desenharLista(){
     return;
   }
 
-  const porPasta = {};
+  const porPasta = {};   // pasta_id -> roteiros direto nela (nao conta os das subpastas)
   pastas.forEach(p => { porPasta[p.id] = []; });
   const semPasta = [];
   roteiros.forEach((r, i) => {
@@ -4041,34 +4042,18 @@ function desenharLista(){
     else semPasta.push({ r, i });
   });
 
-  const pastasOrdenadas = [...pastas].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-
-  let html = '';
-
-  pastasOrdenadas.forEach(p => {
-    const lista = porPasta[p.id] || [];
-    const aberta = pastasAbertas.has(p.id);
-    html += `<div class="pasta-secao ${aberta ? '' : 'fechada'}">
-      <div class="pasta-cabecalho" style="cursor:pointer;"
-          onclick="alternarPasta('${p.id}')"
-          ondragover="arrastarSobrePasta(event)"
-          ondragleave="sairDoAlvoPasta(event)"
-          ondrop="soltarEmPasta('${p.id}', event)">
-        <span class="icone-toggle-pasta">${aberta ? '▾' : '▸'}</span>
-        <span class="icone-pasta">📁</span>
-        <span class="nome-pasta" id="nomePasta-${p.id}">${escapar(p.nome)}</span>
-        <span class="contagem-pasta">${lista.length} ${lista.length === 1 ? 'roteiro' : 'roteiros'}</span>
-        <button class="btn icon small" type="button" title="Renomear pasta" onclick="event.stopPropagation();iniciarRenomearPasta('${p.id}')">✎</button>
-        <button class="btn icon small" type="button" title="Apagar pasta" onclick="event.stopPropagation();apagarPasta('${p.id}')">🗑</button>
-      </div>
-      <div class="pasta-itens">
-        ${lista.length ? lista.map(x => itemRoteiroHTML(x.r, x.i)).join('') :
-          '<div class="pasta-vazia">Arraste um roteiro até aqui para guardar nesta pasta.</div>'}
-      </div>
-    </div>`;
+  // 'raiz' = pastas sem pasta-mae (ou cuja pasta-mae nao existe mais na lista
+  // atual). Pasta dentro de pasta: cada pasta pode ter subpastas dela mesma.
+  const porPai = {};
+  pastas.forEach(p => {
+    const chave = (p.pasta_pai_id && porPasta[p.pasta_pai_id] !== undefined) ? p.pasta_pai_id : 'raiz';
+    (porPai[chave] = porPai[chave] || []).push(p);
   });
+  Object.values(porPai).forEach(lista => lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
 
-  if(pastasOrdenadas.length){
+  let html = (porPai['raiz'] || []).map(p => pastaSecaoHTML(p, porPai, porPasta, 0)).join('');
+
+  if(pastas.length){
     html += `<div class="pasta-secao">
       <div class="pasta-cabecalho" style="background:transparent;"
           ondragover="arrastarSobrePasta(event)"
@@ -4094,6 +4079,51 @@ function desenharLista(){
   }
 
   el.innerHTML = html;
+}
+
+// Conta os roteiros de uma pasta somando tambem os das subpastas dela, pra
+// uma pasta que so tem subpastas com roteiro dentro nao aparecer como "0
+// roteiros" no cabecalho.
+function contarRoteirosRecursivo(pastaId, porPai, porPasta){
+  let total = (porPasta[pastaId] || []).length;
+  (porPai[pastaId] || []).forEach(sub => { total += contarRoteirosRecursivo(sub.id, porPai, porPasta); });
+  return total;
+}
+
+function pastaSecaoHTML(p, porPai, porPasta, nivel){
+  const subpastas = nivel < 20 ? (porPai[p.id] || []) : []; // trava de seguranca contra ciclo
+  const itensDiretos = porPasta[p.id] || [];
+  const total = contarRoteirosRecursivo(p.id, porPai, porPasta);
+  const aberta = pastasAbertas.has(p.id);
+  const formAberto = subpastaFormAbertaEm === p.id;
+  const vazia = !subpastas.length && !itensDiretos.length && !formAberto;
+  return `<div class="pasta-secao ${aberta ? '' : 'fechada'}">
+    <div class="pasta-cabecalho" style="cursor:pointer;"
+        onclick="alternarPasta('${p.id}')"
+        ondragover="arrastarSobrePasta(event)"
+        ondragleave="sairDoAlvoPasta(event)"
+        ondrop="soltarEmPasta('${p.id}', event)">
+      <span class="icone-toggle-pasta">${aberta ? '▾' : '▸'}</span>
+      <span class="icone-pasta">📁</span>
+      <span class="nome-pasta" id="nomePasta-${p.id}">${escapar(p.nome)}</span>
+      <span class="contagem-pasta">${total} ${total === 1 ? 'roteiro' : 'roteiros'}</span>
+      <button class="btn icon small" type="button" title="Nova subpasta" onclick="event.stopPropagation();mostrarFormNovaSubpasta('${p.id}')">📁+</button>
+      <button class="btn icon small" type="button" title="Renomear pasta" onclick="event.stopPropagation();iniciarRenomearPasta('${p.id}')">✎</button>
+      <button class="btn icon small" type="button" title="Apagar pasta" onclick="event.stopPropagation();apagarPasta('${p.id}')">🗑</button>
+    </div>
+    <div class="pasta-itens">
+      ${formAberto ? `<div class="form-nova-pasta" style="margin-bottom:10px;">
+        <input type="text" id="campoNovaSubpasta-${p.id}" placeholder="Nome da subpasta" maxlength="80"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();criarSubpasta('${p.id}');}
+            if(event.key==='Escape'){event.preventDefault();esconderFormNovaSubpasta();}">
+        <button class="btn primary small" onclick="criarSubpasta('${p.id}')">Criar</button>
+        <button class="btn small" onclick="esconderFormNovaSubpasta()">Cancelar</button>
+      </div>` : ''}
+      ${subpastas.map(sp => pastaSecaoHTML(sp, porPai, porPasta, nivel + 1)).join('')}
+      ${itensDiretos.map(x => itemRoteiroHTML(x.r, x.i)).join('')}
+      ${vazia ? '<div class="pasta-vazia">Arraste um roteiro até aqui, ou crie uma subpasta.</div>' : ''}
+    </div>
+  </div>`;
 }
 
 function alternarPasta(id){
@@ -4127,6 +4157,36 @@ async function criarPasta(){
     toast('Pasta criada.', 'ok');
   }catch(e){
     toast('Não consegui criar a pasta: ' + e.message, 'err');
+  }
+}
+
+/* ---------- subpastas (pasta dentro de pasta) ---------- */
+function mostrarFormNovaSubpasta(paiId){
+  subpastaFormAbertaEm = paiId;
+  pastasAbertas.add(paiId); // abre a pasta-mae pra ja mostrar onde a subpasta vai aparecer
+  desenharLista();
+  const campo = document.getElementById('campoNovaSubpasta-' + paiId);
+  if(campo) campo.focus();
+}
+
+function esconderFormNovaSubpasta(){
+  subpastaFormAbertaEm = null;
+  desenharLista();
+}
+
+async function criarSubpasta(paiId){
+  const campo = document.getElementById('campoNovaSubpasta-' + paiId);
+  if(!campo) return;
+  const nome = campo.value.trim();
+  if(!nome){ toast('Digite um nome para a subpasta.', 'err'); return; }
+  try{
+    const criada = await api('pastas', { method:'POST', body:{ culto: cultoAtual, nome, pasta_pai_id: paiId } });
+    if(criada && criada[0]) pastas.push(criada[0]);
+    subpastaFormAbertaEm = null;
+    desenharLista();
+    toast('Subpasta criada.', 'ok');
+  }catch(e){
+    toast('Não consegui criar a subpasta: ' + e.message, 'err');
   }
 }
 
@@ -4175,11 +4235,16 @@ async function salvarRenomearPasta(id){
 async function apagarPasta(id){
   const pasta = pastas.find(p => p.id === id);
   if(!pasta) return;
-  if(!confirm(`Apagar a pasta "${pasta.nome}"? Os roteiros dela voltam para "Sem pasta" — nenhum roteiro é apagado.`)) return;
+  const temSubpastas = pastas.some(p => p.pasta_pai_id === id);
+  const aviso = temSubpastas
+    ? `Apagar a pasta "${pasta.nome}"? Os roteiros dela voltam para "Sem pasta" e as subpastas dela sobem de nível — nada além da própria pasta é apagado.`
+    : `Apagar a pasta "${pasta.nome}"? Os roteiros dela voltam para "Sem pasta" — nenhum roteiro é apagado.`;
+  if(!confirm(aviso)) return;
   try{
     await api(`pastas?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', prefer:'return=minimal' });
     pastas = pastas.filter(p => p.id !== id);
     roteiros.forEach(r => { if(r.pasta_id === id) r.pasta_id = null; });
+    pastas.forEach(p => { if(p.pasta_pai_id === id) p.pasta_pai_id = null; }); // sobem pra raiz (o banco faz o mesmo: on delete set null)
     desenharLista();
     toast('Pasta apagada.', 'ok');
   }catch(e){
@@ -5985,10 +6050,10 @@ function desenharCompartilhar(){
     return;
   }
 
-  // Agrupa pelas mesmas pastas do editor (pasta_id) -- igual desenharLista()
-  // faz la no culto de sexta/sabado, so que aqui e so pra navegar/localizar
-  // mais rapido (sem criar, renomear, apagar pasta ou arrastar roteiro --
-  // isso continua sendo feito la no editor de cada culto).
+  // Agrupa pelas mesmas pastas (e subpastas) do editor (pasta_id/pasta_pai_id)
+  // -- igual desenharLista() faz la no culto de sexta/sabado, so que aqui e
+  // so pra navegar/localizar mais rapido (sem criar, renomear, apagar pasta
+  // ou arrastar roteiro -- isso continua sendo feito la no editor de cada culto).
   const porPasta = {};
   pastasCompartilhar.forEach(p => { porPasta[p.id] = []; });
   const semPasta = [];
@@ -5997,28 +6062,16 @@ function desenharCompartilhar(){
     else semPasta.push(r);
   });
 
-  const pastasOrdenadas = [...pastasCompartilhar].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-
-  let html = '';
-
-  pastasOrdenadas.forEach(p => {
-    const itens = porPasta[p.id] || [];
-    const aberta = pastasCompartilharAbertas.has(p.id);
-    html += `<div class="pasta-secao ${aberta ? '' : 'fechada'}">
-      <div class="pasta-cabecalho" style="cursor:pointer;" onclick="alternarPastaCompartilhar('${p.id}')">
-        <span class="icone-toggle-pasta">${aberta ? '▾' : '▸'}</span>
-        <span class="icone-pasta">📁</span>
-        <span class="nome-pasta">${escapar(p.nome)}</span>
-        <span class="contagem-pasta">${itens.length} ${itens.length === 1 ? 'roteiro' : 'roteiros'}</span>
-      </div>
-      <div class="pasta-itens">
-        ${itens.length ? itens.map(itemCompartilharHTML).join('') :
-          '<div class="pasta-vazia">Nenhum roteiro nesta pasta ainda.</div>'}
-      </div>
-    </div>`;
+  const porPai = {};
+  pastasCompartilhar.forEach(p => {
+    const chave = (p.pasta_pai_id && porPasta[p.pasta_pai_id] !== undefined) ? p.pasta_pai_id : 'raiz';
+    (porPai[chave] = porPai[chave] || []).push(p);
   });
+  Object.values(porPai).forEach(l => l.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')));
 
-  if(pastasOrdenadas.length){
+  let html = (porPai['raiz'] || []).map(p => pastaSecaoCompartilharHTML(p, porPai, porPasta, 0)).join('');
+
+  if(pastasCompartilhar.length){
     html += `<div class="pasta-secao">
       <div class="pasta-cabecalho" style="background:transparent;cursor:default;">
         <span class="icone-pasta">📄</span>
@@ -6036,6 +6089,33 @@ function desenharCompartilhar(){
   }
 
   el.innerHTML = html;
+}
+
+function contarRoteirosCompartilharRecursivo(pastaId, porPai, porPasta){
+  let total = (porPasta[pastaId] || []).length;
+  (porPai[pastaId] || []).forEach(sub => { total += contarRoteirosCompartilharRecursivo(sub.id, porPai, porPasta); });
+  return total;
+}
+
+function pastaSecaoCompartilharHTML(p, porPai, porPasta, nivel){
+  const subpastas = nivel < 20 ? (porPai[p.id] || []) : [];
+  const itensDiretos = porPasta[p.id] || [];
+  const total = contarRoteirosCompartilharRecursivo(p.id, porPai, porPasta);
+  const aberta = pastasCompartilharAbertas.has(p.id);
+  const vazia = !subpastas.length && !itensDiretos.length;
+  return `<div class="pasta-secao ${aberta ? '' : 'fechada'}">
+    <div class="pasta-cabecalho" style="cursor:pointer;" onclick="alternarPastaCompartilhar('${p.id}')">
+      <span class="icone-toggle-pasta">${aberta ? '▾' : '▸'}</span>
+      <span class="icone-pasta">📁</span>
+      <span class="nome-pasta">${escapar(p.nome)}</span>
+      <span class="contagem-pasta">${total} ${total === 1 ? 'roteiro' : 'roteiros'}</span>
+    </div>
+    <div class="pasta-itens">
+      ${subpastas.map(sp => pastaSecaoCompartilharHTML(sp, porPai, porPasta, nivel + 1)).join('')}
+      ${itensDiretos.map(itemCompartilharHTML).join('')}
+      ${vazia ? '<div class="pasta-vazia">Nenhum roteiro nesta pasta ainda.</div>' : ''}
+    </div>
+  </div>`;
 }
 
 /* =====================================================================
