@@ -5918,6 +5918,10 @@ function desenharPessoas(pessoas){
 /* =====================================================================
    COMPARTILHAR COM CONVIDADOS (link publico + PDF)
 ===================================================================== */
+let listaCompartilharAtual = [];   // roteiros carregados (de todos os cultos permitidos)
+let pastasCompartilhar = [];       // pastas desses mesmos cultos (as mesmas pastas do editor)
+let pastasCompartilharAbertas = new Set(); // ids das pastas expandidas aqui (fechadas por padrao)
+
 async function abrirCompartilhar(){
   if(sujo && !confirm('Você tem alterações não salvas. Sair do editor mesmo assim?')) return;
   sujo = false;
@@ -5928,50 +5932,110 @@ async function abrirCompartilhar(){
   document.getElementById('listaCompartilhar').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
     const permitidos = cultosPermitidos();
-    const lista = await api(
-      `roteiros?culto=in.(${permitidos.join(',')})&select=id,culto,nome,titulo,atualizado_em&order=atualizado_em.desc`);
-    desenharCompartilhar(lista);
+    // As pastas aqui sao as MESMAS pastas usadas la no editor (culto de sexta /
+    // culto de sabado) -- nao existe um jeito separado de organizar so pra
+    // compartilhar. Assim, organizar as pastas num lugar (editor) ja reflete
+    // aqui, pra achar o roteiro certo mais rapido na hora de gerar o link/PDF.
+    const [lista, pastas] = await Promise.all([
+      api(`roteiros?culto=in.(${permitidos.join(',')})&select=id,culto,nome,titulo,pasta_id,atualizado_em&order=atualizado_em.desc`),
+      api(`pastas?culto=in.(${permitidos.join(',')})&select=*`)
+    ]);
+    listaCompartilharAtual = lista || [];
+    pastasCompartilhar = pastas || [];
+    desenharCompartilhar();
   }catch(e){
     document.getElementById('listaCompartilhar').innerHTML =
       `<div class="aviso erro">${escapar(e.message)}</div>`;
   }
 }
 
-function desenharCompartilhar(lista){
+function alternarPastaCompartilhar(id){
+  if(pastasCompartilharAbertas.has(id)) pastasCompartilharAbertas.delete(id);
+  else pastasCompartilharAbertas.add(id);
+  desenharCompartilhar();
+}
+
+// Pega o roteiro pelo id na lista ja carregada -- assim o botao nao precisa
+// interpolar nome/titulo dentro do atributo onclick (um nome com aspas
+// quebraria o HTML).
+function gerarLinkCompartilhar(id){
+  const r = listaCompartilharAtual.find(x => x.id === id);
+  if(!r) return;
+  abrirModalLink(linkConvidado(r.id), r.nome);
+}
+
+function itemCompartilharHTML(r){
+  return `<div class="lista-item">
+    <div style="flex:1;min-width:0;">
+      <div class="nome">${escapar(r.nome)} <span class="badge ${escapar(r.culto)}">${escapar(NOME_CULTO[r.culto] || r.culto)}</span></div>
+      <div class="meta">${escapar(r.titulo || '')}</div>
+    </div>
+    <button class="btn small" onclick="gerarLinkCompartilhar('${r.id}')">Gerar link</button>
+    <button class="btn small primary" onclick="gerarPdfRoteiro('${r.id}')">Gerar PDF</button>
+  </div>`;
+}
+
+function desenharCompartilhar(){
   const el = document.getElementById('listaCompartilhar');
-  if(!lista.length){
+  const lista = listaCompartilharAtual;
+  if(!lista.length && !pastasCompartilhar.length){
     el.innerHTML = `<div class="vazio">
       Nenhum roteiro publicado ainda.<br>Assim que você criar um, ele aparece aqui para compartilhar.
     </div>`;
     return;
   }
-  el.innerHTML = '';
-  // Monta cada linha via DOM (nao via onclick="..." com o nome interpolado):
-  // um nome de roteiro com aspas quebraria o atributo HTML. Os botoes pegam
-  // o roteiro certo por fechamento (closure), sem precisar escapar nada.
+
+  // Agrupa pelas mesmas pastas do editor (pasta_id) -- igual desenharLista()
+  // faz la no culto de sexta/sabado, so que aqui e so pra navegar/localizar
+  // mais rapido (sem criar, renomear, apagar pasta ou arrastar roteiro --
+  // isso continua sendo feito la no editor de cada culto).
+  const porPasta = {};
+  pastasCompartilhar.forEach(p => { porPasta[p.id] = []; });
+  const semPasta = [];
   lista.forEach(r => {
-    const d = document.createElement('div');
-    d.className = 'lista-item';
-    d.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div class="nome">${escapar(r.nome)} <span class="badge ${escapar(r.culto)}">${escapar(NOME_CULTO[r.culto] || r.culto)}</span></div>
-        <div class="meta">${escapar(r.titulo || '')}</div>
-      </div>`;
-
-    const btnLink = document.createElement('button');
-    btnLink.className = 'btn small';
-    btnLink.textContent = 'Gerar link';
-    btnLink.onclick = () => abrirModalLink(linkConvidado(r.id), r.nome);
-    d.appendChild(btnLink);
-
-    const btnPdf = document.createElement('button');
-    btnPdf.className = 'btn small primary';
-    btnPdf.textContent = 'Gerar PDF';
-    btnPdf.onclick = () => gerarPdfRoteiro(r.id);
-    d.appendChild(btnPdf);
-
-    el.appendChild(d);
+    if(r.pasta_id && porPasta[r.pasta_id]) porPasta[r.pasta_id].push(r);
+    else semPasta.push(r);
   });
+
+  const pastasOrdenadas = [...pastasCompartilhar].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  let html = '';
+
+  pastasOrdenadas.forEach(p => {
+    const itens = porPasta[p.id] || [];
+    const aberta = pastasCompartilharAbertas.has(p.id);
+    html += `<div class="pasta-secao ${aberta ? '' : 'fechada'}">
+      <div class="pasta-cabecalho" style="cursor:pointer;" onclick="alternarPastaCompartilhar('${p.id}')">
+        <span class="icone-toggle-pasta">${aberta ? '▾' : '▸'}</span>
+        <span class="icone-pasta">📁</span>
+        <span class="nome-pasta">${escapar(p.nome)}</span>
+        <span class="contagem-pasta">${itens.length} ${itens.length === 1 ? 'roteiro' : 'roteiros'}</span>
+      </div>
+      <div class="pasta-itens">
+        ${itens.length ? itens.map(itemCompartilharHTML).join('') :
+          '<div class="pasta-vazia">Nenhum roteiro nesta pasta ainda.</div>'}
+      </div>
+    </div>`;
+  });
+
+  if(pastasOrdenadas.length){
+    html += `<div class="pasta-secao">
+      <div class="pasta-cabecalho" style="background:transparent;cursor:default;">
+        <span class="icone-pasta">📄</span>
+        <span class="nome-pasta">Sem pasta</span>
+        <span class="contagem-pasta">${semPasta.length} ${semPasta.length === 1 ? 'roteiro' : 'roteiros'}</span>
+      </div>
+      <div class="pasta-itens">
+        ${semPasta.length ? semPasta.map(itemCompartilharHTML).join('') :
+          '<div class="pasta-vazia">Nenhum roteiro sem pasta.</div>'}
+      </div>
+    </div>`;
+  } else {
+    html += lista.length ? lista.map(itemCompartilharHTML).join('') :
+      `<div class="vazio">Nenhum roteiro publicado ainda.<br>Assim que você criar um, ele aparece aqui para compartilhar.</div>`;
+  }
+
+  el.innerHTML = html;
 }
 
 /* =====================================================================
