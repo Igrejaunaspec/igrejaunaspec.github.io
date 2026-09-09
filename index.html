@@ -1153,7 +1153,7 @@ const YOUTUBE_CHANNEL_ID = 'UCN2L7fsIApLM3gRwpgQpFDQ'; // @igrejaunasp
 ===================================================================== */
 const CHAVE_SESSAO = 'roteiroEditor.sessao';
 let sessao   = null;   // { access_token, refresh_token, expira_em, email }
-let perfil   = null;   // { acesso_sexta, acesso_sabado, acesso_agenda, acesso_agendamentos, acesso_calendario, acesso_escala, acesso_youtube, admin }
+let perfil   = null;   // { acesso_sexta, acesso_sabado, acesso_agenda, acesso_agendamentos, acesso_calendario, acesso_escala, acesso_youtube, admin, setores }
 let cultoAtual = null; // 'sexta' | 'sabado' | 'pessoas'
 let roteiros = [];     // lista do culto atual
 let pastas   = [];     // pastas do culto atual
@@ -2203,6 +2203,17 @@ let filtroStatusAgendamentos = 'ativos'; // 'ativos' | 'todos' | um status espec
 let filtroAnoAgendamentosAtual = 'todos'; // 'todos' ou um ano (string), ex: '2024'
 let agendamentosAbertos = new Set(); // ids com o "ver detalhes" expandido
 let etiquetasDropdownAbertos = new Set(); // ids com a lista suspensa de etiquetas aberta
+let setoresDropdownAbertos = new Set(); // ids com a lista suspensa de setores aberta
+
+// Setores que podem ser marcados num agendamento pra dizer quem PRECISA
+// vê-lo na agenda (Calendário / lista de Agendamentos). Deixando sem nenhum
+// setor marcado, o evento continua visível pra todo mundo que tiver acesso
+// à agenda -- igual sempre foi (comportamento padrão, não quebra nada do
+// que já existe). So depois que alguem marca 1+ setores num evento e que ele
+// passa a ficar restrito a quem for desses setores (ou administrador, que
+// sempre ve tudo). Cada pessoa (aba Pessoas) tambem marca a quais setores
+// ela pertence -- e o que decide o que ela enxerga.
+const SETORES_AGENDA = ['Comunicação', 'Pastores', 'Secretaria', 'Conservação'];
 
 // Etiquetas que podem ser marcadas num pedido, alem do status. Cada
 // agendamento guarda uma lista dessas chaves na coluna "etiquetas" (array).
@@ -2296,9 +2307,10 @@ function garantirFechamentoEtiquetaDropdown(){
   if(_fechaEtiquetaDropdownListener) return;
   _fechaEtiquetaDropdownListener = true;
   document.addEventListener('mousedown', (ev) => {
-    if(etiquetasDropdownAbertos.size === 0) return;
+    if(etiquetasDropdownAbertos.size === 0 && setoresDropdownAbertos.size === 0) return;
     if(ev.target.closest('.etiqueta-dropdown-wrap')) return;
     etiquetasDropdownAbertos.clear();
+    setoresDropdownAbertos.clear();
     desenharListaAgendamentos();
   });
 }
@@ -2306,7 +2318,31 @@ function garantirFechamentoEtiquetaDropdown(){
 function toggleEtiquetaDropdown(id){
   if(etiquetasDropdownAbertos.has(id)) etiquetasDropdownAbertos.delete(id);
   else etiquetasDropdownAbertos.add(id);
+  setoresDropdownAbertos.clear();
   desenharListaAgendamentos();
+}
+
+function toggleSetorDropdown(id){
+  if(setoresDropdownAbertos.has(id)) setoresDropdownAbertos.delete(id);
+  else setoresDropdownAbertos.add(id);
+  etiquetasDropdownAbertos.clear();
+  desenharListaAgendamentos();
+}
+
+async function toggleSetorAgendamento(id, setor){
+  const alvo = agendamentos.find(a => a.id === id);
+  if(!alvo) return;
+  const antes = alvo.setores_visiveis || [];
+  const depois = antes.includes(setor) ? antes.filter(s => s !== setor) : [...antes, setor];
+  alvo.setores_visiveis = depois; // otimista
+  desenharListaAgendamentos();
+  try{
+    await api(`agendamentos?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ setores_visiveis: depois } });
+  }catch(e){
+    alvo.setores_visiveis = antes; // desfaz se der erro
+    desenharListaAgendamentos();
+    toast('Não consegui atualizar os setores: ' + e.message, 'err');
+  }
 }
 
 function montarFiltrosEtiquetasAgendamentos(){
@@ -2428,6 +2464,16 @@ function etiquetasBadgesHTML(a){
     }).join('') + `</div>`;
 }
 
+// Mostra pra quais setores um evento esta restrito (se nenhum, nao mostra
+// nada -- e o caso comum, evento visivel pra todo mundo).
+function setoresBadgeHTML(a){
+  const setores = a.setores_visiveis || [];
+  if(!setores.length) return '';
+  return `<div class="agendamento-etiquetas">` +
+    setores.map(s => `<span class="etiqueta-badge" style="background:#64748b1f;color:#475569;">🏢 ${escapar(s)}</span>`).join('') +
+    `</div>`;
+}
+
 // Lista de campos mostrados no "Ver tudo" de cada pedido. Vem do schema ATUAL
 // do formulario (o que esta valendo agora no editor), pra acompanhar as
 // perguntas/opcoes que a Igreja configurou -- por isso nome_evento,
@@ -2450,6 +2496,8 @@ function agendamentoItemHTML(a){
   const aberto = agendamentosAbertos.has(a.id);
   const etiquetas = a.etiquetas || [];
   const dropdownAberto = etiquetasDropdownAbertos.has(a.id);
+  const setoresDoAgendamento = a.setores_visiveis || [];
+  const setorDropdownAberto = setoresDropdownAbertos.has(a.id);
   return `<div class="agendamento-item">
     <div class="agendamento-linha1">
       <div>
@@ -2459,6 +2507,7 @@ function agendamentoItemHTML(a){
         </div>
         <div class="meta">${escapar(a.nome_responsavel || '')}${a.nome_responsavel ? ' · ' : ''}pedido em ${escapar(formatarDataHoraCriacao(a.criado_em))}</div>
         ${etiquetasBadgesHTML(a)}
+        ${setoresBadgeHTML(a)}
       </div>
       <div class="agendamento-linha2">
         <select class="status-select" data-status="${escapar(a.status)}"
@@ -2472,6 +2521,16 @@ function agendamentoItemHTML(a){
                <input type="checkbox" ${etiquetas.includes(t.key) ? 'checked' : ''} onchange="toggleEtiquetaAgendamento('${a.id}','${t.key}')">
                <span class="etiqueta-dot" style="background:${t.cor || '#666666'};"></span>
                <span>${t.ico} ${escapar(t.label)}</span>
+             </label>`).join('')}
+          </div>` : ''}
+        </div>
+        <div class="etiqueta-dropdown-wrap setor-dropdown-wrap">
+          <button class="btn small" title="Quem precisa ver este evento na agenda? Deixe sem marcar pra continuar visível pra todo mundo."
+            onclick="toggleSetorDropdown('${a.id}')">🏢 Setores${setoresDoAgendamento.length ? ` (${setoresDoAgendamento.length})` : ''}</button>
+          ${setorDropdownAberto ? `<div class="etiqueta-dropdown-menu">
+            ${SETORES_AGENDA.map(s => `<label class="etiqueta-dropdown-item">
+               <input type="checkbox" ${setoresDoAgendamento.includes(s) ? 'checked' : ''} onchange="toggleSetorAgendamento('${a.id}','${s}')">
+               <span>${escapar(s)}</span>
              </label>`).join('')}
           </div>` : ''}
         </div>
@@ -2711,6 +2770,7 @@ function desenharDetalheDiaCalendario(porDia){
         </div>
       </div>
       ${etiquetasBadgesHTML(a)}
+      ${setoresBadgeHTML(a)}
     </div>`).join('');
 }
 
@@ -2739,7 +2799,7 @@ function abrirModalEventoNovo(chaveDiaClicado){
   desenharModalEvento({
     nome_evento:'', descricao:'', espacos_utilizados:'',
     nome_responsavel: (sessao && sessao.email) || '', contato: (sessao && sessao.email) || '', email:'',
-    status:'Agendado', cor:'', etiquetas:[], diaInteiro:true,
+    status:'Agendado', cor:'', etiquetas:[], setoresVisiveis:[], diaInteiro:true,
     dataInicioISO: formatarDataISO(new Date(ano, mes - 1, dia)), dataFimISO:'', horaInicio:'', horaFim:'',
     recorrencia:'nenhuma', recorrenciaAteISO:''
   });
@@ -2759,6 +2819,7 @@ function abrirModalEventoEditar(id){
     nome_evento: a.nome_evento || '', descricao: a.descricao || '', espacos_utilizados: a.espacos_utilizados || '',
     nome_responsavel: a.nome_responsavel || '', contato: a.contato || '', email: a.email || '',
     status: a.status || 'Agendado', cor: a.cor || '', etiquetas: a.etiquetas || [],
+    setoresVisiveis: a.setores_visiveis || [],
     diaInteiro: !temHora,
     dataInicioISO: dIni ? formatarDataISO(dIni) : '',
     dataFimISO: (dFim && !temHora) ? formatarDataISO(dFim) : '',
@@ -2842,6 +2903,19 @@ function desenharModalEvento(d){
         </label>`).join('')}
       </div>
     </div>` : ''}
+
+    <div class="field">
+      <label>Quem precisa ver este evento na agenda?</label>
+      <div class="evento-etiquetas-lista">
+        ${SETORES_AGENDA.map(s => `<label>
+          <input type="checkbox" class="evSetorChk" value="${escapar(s)}" ${d.setoresVisiveis.includes(s) ? 'checked' : ''}>
+          ${escapar(s)}
+        </label>`).join('')}
+      </div>
+      <p class="dica" style="margin:6px 0 0;font-size:12.5px;color:var(--muted);">
+        Sem marcar nada, o evento fica visível pra todo mundo que acessa a agenda (padrão). Marcando um ou mais setores, só quem for desses setores (e administradores) passa a ver esse evento.
+      </p>
+    </div>
 
     <div class="field">
       <label for="evStatus">Status</label>
@@ -2938,6 +3012,7 @@ async function salvarEventoModal(){
   const cor = document.getElementById('evCor').value || corPadraoPorEspaco(local) || null;
   const status = document.getElementById('evStatus').value;
   const etiquetas = Array.from(document.querySelectorAll('.evTagChk:checked')).map(c => c.value);
+  const setoresVisiveis = Array.from(document.querySelectorAll('.evSetorChk:checked')).map(c => c.value);
 
   const btn = document.getElementById('btnSalvarEvento');
   btn.disabled = true;
@@ -2956,13 +3031,15 @@ async function salvarEventoModal(){
         }).map(l => l.id);
         if(ids.length){
           await api(`agendamentos?id=in.(${ids.join(',')})`, { method:'PATCH', prefer:'return=minimal', body:{
-            nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email, cor, status, etiquetas
+            nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email, cor, status, etiquetas,
+            setores_visiveis: setoresVisiveis
           }});
         }
       } else {
         await api(`agendamentos?id=eq.${eventoModalId}`, { method:'PATCH', prefer:'return=minimal', body:{
           nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email,
-          data_inicio: dataInicio, data_saida: dataSaida, horarios_evento: horarios, cor, status, etiquetas
+          data_inicio: dataInicio, data_saida: dataSaida, horarios_evento: horarios, cor, status, etiquetas,
+          setores_visiveis: setoresVisiveis
         }});
       }
       toast('Evento atualizado!', 'ok');
@@ -2970,7 +3047,7 @@ async function salvarEventoModal(){
       const recorrencia = document.getElementById('evRecorrencia').value;
       const linhaBase = {
         nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email,
-        horarios_evento: horarios, status, cor, etiquetas, origem: 'app'
+        horarios_evento: horarios, status, cor, etiquetas, setores_visiveis: setoresVisiveis, origem: 'app'
       };
       if(recorrencia === 'nenhuma'){
         await api('agendamentos', { method:'POST', prefer:'return=minimal',
@@ -5116,8 +5193,11 @@ function desenharPessoas(pessoas){
       <label class="chk"><input type="checkbox" data-c="acesso_calendario" ${p.acesso_calendario?'checked':''}> Calendário</label>
       <label class="chk"><input type="checkbox" data-c="acesso_escala" ${p.acesso_escala?'checked':''}> Escala</label>
       <label class="chk"><input type="checkbox" data-c="acesso_youtube" ${p.acesso_youtube?'checked':''}> YouTube</label>
-      <label class="chk"><input type="checkbox" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}> Administrador</label>`;
-    d.querySelectorAll('input[type=checkbox]').forEach(cx => {
+      <label class="chk"><input type="checkbox" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}> Administrador</label>
+      <span style="width:1px;align-self:stretch;background:var(--border);"></span>
+      <span style="font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;">Vê na agenda:</span>
+      ${SETORES_AGENDA.map(s => `<label class="chk"><input type="checkbox" data-setor="${escapar(s)}" ${(p.setores||[]).includes(s)?'checked':''}> ${escapar(s)}</label>`).join('')}`;
+    d.querySelectorAll('input[data-c]').forEach(cx => {
       cx.onchange = async () => {
         const campo = cx.dataset.c;
         cx.disabled = true;
@@ -5126,6 +5206,20 @@ function desenharPessoas(pessoas){
           toast('Acesso atualizado.', 'ok');
         }catch(e){ cx.checked = !cx.checked; toast(e.message, 'err'); }
         finally{ if(!(campo==='admin' && eu)) cx.disabled = false; }
+      };
+    });
+    // Setores: guarda a lista inteira marcada (nao um booleano por coluna,
+    // igual acesso_*) -- decide o que essa pessoa enxerga no Calendario e na
+    // lista de Agendamentos (ver SETORES_AGENDA).
+    d.querySelectorAll('input[data-setor]').forEach(cx => {
+      cx.onchange = async () => {
+        cx.disabled = true;
+        const marcados = Array.from(d.querySelectorAll('input[data-setor]:checked')).map(c => c.dataset.setor);
+        try{
+          await api(`perfis?id=eq.${p.id}`, { method:'PATCH', body:{ setores: marcados } });
+          toast('Setores atualizados.', 'ok');
+        }catch(e){ cx.checked = !cx.checked; toast(e.message, 'err'); }
+        finally{ cx.disabled = false; }
       };
     });
 
