@@ -4009,6 +4009,7 @@ function itemRoteiroHTML(r, i){
   const itens = (r.dados && r.dados.rows ? r.dados.rows.length : 0);
   const quando = r.atualizado_em ? new Date(r.atualizado_em).toLocaleString('pt-BR',
     { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+  const destino = r.culto === 'sexta' ? 'sabado' : 'sexta';
   return `<div class="lista-item" draggable="true" style="cursor:pointer;"
       onclick="abrirEditor(${i})"
       ondragstart="iniciarArrastoRoteiro('${r.id}', event)"
@@ -4019,6 +4020,8 @@ function itemRoteiroHTML(r, i){
       <div class="meta">${itens} ${itens === 1 ? 'item' : 'itens'} ·
         atualizado ${escapar(quando)}${r.atualizado_por ? ' por ' + escapar(r.atualizado_por) : ''}</div>
     </div>
+    <button class="btn small" type="button" title="Mover este roteiro para o culto de ${NOME_CULTO[destino]}"
+      onclick="event.stopPropagation();moverRoteiroCulto(${i})">→ ${NOME_CULTO[destino]}</button>
     <button class="btn small" onclick="event.stopPropagation();duplicarRoteiro(${i})">Duplicar</button>
     <button class="btn small primary" onclick="event.stopPropagation();abrirEditor(${i})">Abrir</button>
   </div>`;
@@ -4347,6 +4350,39 @@ function duplicarRoteiro(i){
   sujo = true;
   abrirTelaEditor();
   toast('Cópia criada — mude o nome e salve.', 'ok');
+}
+
+// Transfere um roteiro do culto de sexta pro de sabado, ou vice-versa. Sai
+// da lista atual e passa a aparecer na lista do outro culto (sem pasta la --
+// as pastas de um culto nao existem no outro). Precisa ter acesso de edicao
+// nos DOIS cultos (regra do banco); quem so edita um dos dois nao consegue.
+async function moverRoteiroCulto(i){
+  const r = roteiros[i];
+  if(!r) return;
+  const destino = r.culto === 'sexta' ? 'sabado' : 'sexta';
+  const colunasOrigem = (COLUNAS[r.culto] || []).map(c => c.k);
+  const colunasDestino = new Set((COLUNAS[destino] || []).map(c => c.k));
+  const perdeColuna = colunasOrigem.some(k => !colunasDestino.has(k));
+  let aviso = `Mover "${r.nome}" para o culto de ${NOME_CULTO[destino]}? ` +
+    `Ele sai da lista de ${NOME_CULTO[r.culto]} e passa a aparecer em ${NOME_CULTO[destino]} ` +
+    `(sem pasta lá — você pode arrastar pra uma pasta depois).`;
+  if(perdeColuna){
+    aviso += ` Atenção: algumas colunas de ${NOME_CULTO[r.culto]} não existem no culto de ${NOME_CULTO[destino]} — ` +
+      `o conteúdo delas continua salvo, mas não vai aparecer no editor de lá.`;
+  }
+  if(!confirm(aviso)) return;
+  try{
+    await api(`roteiros?id=eq.${encodeURIComponent(r.id)}`, { method:'PATCH', prefer:'return=minimal',
+      body:{ culto: destino, pasta_id: null } });
+    roteiros = roteiros.filter(x => x.id !== r.id);
+    desenharLista();
+    toast(`Roteiro movido para o culto de ${NOME_CULTO[destino]}.`, 'ok');
+  }catch(e){
+    const msg = /duplicate key|already exists/i.test(e.message)
+      ? `Já existe um roteiro chamado "${r.nome}" no culto de ${NOME_CULTO[destino]}. Renomeie um dos dois antes de mover.`
+      : e.message;
+    toast('Não consegui mover o roteiro: ' + msg, 'err');
+  }
 }
 
 function abrirTelaEditor(){
