@@ -661,7 +661,7 @@
     <div class="logo"><span></span> IGREJA ADVENTISTA UNASP - EC</div>
     <p class="who">editor de roteiro</p>
 
-    <div class="login-tabs">
+    <div class="login-tabs" id="loginTabs">
       <button id="abaEntrar" class="on" onclick="trocarModoLogin('entrar')">Entrar</button>
       <button id="abaCriar" onclick="trocarModoLogin('criar')">Criar acesso</button>
     </div>
@@ -677,13 +677,20 @@
         <label for="inEmail">E-mail</label>
         <input type="email" id="inEmail" autocomplete="email" placeholder="voce@email.com">
       </div>
-      <div class="field">
+      <div class="field" id="campoSenha">
         <label for="inSenha">Senha</label>
         <input type="password" id="inSenha" autocomplete="current-password" placeholder="Sua senha">
       </div>
       <button class="btn primary" id="btnLogin" style="width:100%;padding:12px;font-size:15px;"
               onclick="enviarLogin()">Entrar</button>
     </form>
+
+    <p id="linkEsqueciSenha" class="who" style="margin:14px 0 0;font-size:12.5px;">
+      <a href="#" onclick="trocarModoLogin('recuperar');return false;">Esqueci minha senha</a>
+    </p>
+    <p id="linkVoltarLogin" class="who hidden" style="margin:14px 0 0;font-size:12.5px;">
+      <a href="#" onclick="trocarModoLogin('entrar');return false;">Voltar pro login</a>
+    </p>
 
     <p id="dicaCriar" class="who" style="margin:16px 0 0;font-size:12.5px;display:none;">
       Depois de criar seu acesso, um administrador precisa liberar quais cultos
@@ -1924,11 +1931,19 @@ function decodificarToken(token){
 
 function trocarModoLogin(modo){
   modoLogin = modo;
+  // modo "recuperar": pediu "Esqueci minha senha" -- esconde as abas Entrar/Criar
+  // acesso e o campo de senha, so pede o e-mail pra mandar o link de redefinicao
+  // (mesmo endpoint /auth/v1/recover que o botao "Redefinir senha" da aba Pessoas usa).
+  document.getElementById('loginTabs').style.display = modo === 'recuperar' ? 'none' : '';
   document.getElementById('abaEntrar').classList.toggle('on', modo === 'entrar');
   document.getElementById('abaCriar').classList.toggle('on',  modo === 'criar');
-  document.getElementById('campoNome').style.display = modo === 'criar' ? '' : 'none';
-  document.getElementById('dicaCriar').style.display = modo === 'criar' ? '' : 'none';
-  document.getElementById('btnLogin').textContent = modo === 'criar' ? 'Criar meu acesso' : 'Entrar';
+  document.getElementById('campoNome').style.display  = modo === 'criar' ? '' : 'none';
+  document.getElementById('campoSenha').style.display = modo === 'recuperar' ? 'none' : '';
+  document.getElementById('dicaCriar').style.display  = modo === 'criar' ? '' : 'none';
+  document.getElementById('linkEsqueciSenha').classList.toggle('hidden', modo !== 'entrar');
+  document.getElementById('linkVoltarLogin').classList.toggle('hidden',  modo !== 'recuperar');
+  document.getElementById('btnLogin').textContent =
+    modo === 'criar' ? 'Criar meu acesso' : modo === 'recuperar' ? 'Enviar link de redefinição' : 'Entrar';
   document.getElementById('inSenha').setAttribute('autocomplete',
     modo === 'criar' ? 'new-password' : 'current-password');
   avisoLogin('');
@@ -1936,9 +1951,38 @@ function trocarModoLogin(modo){
 
 async function enviarLogin(){
   const email = document.getElementById('inEmail').value.trim();
+  const btn   = document.getElementById('btnLogin');
+
+  // "Esqueci minha senha": manda o link de redefinicao pro proprio e-mail
+  // digitado, sem precisar saber a senha (mesmo endpoint publico usado pelo
+  // botao "Redefinir senha" que um admin aciona na aba Pessoas).
+  if(modoLogin === 'recuperar'){
+    if(!email){ avisoLogin('Digite seu e-mail.'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    avisoLogin('');
+    try{
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+        body: JSON.stringify({ email, redirect_to: location.origin + location.pathname })
+      });
+      if(!r.ok){
+        const dados = await r.json().catch(() => ({}));
+        throw new Error(dados.msg || dados.error_description || dados.message || 'Não consegui enviar o link.');
+      }
+      avisoLogin(`Se ${email} tiver acesso aqui, enviamos um link de redefinição — confira sua caixa de entrada (e o spam).`, 'ok');
+    }catch(e){
+      avisoLogin(e.message);
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Enviar link de redefinição';
+    }
+    return;
+  }
+
   const senha = document.getElementById('inSenha').value;
   const nome  = document.getElementById('inNome').value.trim();
-  const btn   = document.getElementById('btnLogin');
 
   if(!email || !senha){ avisoLogin('Preencha e-mail e senha.'); return; }
   if(modoLogin === 'criar' && senha.length < 6){
