@@ -6616,7 +6616,11 @@ async function abrirVisualizacaoConvidado(id, autoImprimir, contextoLogado){
         <p class="convidado-rodape no-print">Gerado por Roteiro ao Vivo — IGREJA UNASP EC</p>
       </div>`;
 
-  if(autoImprimir) setTimeout(() => window.print(), 300);
+  // Antes chamava window.print() automaticamente aqui quando autoImprimir
+  // era true (vindo do link "&imprimir=1" gerado por gerarPdfRoteiro). Agora
+  // a impressao/PDF so abre quando a pessoa clica no botao "🖨️ Gerar PDF"
+  // que ja aparece na tela -- autoImprimir fica sem uso, mantido so pra nao
+  // quebrar quem ainda chama esta funcao com esse argumento.
 }
 
 // Volta da visualizacao de um roteiro (aberta a partir de "Meus roteiros")
