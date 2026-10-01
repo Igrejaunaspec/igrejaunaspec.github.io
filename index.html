@@ -321,6 +321,16 @@
   .folha{background:var(--panel);width:100%;border-radius:18px 18px 0 0;
     padding:8px 12px calc(14px + env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto;animation:sobeFolha .18s ease-out;}
   @keyframes sobeFolha{from{transform:translateY(40px);opacity:.4;}}
+  /* painel lateral (menu "Mais"/"Roteiros"): desliza da direita, altura toda */
+  .folha-fundo.lateral{align-items:stretch;justify-content:flex-end;}
+  .folha.lateral{width:min(84vw,340px);max-height:none;height:100%;border-radius:18px 0 0 18px;
+    padding:calc(18px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
+    animation:entraLado .2s ease-out;display:flex;flex-direction:column;}
+  .folha.lateral .folha-alca{display:none;}
+  .folha.lateral .rodape-conta{margin-top:auto;}
+  .folha-fundo.saindo .folha.lateral{transform:translateX(100%);transition:transform .18s ease-in;}
+  .folha-fundo.saindo{background:transparent;transition:background .18s;}
+  @keyframes entraLado{from{transform:translateX(100%);}}
   .folha-alca{width:40px;height:4px;border-radius:2px;background:var(--border);margin:4px auto 12px;}
   .folha-titulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);padding:0 6px 8px;}
   .folha button.item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;
@@ -4392,23 +4402,26 @@ function acaoFabCelular(){
 function abrirFolhaCelular(titulo, botoes, comConta){
   fecharFolhaCelular();
   const fundo = document.createElement('div');
-  fundo.className = 'folha-fundo';
+  fundo.className = 'folha-fundo lateral';
   fundo.id = 'folhaCelular';
   fundo.onclick = e => { if(e.target === fundo) fecharFolhaCelular(); };
   window._botoesFolha = botoes;
   const email = (document.getElementById('meuEmail') || {}).textContent || '';
-  fundo.innerHTML = `<div class="folha"><div class="folha-alca"></div>
+  fundo.innerHTML = `<div class="folha lateral"><div class="folha-alca"></div>
     <div class="folha-titulo">${escapar(titulo)}</div>
     ${botoes.map((b, i) => `<button class="item" onclick="fecharFolhaCelular();window._botoesFolha[${i}].click()">
-      <span class="ico">${ICONES_ABA[b.dataset.culto] || (b.textContent === 'Escala' ? '🗓️' : '•')}</span>${escapar(b.textContent)}</button>`).join('')}
-    ${comConta ? `<div class="quem">${escapar(email)}</div>
-      <button class="item sair" onclick="fecharFolhaCelular();sair()"><span class="ico">⎋</span>Sair</button>` : ''}
+      <span class="ico">${ICONES_ABA[b.dataset.culto] || (b.textContent === 'Escala' ? '🗓️' : '•')}</span>${escapar(b.dataset.culto === 'agenda' ? 'Arte da Agenda' : b.textContent)}</button>`).join('')}
+    ${comConta ? `<div class="rodape-conta"><div class="quem">${escapar(email)}</div>
+      <button class="item sair" onclick="fecharFolhaCelular();sair()"><span class="ico">🚪</span>Sair</button></div>` : ''}
   </div>`;
   document.body.appendChild(fundo);
 }
 function fecharFolhaCelular(){
   const f = document.getElementById('folhaCelular');
-  if(f) f.remove();
+  if(!f) return;
+  f.id = '';
+  f.classList.add('saindo');
+  setTimeout(() => f.remove(), 180);
 }
 
 // Calendario no celular: arrastar pro lado troca de mes
