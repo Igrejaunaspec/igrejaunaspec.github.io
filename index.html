@@ -361,7 +361,11 @@
     cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .12s;}
   .calendario-dia:hover .calendario-dia-add{opacity:1;}
   .calendario-dia-add:hover{background:var(--accent);color:var(--accent-ink);}
-  .calendario-eventos{display:flex;flex-direction:column;gap:3px;overflow:hidden;}
+  .calendario-eventos{display:flex;flex-direction:column;gap:3px;overflow:visible;}
+  .calendario-evento-vazio{height:20px;flex:none;}
+  .calendario-evento-pill{height:20px;line-height:14px;flex:none;position:relative;z-index:2;}
+  .calendario-evento-pill.continua-antes{border-top-left-radius:0;border-bottom-left-radius:0;}
+  .calendario-evento-pill.continua-depois{border-top-right-radius:0;border-bottom-right-radius:0;}
   .calendario-evento-pill{background:#16a34a;color:#fff;border:0;border-radius:6px;box-shadow:0 1px 0 rgba(0,0,0,.08);
     padding:3px 6px;font-size:11px;font-weight:650;text-align:left;cursor:pointer;font-family:inherit;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
@@ -3392,33 +3396,87 @@ function desenharCalendario(){
   const inicioGrade = new Date(primeiroDoMes);
   inicioGrade.setDate(inicioGrade.getDate() - primeiroDoMes.getDay()); // volta ate domingo
 
+  // Barras continuas (igual ao Google): em cada semana, cada evento ganha uma
+  // "faixa" (linha) fixa; eventos de varios dias viram UMA barra que atravessa
+  // os dias da semana. Os outros dias da faixa ficam com um espaco vazio.
+  const MOSTRAR = 3;
+  const EXTRA_PX = 22; // gap da grade (6) + padding (7+7) + bordas (1+1) entre celulas
+  const diaIdx = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - inicioGrade) / 86400000);
+  const faixasPorCelula = Array.from({length: 42}, () => []); // [celula] -> lista de {faixa, a, span, antes, depois}
+  const totalPorCelula = new Array(42).fill(0);
+  for(let sem = 0; sem < 6; sem++){
+    const iniSem = sem * 7, fimSem = iniSem + 6;
+    const segs = [];
+    calendarioAgendamentos.forEach(a => {
+      const dIni = parseDataBR(a.data_inicio);
+      if(!dIni) return;
+      const dFimBruto = parseDataBR(a.data_saida);
+      let ini = diaIdx(dIni);
+      let fim = dFimBruto ? diaIdx(dFimBruto) : ini;
+      if(fim < ini) fim = ini;
+      if(fim - ini > 90) fim = ini + 90;
+      if(fim < iniSem || ini > fimSem) return;
+      segs.push({ a, ini: Math.max(ini, iniSem), fim: Math.min(fim, fimSem), antes: ini < iniSem, depois: fim > fimSem, dur: fim - ini });
+    });
+    // mais longos primeiro (ficam em cima, como no Google), depois por inicio
+    segs.sort((x, y) => (y.dur - x.dur) || (x.ini - y.ini) || (x.a.data_inicio||'').localeCompare(y.a.data_inicio||''));
+    const ocupado = []; // ocupado[faixa][dia]
+    segs.forEach(sg => {
+      for(let d = sg.ini; d <= sg.fim; d++) totalPorCelula[d]++;
+      let f = 0;
+      while(true){
+        ocupado[f] = ocupado[f] || {};
+        let livre = true;
+        for(let d = sg.ini; d <= sg.fim; d++) if(ocupado[f][d]){ livre = false; break; }
+        if(livre) break;
+        f++;
+      }
+      for(let d = sg.ini; d <= sg.fim; d++) ocupado[f][d] = true;
+      if(f >= MOSTRAR) return;
+      // a barra so pode ser desenhada a partir do 1o dia; se algum dia do meio
+      // ficar sem espaco, ainda assim a faixa reservada garante alinhamento.
+      faixasPorCelula[sg.ini].push({ faixa: f, a: sg.a, span: sg.fim - sg.ini + 1, antes: sg.antes, depois: sg.depois });
+      for(let d = sg.ini + 1; d <= sg.fim; d++) faixasPorCelula[d].push({ faixa: f, cobre: true });
+    });
+  }
+
   let html = '';
   for(let i = 0; i < 42; i++){
     const dia = new Date(inicioGrade);
     dia.setDate(inicioGrade.getDate() + i);
     const chave = chaveDia(dia);
     const foraDoMes = dia.getMonth() !== calendarioMes;
-    const eventosDoDia = (porDia[chave] || []).slice().sort((x, y) => (x.data_inicio||'').localeCompare(y.data_inicio||''));
-    const MOSTRAR = 3;
+    const itens = faixasPorCelula[i];
+    const visiveis = itens.length;
+    const escondidos = totalPorCelula[i] - visiveis;
+    const maxFaixa = itens.reduce((m, x) => Math.max(m, x.faixa), -1);
 
     let classes = 'calendario-dia';
     if(foraDoMes) classes += ' fora';
     if(chave === hoje) classes += ' hoje';
     if(chave === calendarioDiaSelecionado) classes += ' selecionado';
 
-    const cliqueVazio = eventosDoDia.length ? `selecionarDiaCalendario('${chave}')` : `abrirModalEventoNovo('${chave}')`;
+    let linhas = '';
+    for(let f = 0; f <= maxFaixa; f++){
+      const it = itens.find(x => x.faixa === f);
+      if(!it || it.cobre){ linhas += '<div class="calendario-evento-vazio"></div>'; continue; }
+      const a = it.a;
+      const tipoEv = tipoDoEvento(a);
+      const cor = (tipoEv && tipoEv.cor) || a.cor || corPadraoPorEspaco(a.espacos_utilizados) || '#16a34a';
+      const largura = it.span > 1 ? `width:calc(${it.span * 100}% + ${(it.span - 1) * EXTRA_PX}px);` : '';
+      const cls = 'calendario-evento-pill' + (it.antes ? ' continua-antes' : '') + (it.depois ? ' continua-depois' : '');
+      linhas += `<button class="${cls}" title="${escapar(a.nome_evento||'')}" style="background:${cor};color:${corContrasteTexto(cor)};${largura}"
+        onclick="event.stopPropagation();abrirModalEventoEditar('${a.id}')">${escapar(a.nome_evento || '(sem nome)')}</button>`;
+    }
+
+    const temEventos = totalPorCelula[i] > 0;
+    const cliqueVazio = temEventos ? `selecionarDiaCalendario('${chave}')` : `abrirModalEventoNovo('${chave}')`;
     html += `<div class="${classes}" onclick="${cliqueVazio}">
       <button class="calendario-dia-add" title="Novo evento neste dia" onclick="event.stopPropagation();abrirModalEventoNovo('${chave}')">+</button>
       <div class="numero">${dia.getDate()}</div>
       <div class="calendario-eventos">
-        ${eventosDoDia.slice(0, MOSTRAR).map(a => {
-          const tipoEv = tipoDoEvento(a);
-          const cor = (tipoEv && tipoEv.cor) || a.cor || corPadraoPorEspaco(a.espacos_utilizados) || '#16a34a';
-          const estilo = ` style="background:${cor};color:${corContrasteTexto(cor)};"`;
-          return `<button class="calendario-evento-pill" title="${escapar(a.nome_evento||'')}"${estilo}
-          onclick="event.stopPropagation();abrirModalEventoEditar('${a.id}')">${escapar(a.nome_evento || '(sem nome)')}</button>`;
-        }).join('')}
-        ${eventosDoDia.length > MOSTRAR ? `<button class="calendario-mais" onclick="event.stopPropagation();selecionarDiaCalendario('${chave}')">+${eventosDoDia.length - MOSTRAR} mais</button>` : ''}
+        ${linhas}
+        ${escondidos > 0 ? `<button class="calendario-mais" onclick="event.stopPropagation();selecionarDiaCalendario('${chave}')">+${escondidos} mais</button>` : ''}
       </div>
     </div>`;
   }
