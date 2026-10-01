@@ -232,6 +232,7 @@
      VERSAO CELULAR (ate 700px) -- vale pro site inteiro
      ========================================================== */
   .calendario-lista{display:none;}
+  .so-celular{display:none;}
   @media screen and (max-width:700px){
     body{font-size:15px;}
     /* campos com 16px: evita o iPhone dar zoom ao tocar no campo */
@@ -274,6 +275,9 @@
     /* calendario: no celular vira lista por dia (estilo Agenda do Google) */
     .calendario-cabecalho,.calendario-grid,.calendario-detalhe-dia,.calendario-legenda{display:none !important;}
     .calendario-lista{display:flex;flex-direction:column;}
+    .so-celular{display:inline-flex;align-items:center;}
+    .cal-lista-dia:has(.cal-lista-vazio){padding:6px 0;}
+    .cal-lista-dia:not(.hoje):has(.cal-lista-vazio) .cal-lista-data .num{font-size:17px;height:30px;color:var(--muted);}
     .calendario-topo{flex-wrap:wrap;gap:8px;}
     .cal-lista-dia{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--border-soft);}
     .cal-lista-dia:first-child{border-top:0;}
@@ -1072,6 +1076,7 @@
           <div class="calendario-titulo" id="calendarioTitulo"></div>
           <button class="btn icon" onclick="navegarCalendario(1)" title="Próximo mês">›</button>
           <button class="btn small" onclick="irParaHojeCalendario()">Hoje</button>
+          <button class="btn small so-celular" id="btnTodosDias" onclick="alternarTodosDiasCalendario()">Todos os dias</button>
           <span class="calendario-legenda"><span class="ponto"></span> Agendado</span>
         </div>
         <div class="calendario-cabecalho">
@@ -3622,7 +3627,20 @@ function selecionarDiaCalendario(chave){
 
 // Versao celular do calendario: lista dia a dia (igual ao modo "Agenda" do
 // Google). So aparece em tela pequena (CSS); no computador fica escondida.
+// No celular: mostrar so os dias com evento (padrao) ou todos os dias do mes.
+let calendarioTodosDias = false;
+try{ calendarioTodosDias = localStorage.getItem('calTodosDias') === '1'; }catch(e){}
+function alternarTodosDiasCalendario(){
+  calendarioTodosDias = !calendarioTodosDias;
+  try{ localStorage.setItem('calTodosDias', calendarioTodosDias ? '1' : '0'); }catch(e){}
+  desenharCalendario();
+}
 function desenharListaCalendario(porDia){
+  const btnTD = document.getElementById('btnTodosDias');
+  if(btnTD){
+    btnTD.textContent = calendarioTodosDias ? 'Só com eventos' : 'Todos os dias';
+    btnTD.classList.toggle('primary', calendarioTodosDias);
+  }
   const el = document.getElementById('calendarioLista');
   if(!el) return;
   const hojeK = chaveDia(new Date());
@@ -3632,7 +3650,7 @@ function desenharListaCalendario(porDia){
     const data = new Date(calendarioAno, calendarioMes, d);
     const k = chaveDia(data);
     const evs = (porDia[k] || []).slice().sort((x, y) => (x.data_inicio||'').localeCompare(y.data_inicio||''));
-    if(!evs.length && k !== hojeK) continue;
+    if(!evs.length && k !== hojeK && !calendarioTodosDias) continue;
     const semana = data.toLocaleDateString('pt-BR', { weekday:'short' }).replace('.', '');
     html += `<div class="cal-lista-dia${k === hojeK ? ' hoje' : ''}" id="calLista-${k}">
       <div class="cal-lista-data" onclick="abrirModalEventoNovo('${k}')" title="Novo evento neste dia">
@@ -3658,7 +3676,7 @@ function desenharListaCalendario(porDia){
             ${quando ? `<span class="quando">${escapar(quando)}</span>` : ''}
             ${a.espacos_utilizados ? `<span class="quando">${escapar(a.espacos_utilizados)}</span>` : ''}
           </button>`;
-        }).join('') : '<div class="cal-lista-vazio">Nada agendado hoje</div>'}
+        }).join('') : `<div class="cal-lista-vazio" onclick="abrirModalEventoNovo('${k}')">${k === hojeK ? 'Nada agendado hoje' : 'Sem eventos'}</div>`}
       </div>
     </div>`;
   }
