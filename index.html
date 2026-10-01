@@ -220,6 +220,70 @@
     header{padding:9px 12px;gap:10px;}
   }
 
+
+  /* ==========================================================
+     VERSAO CELULAR (ate 700px) -- vale pro site inteiro
+     ========================================================== */
+  .calendario-lista{display:none;}
+  @media screen and (max-width:700px){
+    body{font-size:15px;}
+    /* campos com 16px: evita o iPhone dar zoom ao tocar no campo */
+    input[type=text],input[type=email],input[type=password],input[type=number],input[type=time],input[type=date],textarea,select{font-size:16px;}
+    .btn{min-height:38px;}
+    .btn.small{min-height:34px;}
+
+    /* barra de cima compacta */
+    header{padding:8px 12px;gap:8px;flex-wrap:nowrap;}
+    header .sub{display:none;}
+    .logo{font-size:13px;min-width:0;flex:1;overflow:hidden;white-space:nowrap;}
+    .logo{text-overflow:ellipsis;display:block;}
+    .logo span{vertical-align:middle;margin-right:6px;}
+    header .spacer{display:none;}
+    #paginaCalendario .card > div:first-child p.hint{display:none;}
+    .whoami{max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;}
+    /* abas: rolam de lado, fixas logo abaixo da barra */
+    .tabs{padding:0 6px;position:sticky;top:51px;z-index:45;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tabs button{padding:12px 11px;font-size:14px;}
+
+    .wrap{padding:12px 10px 90px;}
+    .card{padding:14px 12px;border-radius:12px;}
+    .card h2{font-size:16px;}
+    /* blocos com largura minima fixa nao estouram a tela */
+    .wrap [style*="min-width:220px"],.wrap [style*="min-width:180px"]{min-width:100% !important;}
+    .agenda-secoes-col{min-width:0;flex-basis:100%;}
+    .barra-salvar{margin:0 -10px -90px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+    .tabela-wrap{-webkit-overflow-scrolling:touch;}
+
+    /* janelas (modais) ocupam a tela toda, como app */
+    .modal-fundo{padding:0;align-items:flex-end;}
+    .modal-caixa,.modal-caixa.grande{max-width:100%;width:100%;max-height:94vh;overflow-y:auto;
+      border-radius:16px 16px 0 0;padding:18px 14px calc(18px + env(safe-area-inset-bottom));}
+    .modal-botoes{position:sticky;bottom:-18px;background:var(--panel);padding:10px 0 4px;}
+    .campo-2col > .field{flex:1 1 100%;}
+
+    #toasts{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));align-items:stretch;}
+
+    /* calendario: no celular vira lista por dia (estilo Agenda do Google) */
+    .calendario-cabecalho,.calendario-grid,.calendario-detalhe-dia,.calendario-legenda{display:none !important;}
+    .calendario-lista{display:flex;flex-direction:column;}
+    .calendario-topo{flex-wrap:wrap;gap:8px;}
+    .cal-lista-dia{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--border-soft);}
+    .cal-lista-dia:first-child{border-top:0;}
+    .cal-lista-data{flex:0 0 44px;display:flex;flex-direction:column;align-items:center;cursor:pointer;padding-top:2px;}
+    .cal-lista-data .sem{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted2);letter-spacing:.4px;}
+    .cal-lista-data .num{font-size:20px;font-weight:700;color:var(--text);width:36px;height:36px;
+      display:flex;align-items:center;justify-content:center;border-radius:50%;}
+    .cal-lista-dia.hoje .cal-lista-data .sem{color:var(--accent);}
+    .cal-lista-dia.hoje .cal-lista-data .num{background:var(--accent);color:var(--accent-ink);}
+    .cal-lista-eventos{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+    .cal-lista-evento{border:0;border-radius:10px;padding:9px 12px;text-align:left;font-family:inherit;
+      cursor:pointer;display:flex;flex-direction:column;gap:2px;width:100%;}
+    .cal-lista-evento .nome{font-size:14.5px;font-weight:650;}
+    .cal-lista-evento .quando{font-size:12.5px;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .cal-lista-vazio{font-size:13px;color:var(--muted2);padding:10px 0;}
+  }
+
   /* ---------- convidado (visualizacao publica / PDF) ---------- */
   .convidado-tela{min-height:100%;background:var(--bg);}
   .convidado-wrap{max-width:920px;margin:0 auto;padding:22px 16px 60px;}
@@ -956,6 +1020,7 @@
           <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
         </div>
         <div class="calendario-grid" id="calendarioGrid"></div>
+        <div class="calendario-lista" id="calendarioLista"></div>
       </div>
       <div class="card calendario-detalhe-dia hidden" id="calendarioDetalheDia"></div>
     </div>
@@ -3349,6 +3414,11 @@ async function abrirCalendario(){
   }
 }
 
+function rolarParaHojeLista(){
+  if(window.innerWidth > 700) return;
+  const el = document.getElementById('calLista-' + chaveDia(new Date()));
+  if(el) el.scrollIntoView({ behavior:'smooth', block:'center' });
+}
 function navegarCalendario(delta){
   calendarioMes += delta;
   if(calendarioMes < 0){ calendarioMes = 11; calendarioAno--; }
@@ -3363,6 +3433,7 @@ function irParaHojeCalendario(){
   calendarioMes = hoje.getMonth();
   calendarioDiaSelecionado = chaveDia(hoje);
   desenharCalendario();
+  rolarParaHojeLista();
 }
 
 const NOMES_MES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -3481,6 +3552,7 @@ function desenharCalendario(){
     </div>`;
   }
   document.getElementById('calendarioGrid').innerHTML = html;
+  desenharListaCalendario(porDia);
 
   desenharDetalheDiaCalendario(porDia);
 }
@@ -3488,6 +3560,51 @@ function desenharCalendario(){
 function selecionarDiaCalendario(chave){
   calendarioDiaSelecionado = (calendarioDiaSelecionado === chave) ? null : chave;
   desenharCalendario();
+}
+
+// Versao celular do calendario: lista dia a dia (igual ao modo "Agenda" do
+// Google). So aparece em tela pequena (CSS); no computador fica escondida.
+function desenharListaCalendario(porDia){
+  const el = document.getElementById('calendarioLista');
+  if(!el) return;
+  const hojeK = chaveDia(new Date());
+  const diasNoMes = new Date(calendarioAno, calendarioMes + 1, 0).getDate();
+  let html = '';
+  for(let d = 1; d <= diasNoMes; d++){
+    const data = new Date(calendarioAno, calendarioMes, d);
+    const k = chaveDia(data);
+    const evs = (porDia[k] || []).slice().sort((x, y) => (x.data_inicio||'').localeCompare(y.data_inicio||''));
+    if(!evs.length && k !== hojeK) continue;
+    const semana = data.toLocaleDateString('pt-BR', { weekday:'short' }).replace('.', '');
+    html += `<div class="cal-lista-dia${k === hojeK ? ' hoje' : ''}" id="calLista-${k}">
+      <div class="cal-lista-data" onclick="abrirModalEventoNovo('${k}')" title="Novo evento neste dia">
+        <span class="sem">${escapar(semana)}</span><span class="num">${d}</span>
+      </div>
+      <div class="cal-lista-eventos">
+        ${evs.length ? evs.map(a => {
+          const tipoEv = tipoDoEvento(a);
+          const cor = (tipoEv && tipoEv.cor) || a.cor || corPadraoPorEspaco(a.espacos_utilizados) || '#16a34a';
+          const ini = parseDataBR(a.data_inicio), fimB = parseDataBR(a.data_saida);
+          let quando = a.horarios_evento || '';
+          if(ini && fimB){
+            const i0 = new Date(ini.getFullYear(), ini.getMonth(), ini.getDate());
+            const f0 = new Date(fimB.getFullYear(), fimB.getMonth(), fimB.getDate());
+            const tot = Math.round((f0 - i0) / 86400000) + 1;
+            if(tot > 1){
+              const n = Math.round((data - i0) / 86400000) + 1;
+              quando = `Dia ${n} de ${tot}` + (quando && quando !== 'Dia inteiro' ? ` · ${quando}` : '');
+            }
+          }
+          return `<button class="cal-lista-evento" style="background:${cor};color:${corContrasteTexto(cor)};" onclick="abrirModalEventoEditar('${a.id}')">
+            <span class="nome">${escapar(a.nome_evento || '(sem nome)')}</span>
+            ${quando ? `<span class="quando">${escapar(quando)}</span>` : ''}
+            ${a.espacos_utilizados ? `<span class="quando">${escapar(a.espacos_utilizados)}</span>` : ''}
+          </button>`;
+        }).join('') : '<div class="cal-lista-vazio">Nada agendado hoje</div>'}
+      </div>
+    </div>`;
+  }
+  el.innerHTML = html || '<div class="vazio">Nenhum evento neste mês.</div>';
 }
 
 function desenharDetalheDiaCalendario(porDia){
@@ -4166,6 +4283,9 @@ function montarAbas(){
 function marcarAba(qual){
   document.querySelectorAll('#abasTopo button').forEach(b =>
     b.classList.toggle('on', b.dataset.culto === qual));
+  // no celular, rola a barra de abas pra deixar a aba ativa visivel
+  const ativa = document.querySelector('#abasTopo button.on');
+  if(ativa && window.innerWidth <= 700) ativa.scrollIntoView({ inline:'center', block:'nearest' });
 }
 
 // Chamado quando o perfil nao tem acesso de edicao a nenhum culto (nem e
