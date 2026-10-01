@@ -362,10 +362,16 @@
   .calendario-dia:hover .calendario-dia-add{opacity:1;}
   .calendario-dia-add:hover{background:var(--accent);color:var(--accent-ink);}
   .calendario-eventos{display:flex;flex-direction:column;gap:3px;overflow:hidden;}
-  .calendario-evento-pill{background:#dcfce7;color:var(--green);border:0;border-radius:6px;
+  .calendario-evento-pill{background:#16a34a;color:#fff;border:0;border-radius:6px;box-shadow:0 1px 0 rgba(0,0,0,.08);
     padding:3px 6px;font-size:11px;font-weight:650;text-align:left;cursor:pointer;font-family:inherit;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
-  .calendario-evento-pill:hover{filter:brightness(.94);}
+  .calendario-evento-pill:hover{filter:brightness(.92);}
+  .tipo-evento-linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .tipo-evento-linha select{flex:1 1 200px;}
+  .tipo-evento-bolinha{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15);}
+  .tipos-editor-item{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .tipos-editor-item input[type=text]{flex:1;}
+  .tipos-editor-item input[type=color]{width:40px;height:36px;border:1px solid var(--border);border-radius:8px;padding:2px;background:none;cursor:pointer;}
   .calendario-mais{font-size:10.5px;color:var(--muted2);font-weight:650;padding:0 6px;background:none;
     border:0;font-family:inherit;text-align:left;cursor:pointer;}
   .calendario-detalhe-dia{margin-top:18px;}
@@ -3330,6 +3336,7 @@ async function abrirCalendario(){
   document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
     await carregarEtiquetasAgendamento();
+    await carregarTiposEvento();
     const dados = await api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc');
     calendarioAgendamentos = dados || [];
     desenharCalendario();
@@ -3405,8 +3412,9 @@ function desenharCalendario(){
       <div class="numero">${dia.getDate()}</div>
       <div class="calendario-eventos">
         ${eventosDoDia.slice(0, MOSTRAR).map(a => {
-          const cor = a.cor || corPadraoPorEspaco(a.espacos_utilizados);
-          const estilo = cor ? ` style="background:${cor}1f;color:${cor};"` : '';
+          const tipoEv = tipoDoEvento(a);
+          const cor = (tipoEv && tipoEv.cor) || a.cor || corPadraoPorEspaco(a.espacos_utilizados) || '#16a34a';
+          const estilo = ` style="background:${cor};color:${corContrasteTexto(cor)};"`;
           return `<button class="calendario-evento-pill" title="${escapar(a.nome_evento||'')}"${estilo}
           onclick="event.stopPropagation();abrirModalEventoEditar('${a.id}')">${escapar(a.nome_evento || '(sem nome)')}</button>`;
         }).join('')}
@@ -3576,6 +3584,18 @@ function desenharModalEvento(d){
     </div>
 
     <div class="field">
+      <label for="evTipo">Tipo de evento</label>
+      <div class="tipo-evento-linha">
+        <span class="tipo-evento-bolinha" id="evTipoBolinha" style="background:${(tiposEvento.find(t => d.etiquetas.includes(TIPO_PREFIXO + t.id)) || {}).cor || 'transparent'};"></span>
+        <select id="evTipo" onchange="escolherTipoEvento(this.value)">
+          <option value="">— Sem tipo —</option>
+          ${tiposEvento.map(t => `<option value="${escapar(t.id)}"${d.etiquetas.includes(TIPO_PREFIXO + t.id) ? ' selected' : ''}>${escapar(t.nome)}</option>`).join('')}
+        </select>
+        <button type="button" class="btn" onclick="abrirEditorTiposEvento()">⚙️ Gerenciar tipos</button>
+      </div>
+    </div>
+
+    <div class="field">
       <label>Cor do evento</label>
       <div class="paleta-cores-evento" id="evPaletaCores">
         <button type="button" class="cor-evento-opcao${!d.cor ? ' on' : ''}" style="background:#22c55e;" title="Padrão (verde)" onclick="selecionarCorEvento('', this)"></button>
@@ -3661,6 +3681,100 @@ function alternarRecorrenciaEvento(){
   const v = document.getElementById('evRecorrencia').value;
   document.getElementById('evWrapRecorrenciaAte').style.display = v === 'nenhuma' ? 'none' : '';
 }
+/* ==========================================================
+   TIPOS DE EVENTO (ex.: "Comissão" = sempre azul)
+   Lista salva em formulario_schema (id "tipos_evento"). O tipo de cada
+   evento fica no array "etiquetas" como "tipo:<id>" (sem mudar o banco),
+   e a cor do tipo e gravada na coluna "cor" -> sincroniza pro Google.
+   ========================================================== */
+const TIPO_PREFIXO = 'tipo:';
+let tiposEvento = [];
+let tiposEmEdicao = null;
+async function carregarTiposEvento(){
+  try{
+    const linhas = await apiPublico('formulario_schema?id=eq.tipos_evento&select=dados');
+    tiposEvento = (linhas && linhas[0] && linhas[0].dados && Array.isArray(linhas[0].dados.tipos)) ? linhas[0].dados.tipos : [];
+  }catch(e){ tiposEvento = []; }
+}
+function tipoDoEvento(a){
+  const k = (a.etiquetas || []).find(x => typeof x === 'string' && x.startsWith(TIPO_PREFIXO));
+  return k ? tiposEvento.find(t => t.id === k.slice(TIPO_PREFIXO.length)) || null : null;
+}
+function escolherTipoEvento(id){
+  const t = tiposEvento.find(x => x.id === id);
+  document.getElementById('evTipoBolinha').style.background = t ? t.cor : 'transparent';
+  if(t){
+    selecionarCorEvento(t.cor, null);
+    document.getElementById('evCorCustom').value = t.cor;
+    document.querySelectorAll('#evPaletaCores .cor-evento-opcao').forEach(b => {
+      if((b.getAttribute('onclick') || '').includes("'" + t.cor + "'")) b.classList.add('on');
+    });
+  }
+}
+function abrirEditorTiposEvento(){
+  tiposEmEdicao = JSON.parse(JSON.stringify(tiposEvento));
+  let fundo = document.getElementById('modalTiposEvento');
+  if(!fundo){
+    fundo = document.createElement('div');
+    fundo.id = 'modalTiposEvento';
+    fundo.className = 'modal-fundo';
+    fundo.style.zIndex = '2000';
+    fundo.onclick = e => { if(e.target === fundo) fecharEditorTiposEvento(); };
+    fundo.innerHTML = '<div class="modal-caixa" id="modalTiposEventoCaixa"></div>';
+    document.body.appendChild(fundo);
+  }
+  fundo.classList.remove('hidden');
+  desenharEditorTiposEvento();
+}
+function fecharEditorTiposEvento(){
+  const f = document.getElementById('modalTiposEvento');
+  if(f) f.classList.add('hidden');
+}
+function desenharEditorTiposEvento(){
+  document.getElementById('modalTiposEventoCaixa').innerHTML = `
+    <div class="evento-modal-topo"><h3>Tipos de evento</h3>
+      <button class="evento-modal-fechar" onclick="fecharEditorTiposEvento()">✕</button></div>
+    <p class="hint" style="margin:0 0 12px;">Cada tipo tem um nome e uma cor fixa. Ao escolher o tipo no evento, a cor é aplicada sozinha (e vai junto pro Google Agenda).</p>
+    ${tiposEmEdicao.map((t, i) => `<div class="tipos-editor-item">
+      <input type="color" value="${escapar(t.cor)}" oninput="tiposEmEdicao[${i}].cor=this.value">
+      <input type="text" value="${escapar(t.nome)}" placeholder="Nome do tipo" oninput="tiposEmEdicao[${i}].nome=this.value">
+      <button class="btn" title="Apagar" onclick="tiposEmEdicao.splice(${i},1);desenharEditorTiposEvento()">🗑️</button>
+    </div>`).join('') || '<p class="hint">Nenhum tipo ainda.</p>'}
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn" onclick="adicionarTipoEvento()">+ Novo tipo</button>
+      <button class="btn primary" id="btnSalvarTipos" onclick="salvarTiposEvento()">💾 Salvar tipos</button>
+    </div>`;
+}
+function adicionarTipoEvento(){
+  const cores = ['#d50000','#e67c73','#f4511e','#f6bf26','#33b679','#0b8043','#039be5','#3f51b5','#7986cb','#8e24aa','#616161'];
+  tiposEmEdicao.push({ id: 't' + Date.now().toString(36), nome: '', cor: cores[tiposEmEdicao.length % cores.length] });
+  desenharEditorTiposEvento();
+}
+async function salvarTiposEvento(){
+  const limpos = tiposEmEdicao.map(t => ({ id: t.id, nome: (t.nome || '').trim(), cor: t.cor })).filter(t => t.nome);
+  const btn = document.getElementById('btnSalvarTipos');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    await api('formulario_schema', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: { id: 'tipos_evento', dados: { tipos: limpos }, atualizado_em: new Date().toISOString(), atualizado_por: sessao.email }
+    });
+    tiposEvento = limpos;
+    const sel = document.getElementById('evTipo');
+    if(sel){
+      const atual = sel.value;
+      sel.innerHTML = '<option value="">— Sem tipo —</option>' + tiposEvento.map(t => `<option value="${escapar(t.id)}"${t.id === atual ? ' selected' : ''}>${escapar(t.nome)}</option>`).join('');
+    }
+    if(typeof desenharCalendario === 'function') desenharCalendario();
+    toast('Tipos salvos!', 'ok');
+    fecharEditorTiposEvento();
+  }catch(e){
+    toast('Não consegui salvar: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = '💾 Salvar tipos';
+  }
+}
+
 function selecionarCorEvento(hex, btn){
   document.getElementById('evCor').value = hex;
   document.querySelectorAll('#evPaletaCores .cor-evento-opcao').forEach(b => b.classList.remove('on'));
@@ -3703,6 +3817,8 @@ async function salvarEventoModal(){
   const cor = document.getElementById('evCor').value || corPadraoPorEspaco(local) || null;
   const status = document.getElementById('evStatus').value;
   const etiquetas = Array.from(document.querySelectorAll('.evTagChk:checked')).map(c => c.value);
+  const tipoEscolhido = (document.getElementById('evTipo') || {}).value;
+  if(tipoEscolhido) etiquetas.push(TIPO_PREFIXO + tipoEscolhido);
   const setoresVisiveis = Array.from(document.querySelectorAll('.evSetorChk:checked')).map(c => c.value);
 
   const btn = document.getElementById('btnSalvarEvento');
