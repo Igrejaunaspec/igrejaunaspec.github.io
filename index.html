@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Roteiro — Editor | IGREJA UNASP EC</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#2f557f">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Igreja UNASP">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -283,6 +290,45 @@
     .cal-lista-evento .quando{font-size:12.5px;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .cal-lista-vazio{font-size:13px;color:var(--muted2);padding:10px 0;}
   }
+
+
+  /* ==========================================================
+     APP DE CELULAR (body.celular) -- interface propria pro celular:
+     barra de abas embaixo, botao "+" flutuante e folhas de menu.
+     So liga quando a tela e de celular; no computador nada muda.
+     ========================================================== */
+  .nav-celular,.fab-celular{display:none;}
+  body.celular .tabs{display:none;}
+  body.celular header{padding-top:calc(8px + env(safe-area-inset-top));}
+  body.celular header .btn{display:none;}
+  body.celular header .whoami{display:none;}
+  body.celular .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom));}
+  body.celular .barra-salvar{bottom:calc(62px + env(safe-area-inset-bottom));margin:0 -10px 0;border-radius:12px 12px 0 0;}
+  body.celular #toasts{bottom:calc(76px + env(safe-area-inset-bottom));}
+  body.celular .nav-celular{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:90;
+    background:var(--panel);border-top:1px solid var(--border);
+    padding:4px 4px calc(4px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.05);}
+  .nav-celular button{flex:1;border:0;background:none;font-family:inherit;color:var(--muted2);
+    display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;font-size:11px;font-weight:600;cursor:pointer;}
+  .nav-celular button .ico{font-size:21px;line-height:1;filter:grayscale(1);opacity:.75;}
+  .nav-celular button.on{color:var(--accent);}
+  .nav-celular button.on .ico{filter:none;opacity:1;}
+  body.celular .fab-celular.ativo{display:flex;position:fixed;right:16px;
+    bottom:calc(76px + env(safe-area-inset-bottom));z-index:91;width:56px;height:56px;border-radius:18px;
+    border:0;background:var(--accent);color:var(--accent-ink);font-size:30px;font-weight:400;
+    align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(47,85,127,.4);cursor:pointer;}
+  .folha-fundo{position:fixed;inset:0;background:rgba(20,22,28,.45);z-index:300;display:flex;align-items:flex-end;}
+  .folha{background:var(--panel);width:100%;border-radius:18px 18px 0 0;
+    padding:8px 12px calc(14px + env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto;animation:sobeFolha .18s ease-out;}
+  @keyframes sobeFolha{from{transform:translateY(40px);opacity:.4;}}
+  .folha-alca{width:40px;height:4px;border-radius:2px;background:var(--border);margin:4px auto 12px;}
+  .folha-titulo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);padding:0 6px 8px;}
+  .folha button.item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;
+    padding:14px 8px;font-size:16px;font-family:inherit;color:var(--text);text-align:left;border-radius:10px;cursor:pointer;}
+  .folha button.item:active{background:var(--panel2);}
+  .folha button.item .ico{font-size:20px;width:26px;text-align:center;}
+  .folha .quem{font-size:13px;color:var(--muted);padding:10px 8px 4px;border-top:1px solid var(--border-soft);margin-top:6px;}
+  .folha button.item.sair{color:var(--red);}
 
   /* ---------- convidado (visualizacao publica / PDF) ---------- */
   .convidado-tela{min-height:100%;background:var(--bg);}
@@ -811,6 +857,8 @@
   </header>
 
   <div class="tabs" id="abasTopo"></div>
+  <nav class="nav-celular" id="navCelular"></nav>
+  <button class="fab-celular" id="fabCelular" title="Novo evento" onclick="acaoFabCelular()">+</button>
 
   <div class="wrap">
     <!-- ---------- lista de roteiros ---------- -->
@@ -4259,6 +4307,8 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
+  montarNavCelular();
+
   // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
   // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
   // de quem nao tem nenhum culto/agenda liberado.
@@ -4273,12 +4323,108 @@ function montarAbas(){
     else verificarAcessoRestrito();
     return;
   }
-  if(permitidos.length > 0) abrirCulto(permitidos[0]);
+  // no celular, quem tem o Calendario comeca por ele (e o uso mais comum no celular)
+  if(ehCelular() && (perfil.admin || perfil.acesso_calendario)) abrirCalendario();
+  else if(permitidos.length > 0) abrirCulto(permitidos[0]);
   else if(podeEditarAgenda()) abrirAgendaLista();
   else if(perfil.admin || perfil.acesso_agendamentos) abrirAgendamentosLista();
   else if(perfil.admin || perfil.acesso_calendario) abrirCalendario();
   else if(perfil.admin || perfil.acesso_youtube) abrirYoutubeLista();
 }
+
+
+/* ==========================================================
+   APP DE CELULAR
+   Mesma pagina, mesmos dados -- so troca a "casca": abas viram uma barra
+   embaixo (Calendario, Pedidos, Roteiros, Mais) montada a partir das abas
+   que a pessoa tem permissao de ver. Cada botao so "clica" na aba de cima
+   (escondida no celular), entao toda a logica continua a mesma.
+   ========================================================== */
+const MQ_CELULAR = window.matchMedia('(max-width:700px)');
+function ehCelular(){ return MQ_CELULAR.matches; }
+function aplicarModoCelular(){
+  document.body.classList.toggle('celular', ehCelular());
+  atualizarNavCelular();
+}
+MQ_CELULAR.addEventListener ? MQ_CELULAR.addEventListener('change', aplicarModoCelular) : MQ_CELULAR.addListener(aplicarModoCelular);
+document.addEventListener('DOMContentLoaded', aplicarModoCelular);
+if(document.readyState !== 'loading') aplicarModoCelular();
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(() => {}); }
+
+const ICONES_ABA = { calendario:'📅', agendamentos:'📝', agenda:'🖼️', youtube:'▶️', pessoas:'👥',
+  visualizadores:'👁️', compartilhar:'🔗', sexta:'📖', sabado:'📖' };
+function botoesAbas(){ return Array.from(document.querySelectorAll('#abasTopo button')); }
+function abaPorChave(k){ return botoesAbas().find(b => b.dataset.culto === k); }
+function ehAbaRoteiro(b){ return /^Culto de /.test(b.textContent); }
+
+function montarNavCelular(){
+  const nav = document.getElementById('navCelular');
+  if(!nav) return;
+  const itens = [];
+  if(abaPorChave('calendario')) itens.push({ id:'calendario', ico:'📅', txt:'Calendário', fn:() => abaPorChave('calendario').click() });
+  if(abaPorChave('agendamentos')) itens.push({ id:'agendamentos', ico:'📝', txt:'Pedidos', fn:() => abaPorChave('agendamentos').click() });
+  const roteiros = botoesAbas().filter(ehAbaRoteiro);
+  if(roteiros.length === 1) itens.push({ id:roteiros[0].dataset.culto, ico:'📖', txt:'Roteiro', fn:() => roteiros[0].click() });
+  else if(roteiros.length > 1) itens.push({ id:'roteiros', ico:'📖', txt:'Roteiros', fn:() => abrirFolhaCelular('Roteiros', roteiros) });
+  itens.push({ id:'mais', ico:'☰', txt:'Mais', fn:() => {
+    const usados = new Set(['calendario', 'agendamentos', ...roteiros.map(b => b.dataset.culto)]);
+    abrirFolhaCelular('Mais', botoesAbas().filter(b => !usados.has(b.dataset.culto) && !ehAbaRoteiro(b)), true);
+  }});
+  window._itensNavCelular = itens;
+  nav.innerHTML = itens.map((it, i) => `<button data-nav="${it.id}" onclick="window._itensNavCelular[${i}].fn()">
+    <span class="ico">${it.ico}</span>${it.txt}</button>`).join('');
+  atualizarNavCelular();
+}
+function atualizarNavCelular(){
+  const nav = document.getElementById('navCelular');
+  if(!nav) return;
+  const ativa = document.querySelector('#abasTopo button.on');
+  let chave = ativa ? ativa.dataset.culto : '';
+  if(ativa && ehAbaRoteiro(ativa) && nav.querySelector('[data-nav="roteiros"]')) chave = 'roteiros';
+  if(chave && !nav.querySelector(`[data-nav="${chave}"]`)) chave = 'mais';
+  nav.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.nav === chave));
+  const fab = document.getElementById('fabCelular');
+  if(fab) fab.classList.toggle('ativo', ehCelular() && cultoAtual === 'calendario');
+}
+function acaoFabCelular(){
+  if(cultoAtual === 'calendario') abrirModalEventoNovo(chaveDia(new Date()));
+}
+function abrirFolhaCelular(titulo, botoes, comConta){
+  fecharFolhaCelular();
+  const fundo = document.createElement('div');
+  fundo.className = 'folha-fundo';
+  fundo.id = 'folhaCelular';
+  fundo.onclick = e => { if(e.target === fundo) fecharFolhaCelular(); };
+  window._botoesFolha = botoes;
+  const email = (document.getElementById('meuEmail') || {}).textContent || '';
+  fundo.innerHTML = `<div class="folha"><div class="folha-alca"></div>
+    <div class="folha-titulo">${escapar(titulo)}</div>
+    ${botoes.map((b, i) => `<button class="item" onclick="fecharFolhaCelular();window._botoesFolha[${i}].click()">
+      <span class="ico">${ICONES_ABA[b.dataset.culto] || (b.textContent === 'Escala' ? '🗓️' : '•')}</span>${escapar(b.textContent)}</button>`).join('')}
+    ${comConta ? `<div class="quem">${escapar(email)}</div>
+      <button class="item sair" onclick="fecharFolhaCelular();sair()"><span class="ico">⎋</span>Sair</button>` : ''}
+  </div>`;
+  document.body.appendChild(fundo);
+}
+function fecharFolhaCelular(){
+  const f = document.getElementById('folhaCelular');
+  if(f) f.remove();
+}
+
+// Calendario no celular: arrastar pro lado troca de mes
+(function(){
+  let x0 = null, y0 = null;
+  document.addEventListener('touchstart', e => {
+    if(!ehCelular() || !e.target.closest('#calendarioLista')) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive:true });
+  document.addEventListener('touchend', e => {
+    if(x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) navegarCalendario(dx < 0 ? 1 : -1);
+  }, { passive:true });
+})();
 
 function marcarAba(qual){
   document.querySelectorAll('#abasTopo button').forEach(b =>
@@ -4286,6 +4432,7 @@ function marcarAba(qual){
   // no celular, rola a barra de abas pra deixar a aba ativa visivel
   const ativa = document.querySelector('#abasTopo button.on');
   if(ativa && window.innerWidth <= 700) ativa.scrollIntoView({ inline:'center', block:'nearest' });
+  atualizarNavCelular();
 }
 
 // Chamado quando o perfil nao tem acesso de edicao a nenhum culto (nem e
