@@ -408,11 +408,11 @@
   .hom-culto:hover{background:var(--panel2);}
   .hom-culto.ok{border-left-color:#2e9d5b;} .hom-culto.pend{border-left-color:#e0a526;}
   .hom-culto.passado{opacity:.75;}
-  .hom-culto .dia{font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.4px;font-weight:600;}
-  .hom-culto .tit{font-weight:700;font-size:15px;margin:3px 0 2px;overflow-wrap:anywhere;}
-  .hom-culto .preg{font-size:13.5px;}
-  .hom-culto .obs{font-size:12.5px;color:var(--muted2);margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere;}
-  .hom-culto .vz{color:var(--muted2);font-style:italic;font-size:13.5px;margin-top:3px;}
+  .hom-culto .dia{display:flex;align-items:baseline;gap:8px;font-size:13px;color:var(--muted2);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+  .hom-culto .dia .dm{font-size:22px;font-weight:800;color:var(--text);letter-spacing:0;}
+  .hom-culto .dia .nl{margin-left:auto;font-size:12px;text-transform:none;letter-spacing:0;}
+  .hom-culto .preg{font-size:18px;font-weight:700;margin-top:2px;overflow-wrap:anywhere;}
+  .hom-culto .vz{color:var(--muted2);font-style:italic;font-size:15px;margin-top:2px;}
   .hom-lives{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
   .hom-lives a{font-size:12.5px;color:var(--accent);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
   .hom-lives a:hover{text-decoration:underline;}
@@ -5813,23 +5813,13 @@ function cartaoHomiletico(dia){
   const l = homDados[dia.iso + '|' + dia.culto];
   const classe = !l || !l.pregador ? '' : (l.status === 'confirmado' ? 'ok' : 'pend');
   const passado = dia.iso < dataLocalISO(new Date()) ? ' passado' : '';
-  const lives = homLivesPorDia[dia.iso] || [];
-  const vinculado = l ? idDoLinkYoutube(l.link_youtube) : '';
-  const quando = dia.data.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'2-digit' });
-  let livesHTML = lives.map(v => `<a href="${linkYoutube(v.id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()"
-      title="${escapar(v.titulo)}">${v.id === vinculado ? '⭐' : (v.estado === 'live' ? '🔴' : '▶️')}
-      ${escapar(new Date(v.inicio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))} · ${escapar(v.titulo)}</a>`).join('');
-  if(l && l.link_youtube && !lives.some(v => v.id === vinculado))
-    livesHTML = `<a href="${escapar(l.link_youtube)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">⭐ Link do sermão</a>` + livesHTML;
-  return `<div class="hom-culto ${classe}${passado}" onclick="abrirModalHomiletico('${dia.iso}','${dia.culto}')">
-    <div class="dia">${escapar(quando)}</div>
-    ${l && (l.titulo || l.pregador) ? `
-      <div class="tit">${escapar(l.titulo || 'Título a definir')}</div>
-      <div class="preg">🎤 ${escapar(l.pregador || 'Pregador a definir')}
-        ${l.status === 'confirmado' ? '' : '<span style="color:#b07d0e;font-size:12px;"> · a confirmar</span>'}</div>
-      ${l.observacoes ? `<div class="obs">${escapar(l.observacoes)}</div>` : ''}`
-      : '<div class="vz">Sem pregação definida</div>'}
-    ${livesHTML ? `<div class="hom-lives">${livesHTML}</div>` : ''}
+  const nLives = (homLivesPorDia[dia.iso] || []).length;
+  const semana = dia.culto === 'sexta' ? 'Sexta' : 'Sábado';
+  const dm = dia.data.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
+  return `<div class="hom-culto ${classe}${passado}" onclick="abrirModalHomiletico('${dia.iso}','${dia.culto}')"
+      title="${l && l.titulo ? escapar(l.titulo) : ''}">
+    <div class="dia"><span class="dm">${dm}</span> ${semana}${nLives ? `<span class="nl">▶️ ${nLives}</span>` : ''}</div>
+    ${l && l.pregador ? `<div class="preg">${escapar(l.pregador)}</div>` : '<div class="vz">Sem pregador</div>'}
   </div>`;
 }
 
@@ -5873,7 +5863,8 @@ function abrirModalHomiletico(iso, culto){
             onchange="document.getElementById('homLink').value=this.value">
           ${v.miniatura ? `<img src="${escapar(v.miniatura)}" alt="">` : ''}
           <span style="min-width:0;"><strong>${escapar(new Date(v.inicio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}</strong>
-            · ${escapar(v.titulo)}</span></label>`).join('')
+            · ${escapar(v.titulo)}</span>
+          <a class="btn small" style="margin-left:auto;" href="${linkYoutube(v.id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir</a></label>`).join('')
         : '<p class="hint" style="margin:0 0 6px;">Nenhuma live do canal encontrada nesse dia (ainda). Você pode colar o link abaixo.</p>'}
       <input type="text" id="homLink" placeholder="https://www.youtube.com/watch?v=..." value="${escapar(l.link_youtube || '')}" style="margin-top:8px;">
     </div>
