@@ -398,6 +398,49 @@
   .modal-botoes{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;}
   .modal-caixa.grande{max-width:760px;max-height:88vh;overflow-y:auto;}
 
+  /* ---------- agenda pastoral ---------- */
+  .pas-legenda{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto;font-size:12px;color:var(--muted2);}
+  .pas-legenda span{display:inline-flex;align-items:center;gap:5px;}
+  .pas-legenda i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .pas-grade{margin-top:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .pas-cabs,.pas-corpo{display:grid;grid-template-columns:52px repeat(7,minmax(0,1fr));}
+  .pas-cabs{border-bottom:1px solid var(--border);background:var(--panel2);}
+  .pas-cab{padding:8px 6px;font-size:12px;color:var(--muted2);text-transform:uppercase;font-weight:600;border-left:1px solid var(--border);min-width:0;}
+  .pas-cab b{font-size:16px;color:var(--text);}
+  .pas-cab.hoje b{color:#fff;background:var(--accent);border-radius:6px;padding:0 6px;}
+  .pas-igreja{margin-top:4px;font-size:11px;text-transform:none;font-weight:600;background:#e7e9ee;color:#3a4250;border-radius:5px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pas-corpo{max-height:68vh;overflow-y:auto;}
+  .pas-horas div{height:52px;font-size:11px;color:var(--muted2);text-align:right;padding-right:6px;box-sizing:border-box;transform:translateY(-6px);}
+  .pas-col{position:relative;border-left:1px solid var(--border);cursor:copy;}
+  .pas-col.hoje{background:rgba(47,85,127,.04);}
+  .pas-hr{height:52px;border-top:1px solid var(--border);box-sizing:border-box;}
+  .pas-hr:first-child{border-top:0;}
+  .pas-ev{position:absolute;left:3px;right:3px;border:0;border-radius:7px;padding:4px 7px;font-family:inherit;font-size:11.5px;line-height:1.3;text-align:left;overflow:hidden;cursor:pointer;box-sizing:border-box;}
+  .pas-ev b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pas-ev.st-cancelado,.pas-card.st-cancelado{opacity:.45;text-decoration:line-through;}
+  .pas-ev.st-realizado,.pas-card.st-realizado{opacity:.7;}
+  .pas-faixa{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-top:10px;}
+  .pas-faixa button{border:0;background:none;font-family:inherit;border-radius:10px;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted2);font-size:11px;font-weight:700;text-transform:uppercase;position:relative;cursor:pointer;}
+  .pas-faixa button b{font-size:17px;color:var(--text);}
+  .pas-faixa button.on{background:var(--accent);color:#fff;}
+  .pas-faixa button.on b{color:#fff;}
+  .pas-faixa button.hoje:not(.on) b{color:var(--accent);}
+  .pas-faixa button i{width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .pas-dia-lista{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .pas-linha{display:flex;gap:10px;}
+  .pas-h{width:44px;flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--muted2);padding-top:10px;text-align:right;}
+  .pas-card{flex:1;border:0;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:13px;line-height:1.4;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0;cursor:pointer;}
+  .pas-card b{font-size:15px;}
+  .pas-st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+  .pas-chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .pas-chips button{font-family:inherit;font-size:13px;font-weight:600;border-radius:20px;padding:8px 12px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;}
+  .pas-chips button.on{background:var(--c);border-color:var(--c);color:#fff;}
+  .pas-tipo-ed{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .pas-tipo-ed input[type=color]{width:44px;height:40px;padding:2px;border:1px solid var(--border);border-radius:8px;background:none;}
+  .pas-tipo-ed input[type=text]{flex:1;min-width:0;}
+  .pas-tres{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;}
+  @media (max-width:700px){ .pas-legenda{display:none;} .pas-tres{grid-template-columns:1fr 1fr;} .pas-tres .field:first-child{grid-column:1 / -1;} }
+
   /* ---------- calendario homiletico ---------- */
   .hom-legenda{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted2);flex-wrap:wrap;margin-left:auto;}
   .hom-ponto{width:10px;height:10px;border-radius:50%;display:inline-block;margin-left:6px;}
@@ -1153,6 +1196,29 @@
       </div>
     </div>
 
+    <!-- ---------- Agenda pastoral ---------- -->
+    <div id="paginaPastoral" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+          <div style="flex:1;min-width:200px;">
+            <h2>Agenda Pastoral</h2>
+            <p class="hint" style="margin:4px 0 0;">Atendimentos, reuniões e visitas do pastor. Clique num horário vazio para marcar.</p>
+          </div>
+          <button class="btn primary" onclick="novoPastoral()">+ Novo compromisso</button>
+          <button class="btn" onclick="abrirTiposPastoral()">🏷️ Tipos</button>
+          <button class="btn" onclick="carregarAgendaPastoral()">↻ Atualizar</button>
+        </div>
+        <div class="calendario-topo">
+          <button class="btn icon" onclick="navegarAgendaPastoral(-1)" title="Anterior">‹</button>
+          <div class="calendario-titulo" id="pasTitulo"></div>
+          <button class="btn icon" onclick="navegarAgendaPastoral(1)" title="Próximo">›</button>
+          <button class="btn small" onclick="hojeAgendaPastoral()">Hoje</button>
+          <span class="pas-legenda" id="pasLegenda"></span>
+        </div>
+        <div id="pasConteudo"></div>
+      </div>
+    </div>
+
     <!-- ---------- meus roteiros (visualizador restrito) ---------- -->
     <div id="paginaMeusRoteiros" class="hidden">
       <div class="card">
@@ -1341,6 +1407,10 @@
 
 <div id="modalHomiletico" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalHomiletico()">
   <div class="modal-caixa grande" id="modalHomileticoCaixa"></div>
+</div>
+
+<div id="modalPastoral" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalPastoral()">
+  <div class="modal-caixa grande" id="modalPastoralCaixa"></div>
 </div>
 
 <!-- ---------- modal: link gerado para convidados ---------- -->
@@ -4417,6 +4487,16 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
+  // Agenda pastoral: pastor (com anotacoes) ou secretaria (so horarios)
+  if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria){
+    const b = document.createElement('button');
+    b.textContent = 'Agenda Pastoral';
+    b.title = 'Atendimentos e compromissos do pastor';
+    b.onclick = () => abrirAgendaPastoral();
+    b.dataset.culto = 'pastoral';
+    abas.appendChild(b);
+  }
+
   if(perfil.admin){
     const b = document.createElement('button');
     b.textContent = 'Pessoas';
@@ -4466,7 +4546,7 @@ function montarAbas(){
   // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
   // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
   // de quem nao tem nenhum culto/agenda liberado.
-  const temPaginaExtra = perfil.admin || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_youtube || perfil.acesso_homiletico;
+  const temPaginaExtra = perfil.admin || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria;
 
   if(permitidos.length === 0 && !podeEditarAgenda() && !temPaginaExtra){
     // Sem acesso de edicao a nenhum culto, agenda, ou aba extra: pode ser (a)
@@ -4485,6 +4565,7 @@ function montarAbas(){
   else if(perfil.admin || perfil.acesso_calendario) abrirCalendario();
   else if(perfil.admin || perfil.acesso_youtube) abrirYoutubeLista();
   else if(perfil.acesso_homiletico) abrirHomiletico();
+  else if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria) abrirAgendaPastoral();
 }
 
 
@@ -4506,7 +4587,7 @@ document.addEventListener('DOMContentLoaded', aplicarModoCelular);
 if(document.readyState !== 'loading') aplicarModoCelular();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(() => {}); }
 
-const ICONES_ABA = { calendario:'📅', agendamentos:'📝', agenda:'🖼️', youtube:'▶️', homiletico:'🎤', pessoas:'👥',
+const ICONES_ABA = { calendario:'📅', agendamentos:'📝', agenda:'🖼️', youtube:'▶️', homiletico:'🎤', pastoral:'🗓️', pessoas:'👥',
   visualizadores:'👁️', compartilhar:'🔗', sexta:'📖', sabado:'📖' };
 function botoesAbas(){ return Array.from(document.querySelectorAll('#abasTopo button')); }
 function abaPorChave(k){ return botoesAbas().find(b => b.dataset.culto === k); }
@@ -4958,6 +5039,7 @@ function mostrarPagina(qual){
   document.getElementById('paginaAgendamentos').classList.toggle('hidden', qual !== 'agendamentos');
   document.getElementById('paginaCalendario').classList.toggle('hidden',   qual !== 'calendario');
   document.getElementById('paginaHomiletico').classList.toggle('hidden',   qual !== 'homiletico');
+  document.getElementById('paginaPastoral').classList.toggle('hidden',     qual !== 'pastoral');
 }
 
 /* =====================================================================
@@ -6102,6 +6184,362 @@ async function limparHomiletico(){
 }
 
 /* =====================================================================
+   AGENDA PASTORAL -- agenda de atendimentos do pastor
+   Tabela "agenda_pastoral" (horarios: pastor + secretaria) e
+   "agenda_pastoral_notas" (anotacoes privadas: SO o pastor -- o banco
+   bloqueia a secretaria e os outros admins). Os eventos do Calendario da
+   igreja aparecem em cinza, so para evitar marcar em cima deles.
+===================================================================== */
+// Tipos editaveis: ficam em formulario_schema (id "tipos_pastoral").
+// Cada tipo: { id, nome, cor, semPessoa }. Fundo e texto saem da cor.
+const PAS_TIPOS_PADRAO = [
+  { id:'espiritual',     nome:'Atendimento espiritual',    cor:'#6d4bb8' },
+  { id:'aconselhamento', nome:'Aconselhamento individual', cor:'#1f6fb2' },
+  { id:'reuniao',        nome:'Reunião',                   cor:'#1d8a6b' },
+  { id:'visita',         nome:'Visita',                    cor:'#c46a12' },
+  { id:'bloqueio',       nome:'Bloqueio / pessoal',        cor:'#7a8292', semPessoa:true },
+];
+let PAS_TIPOS = {};
+function pasMisturar(hex, alvo, p){
+  const a = hex.replace('#',''), b = alvo.replace('#','');
+  const c = i => Math.round(parseInt(a.substr(i,2),16) * (1-p) + parseInt(b.substr(i,2),16) * p);
+  return '#' + [0,2,4].map(i => c(i).toString(16).padStart(2,'0')).join('');
+}
+function pasMontarTipos(lista){
+  PAS_TIPOS = {};
+  (lista && lista.length ? lista : PAS_TIPOS_PADRAO).forEach(t => {
+    const cor = /^#[0-9a-f]{6}$/i.test(t.cor || '') ? t.cor : '#6d4bb8';
+    PAS_TIPOS[t.id] = t.semPessoa
+      ? { id:t.id, nome:t.nome, cor, semPessoa:true, fundo:cor, texto:corContrasteTexto(cor) }
+      : { id:t.id, nome:t.nome, cor, semPessoa:false, fundo:pasMisturar(cor,'#ffffff',.84), texto:pasMisturar(cor,'#000000',.35) };
+  });
+}
+function pasTipo(id){
+  return PAS_TIPOS[id] || { id, nome:'(tipo removido)', cor:'#9aa1ad', fundo:'#eef0f3', texto:'#3a4250' };
+}
+async function carregarTiposPastoral(){
+  try{
+    const r = await api('formulario_schema?select=dados&id=eq.tipos_pastoral');
+    pasMontarTipos(r && r[0] && r[0].dados && r[0].dados.tipos);
+  }catch(e){ pasMontarTipos(null); }
+  const leg = document.getElementById('pasLegenda');
+  if(leg) leg.innerHTML = Object.values(PAS_TIPOS).map(t => `<span><i style="background:${t.cor}"></i>${escapar(t.nome)}</span>`).join('') +
+    '<span><i style="background:#e7e9ee;border:1px solid #c3c9d4"></i>Igreja</span>';
+}
+
+function abrirTiposPastoral(){
+  window._pasTiposEd = Object.values(PAS_TIPOS).map(t => ({ id:t.id, nome:t.nome, cor:t.cor, semPessoa:t.semPessoa }));
+  desenharEditorTiposPastoral();
+  document.getElementById('modalPastoral').classList.remove('hidden');
+}
+function desenharEditorTiposPastoral(){
+  const L = window._pasTiposEd;
+  document.getElementById('modalPastoralCaixa').innerHTML = `
+    <h3>Tipos de compromisso</h3>
+    <p class="hint">Mude nome e cor, adicione ou remova. "Sem pessoa" serve para bloqueios (não pede nome nem WhatsApp).</p>
+    ${L.map((t, i) => `<div class="pas-tipo-ed">
+      <input type="color" value="${t.cor}" aria-label="Cor" oninput="window._pasTiposEd[${i}].cor=this.value">
+      <input type="text" value="${escapar(t.nome)}" aria-label="Nome do tipo" oninput="window._pasTiposEd[${i}].nome=this.value">
+      <label class="chk"><input type="checkbox" ${t.semPessoa ? 'checked' : ''} onchange="window._pasTiposEd[${i}].semPessoa=this.checked"> Sem pessoa</label>
+      <button class="btn small" title="Remover" aria-label="Remover tipo" onclick="window._pasTiposEd.splice(${i},1);desenharEditorTiposPastoral()">✕</button>
+    </div>`).join('')}
+    <button class="btn small" style="margin-top:8px;" onclick="window._pasTiposEd.push({id:'t'+Date.now().toString(36),nome:'Novo tipo',cor:'#2f557f'});desenharEditorTiposPastoral()">+ Adicionar tipo</button>
+    <p class="hint" style="margin-top:12px;">Compromissos de um tipo removido continuam na agenda, em cinza.</p>
+    <div class="modal-botoes">
+      <button class="btn" onclick="fecharModalPastoral()">Cancelar</button>
+      <button class="btn primary" onclick="salvarTiposPastoral()">Salvar tipos</button>
+    </div>`;
+}
+async function salvarTiposPastoral(){
+  const L = window._pasTiposEd.map(t => ({ id:t.id, nome:(t.nome||'').trim() || 'Sem nome', cor:t.cor, semPessoa:!!t.semPessoa }));
+  if(!L.length){ toast('Deixe pelo menos um tipo.', 'err'); return; }
+  try{
+    await api('formulario_schema', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+      body:{ id:'tipos_pastoral', dados:{ tipos:L }, atualizado_em:new Date().toISOString(), atualizado_por:(sessao && sessao.email) || null } });
+    fecharModalPastoral();
+    await carregarTiposPastoral();
+    desenharAgendaPastoral();
+    toast('Tipos salvos.', 'ok');
+  }catch(e){ toast('Não consegui salvar os tipos: ' + e.message, 'err'); }
+}
+const PAS_STATUS = { pendente:'Pendente', confirmado:'Confirmado', realizado:'Realizado', cancelado:'Cancelado' };
+const PAS_LOCAIS = ['Gabinete', 'Online', 'Visita / endereço'];
+const PAS_H_INI = 7, PAS_H_FIM = 22, PAS_PX_H = 52;
+
+let pasDia = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
+let pasItens = [];
+let pasEventosIgreja = [];
+let pasEdicao = null;
+
+function ehPastor(){ return !!(perfil && perfil.acesso_pastoral); }
+function pasInicioSemana(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; }
+function pasHora(d){ return d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
+function pasISOData(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+async function abrirAgendaPastoral(){
+  cultoAtual = 'pastoral';
+  marcarAba('pastoral');
+  mostrarPagina('pastoral');
+  await carregarTiposPastoral();
+  await carregarAgendaPastoral();
+}
+function navegarAgendaPastoral(n){
+  pasDia.setDate(pasDia.getDate() + (ehCelular() ? n : n * 7));
+  carregarAgendaPastoral();
+}
+function hojeAgendaPastoral(){ pasDia = new Date(); pasDia.setHours(0,0,0,0); carregarAgendaPastoral(); }
+function escolherDiaPastoral(iso){ pasDia = new Date(iso + 'T00:00:00'); desenharAgendaPastoral(); }
+
+async function carregarAgendaPastoral(){
+  const el = document.getElementById('pasConteudo');
+  el.innerHTML = '<div class="vazio">Carregando...</div>';
+  const ini = pasInicioSemana(pasDia);
+  const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
+  try{
+    pasItens = await api(`agenda_pastoral?select=*&inicio=gte.${ini.toISOString()}&inicio=lt.${fim.toISOString()}&order=inicio.asc`) || [];
+    // eventos do Calendario da igreja (so se a pessoa tiver acesso a ele; senao ignora)
+    try{
+      const ag = await api('agendamentos?select=nome_evento,data_inicio,data_saida,horarios_evento&status=eq.Agendado');
+      pasEventosIgreja = (ag || []).map(a => ({ nome: a.nome_evento, ini: parseDataBR(a.data_inicio), fim: parseDataBR(a.data_saida) }))
+        .filter(a => a.ini && a.ini < fim && (a.fim || a.ini) >= ini);
+    }catch(e){ pasEventosIgreja = []; }
+    desenharAgendaPastoral();
+  }catch(e){
+    el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`;
+  }
+}
+
+function pasEventosIgrejaDoDia(d){
+  const k = pasISOData(d);
+  return pasEventosIgreja.filter(a => {
+    const i = pasISOData(a.ini), f = pasISOData(a.fim && a.fim > a.ini ? a.fim : a.ini);
+    return k >= i && k <= f;
+  });
+}
+function pasItensDoDia(d){
+  const k = pasISOData(d);
+  return pasItens.filter(x => pasISOData(new Date(x.inicio)) === k);
+}
+
+function desenharAgendaPastoral(){
+  const ini = pasInicioSemana(pasDia);
+  const dias = Array.from({ length:7 }, (_, i) => { const d = new Date(ini); d.setDate(d.getDate() + i); return d; });
+  const fimSem = dias[6];
+  document.getElementById('pasTitulo').textContent = ehCelular()
+    ? pasDia.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' })
+    : `${ini.getDate()} ${ini.getMonth() !== fimSem.getMonth() ? ini.toLocaleDateString('pt-BR',{month:'short'}).replace('.','') + ' ' : ''}– ${fimSem.toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' })}`;
+  const hojeK = pasISOData(new Date());
+  const el = document.getElementById('pasConteudo');
+
+  if(ehCelular()){
+    // faixa da semana + lista do dia
+    const faixa = `<div class="pas-faixa">${dias.map(d => {
+      const k = pasISOData(d), n = pasItensDoDia(d).filter(x => x.status !== 'cancelado').length;
+      return `<button class="${k === pasISOData(pasDia) ? 'on' : ''}${k === hojeK ? ' hoje' : ''}" onclick="escolherDiaPastoral('${k}')">
+        <span>${d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','').slice(0,3)}</span><b>${d.getDate()}</b>${n ? '<i></i>' : ''}</button>`;
+    }).join('')}</div>`;
+    const itens = pasItensDoDia(pasDia);
+    const igreja = pasEventosIgrejaDoDia(pasDia);
+    let lista = itens.map(x => {
+      const t = pasTipo(x.tipo), a = new Date(x.inicio), b = new Date(x.fim);
+      return `<div class="pas-linha"><div class="pas-h">${pasHora(a)}</div>
+        <button class="pas-card st-${x.status}" style="background:${t.fundo};color:${t.texto};${x.status==='pendente'?'border:2px dashed '+t.cor+';':''}" onclick="abrirModalPastoral('${x.id}')">
+          <b>${escapar(t.semPessoa ? (x.pessoa || t.nome) : (x.pessoa || t.nome))}</b>
+          <span>${escapar(t.nome)} · ${pasHora(a)}–${pasHora(b)}${x.local ? ' · ' + escapar(x.local) : ''}</span>
+          ${x.status !== 'confirmado' ? `<span class="pas-st">${PAS_STATUS[x.status]}</span>` : ''}
+        </button></div>`;
+    }).join('');
+    lista += igreja.map(g => `<div class="pas-linha"><div class="pas-h">${g.ini.getHours() ? pasHora(g.ini) : '—'}</div>
+      <div class="pas-card" style="background:#e7e9ee;color:#3a4250;"><b>${escapar(g.nome || '')}</b><span>Calendário da igreja</span></div></div>`).join('');
+    el.innerHTML = faixa + `<div class="pas-dia-lista">${lista || '<div class="vazio">Nenhum compromisso neste dia.</div>'}</div>`;
+    return;
+  }
+
+  // computador: grade da semana
+  const horas = [];
+  for(let h = PAS_H_INI; h < PAS_H_FIM; h++) horas.push(h);
+  const altura = (PAS_H_FIM - PAS_H_INI) * PAS_PX_H;
+  const colunas = dias.map(d => {
+    const k = pasISOData(d);
+    const igreja = pasEventosIgrejaDoDia(d);
+    const evs = pasItensDoDia(d).map(x => {
+      const t = pasTipo(x.tipo), a = new Date(x.inicio), b = new Date(x.fim);
+      const top = Math.max(0, ((a.getHours() + a.getMinutes()/60) - PAS_H_INI) * PAS_PX_H);
+      const h = Math.max(24, ((b - a) / 3600000) * PAS_PX_H - 3);
+      return `<button class="pas-ev st-${x.status}" style="top:${top}px;height:${h}px;background:${t.fundo};color:${t.texto};${x.status==='pendente'?'border:2px dashed '+t.cor+';':''}"
+        onclick="event.stopPropagation();abrirModalPastoral('${x.id}')" title="${escapar(t.nome)}">
+        <b>${escapar(t.semPessoa ? (x.pessoa || t.nome) : (x.pessoa || t.nome))}</b>${pasHora(a)}–${pasHora(b)}${x.local ? ' · ' + escapar(x.local) : ''}</button>`;
+    }).join('');
+    return `<div class="pas-col${k === hojeK ? ' hoje' : ''}" style="height:${altura}px" onclick="novoPastoralClique(event,'${k}')">
+      ${horas.map(() => `<div class="pas-hr"></div>`).join('')}${evs}</div>
+`;
+  }).join('');
+  const cab = dias.map(d => {
+    const k = pasISOData(d), ig = pasEventosIgrejaDoDia(d);
+    return `<div class="pas-cab${k === hojeK ? ' hoje' : ''}"><span>${d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}</span> <b>${d.getDate()}</b>
+      ${ig.map(g => `<div class="pas-igreja" title="Calendário da igreja">${escapar(g.nome || '')}</div>`).join('')}</div>`;
+  }).join('');
+  el.innerHTML = `<div class="pas-grade">
+    <div class="pas-cabs"><div></div>${cab}</div>
+    <div class="pas-corpo"><div class="pas-horas">${horas.map(h => `<div>${String(h).padStart(2,'0')}h</div>`).join('')}</div>${colunas}</div>
+  </div>`;
+}
+
+// clicar num horario vazio da grade cria um compromisso naquela hora
+function novoPastoralClique(ev, iso){
+  const r = ev.currentTarget.getBoundingClientRect();
+  const hf = PAS_H_INI + Math.floor(((ev.clientY - r.top) / PAS_PX_H) * 2) / 2;
+  const h = Math.floor(hf), m = hf % 1 ? 30 : 0;
+  abrirModalPastoral(null, iso, String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
+}
+function novoPastoral(){
+  const agora = new Date();
+  const hora = pasISOData(pasDia) === pasISOData(agora) ? String(Math.min(21, agora.getHours() + 1)).padStart(2,'0') + ':00' : '09:00';
+  abrirModalPastoral(null, pasISOData(pasDia), hora);
+}
+
+async function abrirModalPastoral(id, iso, hora){
+  const x = id ? pasItens.find(i => i.id === id) : null;
+  const a = x ? new Date(x.inicio) : new Date(iso + 'T' + hora + ':00');
+  const b = x ? new Date(x.fim) : new Date(a.getTime() + 60 * 60000);
+  const dur = Math.round((b - a) / 60000);
+  pasEdicao = { id: x ? x.id : null, tipo: x ? x.tipo : Object.keys(PAS_TIPOS)[0], local: x ? (x.local || '') : 'Gabinete', grupo: x ? x.grupo : null };
+  let notas = '';
+  const caixa = document.getElementById('modalPastoralCaixa');
+  if(x && ehPastor()){
+    try{ const n = await api(`agenda_pastoral_notas?select=notas&id=eq.${x.id}`); notas = (n && n[0] && n[0].notas) || ''; }catch(e){}
+  }
+  const opDur = [15,30,45,60,90,120,180,240];
+  if(!opDur.includes(dur)) opDur.push(dur);
+  caixa.innerHTML = `
+    <h3>${x ? 'Editar compromisso' : 'Novo compromisso'}</h3>
+    <div class="field"><label>Tipo</label><div class="pas-chips" id="pasTipos">${Object.entries(PAS_TIPOS).concat(x && !PAS_TIPOS[x.tipo] ? [[x.tipo, pasTipo(x.tipo)]] : []).map(([k, t]) =>
+      `<button type="button" data-k="${k}" style="--c:${t.cor}" class="${k === pasEdicao.tipo ? 'on' : ''}" onclick="pasEscolher('tipo','${k}')">${escapar(t.nome)}</button>`).join('')}</div></div>
+    <div class="field"><label for="pasPessoa" id="pasPessoaRot">Pessoa</label>
+      <input type="text" id="pasPessoa" value="${escapar(x ? x.pessoa : '')}" placeholder="Nome de quem será atendido"></div>
+    <div class="field" id="pasContatoCampo"><label for="pasContato">WhatsApp</label>
+      <input type="tel" id="pasContato" value="${escapar(x ? x.contato || '' : '')}" placeholder="(19) 99999-9999"></div>
+    <div class="pas-tres">
+      <div class="field"><label for="pasData">Data</label><input type="date" id="pasData" value="${pasISOData(a)}"></div>
+      <div class="field"><label for="pasHoraIni">Início</label><input type="time" id="pasHoraIni" step="900" value="${pasHora(a)}"></div>
+      <div class="field"><label for="pasDur">Duração</label><select id="pasDur">${opDur.sort((p,q)=>p-q).map(m =>
+        `<option value="${m}" ${m === dur ? 'selected' : ''}>${m < 60 ? m + ' min' : (m/60) + (m === 60 ? ' hora' : ' horas')}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Local</label><div class="pas-chips" id="pasLocais">${PAS_LOCAIS.map(l =>
+      `<button type="button" data-k="${escapar(l)}" style="--c:#2f557f" class="${l === pasEdicao.local ? 'on' : ''}" onclick="pasEscolher('local',this.dataset.k)">${escapar(l)}</button>`).join('')}</div>
+      <input type="text" id="pasEndereco" placeholder="Endereço ou link (opcional)" value="${escapar(x && !PAS_LOCAIS.includes(x.local) ? x.local || '' : (x && x.endereco) || '')}" style="margin-top:8px;"></div>
+    <div class="field"><label for="pasStatus">Status</label><select id="pasStatus">${Object.entries(PAS_STATUS).map(([k, n]) =>
+      `<option value="${k}" ${(x ? x.status : 'confirmado') === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+    ${ehPastor() ? `<div class="field"><label for="pasNotas">🔒 Anotações privadas <span style="text-transform:none;font-weight:500;">(só o pastor vê)</span></label>
+      <textarea id="pasNotas" rows="4" placeholder="Assunto, pedidos de oração, próximos passos...">${escapar(notas)}</textarea></div>` : ''}
+    <div class="field"><label for="pasRetorno">Retorno sugerido</label><select id="pasRetorno">
+      ${[['','Sem retorno'],['7','Em 1 semana'],['15','Em 15 dias'],['30','Em 1 mês']].map(([v, n]) =>
+        `<option value="${v}" ${String((x && x.retorno_dias) || '') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+    ${x ? '' : `<div class="field"><label for="pasRepetir">Repetir</label><div style="display:flex;gap:8px;">
+      <select id="pasRepetir" style="flex:1;"><option value="">Não repetir</option><option value="7">Toda semana</option><option value="15">A cada 15 dias</option><option value="30">Todo mês</option></select>
+      <select id="pasVezes" style="width:120px;">${[2,3,4,5,6,8,10,12].map(n => `<option value="${n}">${n} vezes</option>`).join('')}</select></div></div>`}
+    <div class="modal-botoes">
+      ${x ? `<button class="btn" style="margin-right:auto;color:#c0392b;" onclick="excluirPastoral()">Excluir</button>` : ''}
+      ${x && x.contato ? `<button class="btn" onclick="lembretePastoral('${x.id}')">💬 Lembrar no WhatsApp</button>` : ''}
+      <button class="btn" onclick="fecharModalPastoral()">Cancelar</button>
+      <button class="btn primary" id="btnSalvarPas" onclick="salvarPastoral()">Salvar</button>
+    </div>`;
+  pasAtualizarCampos();
+  document.getElementById('modalPastoral').classList.remove('hidden');
+}
+function pasEscolher(campo, valor){
+  pasEdicao[campo] = valor;
+  const box = document.getElementById(campo === 'tipo' ? 'pasTipos' : 'pasLocais');
+  box.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === valor));
+  if(campo === 'tipo') pasAtualizarCampos();
+}
+function pasAtualizarCampos(){
+  const bloq = !!pasTipo(pasEdicao.tipo).semPessoa;
+  document.getElementById('pasPessoaRot').textContent = bloq ? 'Descrição' : 'Pessoa';
+  document.getElementById('pasPessoa').placeholder = bloq ? 'Ex.: estudo, preparo do sermão' : 'Nome de quem será atendido';
+  document.getElementById('pasContatoCampo').style.display = bloq ? 'none' : '';
+}
+function fecharModalPastoral(){ document.getElementById('modalPastoral').classList.add('hidden'); }
+
+async function salvarPastoral(){
+  const data = document.getElementById('pasData').value, hora = document.getElementById('pasHoraIni').value;
+  if(!data || !hora){ toast('Preencha data e horário.', 'err'); return; }
+  const pessoa = document.getElementById('pasPessoa').value.trim();
+  const semPessoa = !!pasTipo(pasEdicao.tipo).semPessoa;
+  if(!pessoa && !semPessoa){ toast('Preencha o nome da pessoa.', 'err'); return; }
+  const ini = new Date(data + 'T' + hora + ':00');
+  const dur = Number(document.getElementById('pasDur').value) || 60;
+  const endereco = document.getElementById('pasEndereco').value.trim();
+  const base = {
+    tipo: pasEdicao.tipo, pessoa,
+    contato: semPessoa ? '' : document.getElementById('pasContato').value.trim(),
+    local: pasEdicao.local || '', endereco,
+    status: document.getElementById('pasStatus').value,
+    retorno_dias: Number(document.getElementById('pasRetorno').value) || null,
+    atualizado_em: new Date().toISOString(), atualizado_por: (sessao && sessao.email) || null,
+  };
+  const notasEl = document.getElementById('pasNotas');
+  const btn = document.getElementById('btnSalvarPas');
+  btn.disabled = true;
+  try{
+    let ids = [];
+    if(pasEdicao.id){
+      await api(`agenda_pastoral?id=eq.${pasEdicao.id}`, { method:'PATCH', prefer:'return=minimal',
+        body: Object.assign({}, base, { inicio: ini.toISOString(), fim: new Date(ini.getTime() + dur*60000).toISOString() }) });
+      ids = [pasEdicao.id];
+    }else{
+      const cada = Number((document.getElementById('pasRepetir') || {}).value) || 0;
+      const vezes = cada ? Number(document.getElementById('pasVezes').value) : 1;
+      const grupo = cada ? (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())) : null;
+      const linhas = [];
+      for(let i = 0; i < vezes; i++){
+        const a = new Date(ini);
+        if(cada === 30) a.setMonth(a.getMonth() + i); else a.setDate(a.getDate() + i * cada);
+        linhas.push(Object.assign({}, base, { inicio: a.toISOString(), fim: new Date(a.getTime() + dur*60000).toISOString(), grupo }));
+      }
+      const r = await api('agenda_pastoral', { method:'POST', body: linhas });
+      ids = (r || []).map(l => l.id);
+    }
+    if(notasEl && ehPastor()){
+      const txt = notasEl.value.trim();
+      if(txt || pasEdicao.id){
+        await api('agenda_pastoral_notas?on_conflict=id', { method:'POST', prefer:'resolution=merge-duplicates,return=minimal',
+          body: ids.map(id => ({ id, notas: txt, atualizado_em: new Date().toISOString() })) });
+      }
+    }
+    fecharModalPastoral();
+    pasDia = new Date(ini); pasDia.setHours(0,0,0,0);
+    await carregarAgendaPastoral();
+    toast('Compromisso salvo.', 'ok');
+  }catch(e){
+    btn.disabled = false;
+    toast('Não consegui salvar: ' + e.message, 'err');
+  }
+}
+
+async function excluirPastoral(){
+  if(!pasEdicao.id || !confirm('Excluir este compromisso?')) return;
+  try{
+    await api(`agenda_pastoral?id=eq.${pasEdicao.id}`, { method:'DELETE', prefer:'return=minimal' });
+    fecharModalPastoral();
+    await carregarAgendaPastoral();
+    toast('Compromisso excluído.', 'ok');
+  }catch(e){ toast('Não consegui excluir: ' + e.message, 'err'); }
+}
+
+function lembretePastoral(id){
+  const x = pasItens.find(i => i.id === id);
+  if(!x) return;
+  const a = new Date(x.inicio);
+  const quando = a.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'2-digit' }) + ' às ' + pasHora(a);
+  const nome = (x.pessoa || '').split(' ')[0];
+  const msg = `Olá${nome ? ', ' + nome : ''}! Passando para lembrar do nosso encontro ${quando}` +
+    `${x.local ? ' (' + x.local + (x.endereco ? ': ' + x.endereco : '') + ')' : ''}. Qualquer imprevisto, é só avisar por aqui. 🙏`;
+  const numero = telefoneParaWhatsApp(x.contato);
+  window.open((numero ? `https://wa.me/${numero}` : 'https://web.whatsapp.com/') + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+}
+
+/* =====================================================================
    AGENDA (arte semanal para Instagram Stories, 1080x1920)
    Cada edicao vira uma linha na tabela "agendas", com uma estrutura livre
    de secoes/itens guardada em "dados" (mesmo espirito do "dados.rows" dos
@@ -6897,6 +7335,8 @@ function desenharPessoas(pessoas){
       <label class="chk"><input type="checkbox" data-c="acesso_escala" ${p.acesso_escala?'checked':''}> Escala</label>
       <label class="chk"><input type="checkbox" data-c="acesso_youtube" ${p.acesso_youtube?'checked':''}> YouTube</label>
       <label class="chk"><input type="checkbox" data-c="acesso_homiletico" ${p.acesso_homiletico?'checked':''}> Homilético</label>
+      <label class="chk" title="Agenda Pastoral completa, com as anotações privadas"><input type="checkbox" data-c="acesso_pastoral" ${p.acesso_pastoral?'checked':''}> Pastor (agenda)</label>
+      <label class="chk" title="Agenda Pastoral sem as anotações"><input type="checkbox" data-c="acesso_pastoral_secretaria" ${p.acesso_pastoral_secretaria?'checked':''}> Secretária (agenda)</label>
       <label class="chk" title="Mostra as pregações confirmadas no Calendário"><input type="checkbox" data-c="ver_homiletico_calendario" ${p.ver_homiletico_calendario?'checked':''}> Pregações no Calendário</label>
       <label class="chk"><input type="checkbox" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}> Administrador</label>
       <span style="width:1px;align-self:stretch;background:var(--border);"></span>
