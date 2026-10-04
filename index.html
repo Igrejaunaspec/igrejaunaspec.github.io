@@ -397,6 +397,10 @@
   .link-caixa input{flex:1;font-family:var(--mono);font-size:12.5px;}
   .modal-botoes{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;}
   .modal-caixa.grande{max-width:760px;max-height:88vh;overflow-y:auto;}
+  /* com uma janela aberta, so ela rola -- a pagina de tras fica parada */
+  body.janela-aberta{position:fixed;left:0;right:0;width:100%;overflow:hidden;}
+  .modal-fundo{overscroll-behavior:contain;touch-action:none;}
+  .modal-caixa{overscroll-behavior:contain;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch;}
 
   /* ---------- agenda pastoral ---------- */
   .pas-legenda{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto;font-size:12px;color:var(--muted2);}
@@ -8120,6 +8124,29 @@ document.addEventListener('keydown', ev => {
     catch(e){ limparSessao(); }
   }
   mostrarLogin();
+})();
+</script>
+<script>
+// Com uma janela (modal) aberta, a pagina de tras nao rola -- no iPhone/iPad o
+// dedo arrastava o fundo. Guarda a posicao e devolve ao fechar.
+(function(){
+  let travado = false, posY = 0;
+  function atualizar(){
+    const aberta = !!document.querySelector('.modal-fundo:not(.hidden)');
+    if(aberta && !travado){
+      posY = window.scrollY; travado = true;
+      document.body.style.top = (-posY) + 'px';
+      document.body.classList.add('janela-aberta');
+    }else if(!aberta && travado){
+      travado = false;
+      document.body.classList.remove('janela-aberta');
+      document.body.style.top = '';
+      window.scrollTo(0, posY);
+    }
+  }
+  const obs = new MutationObserver(atualizar);
+  function ligar(){ obs.observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['class'] }); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ligar); else ligar();
 })();
 </script>
 </body>
