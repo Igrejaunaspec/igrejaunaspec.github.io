@@ -1128,7 +1128,7 @@
         <div class="calendario-grid" id="calendarioGrid"></div>
         <div class="calendario-lista" id="calendarioLista"></div>
       </div>
-      <div class="card calendario-detalhe-dia hidden" id="calendarioDetalheDia"></div>
+      <div class="card calendario-detalhe-dia hidden" id="calendarioDetalheDia" style="display:none !important;"></div>
     </div>
 
     <!-- ---------- Calendario homiletico: pregacoes de sexta e sabado ---------- -->
@@ -3689,9 +3689,15 @@ function desenharCalendario(){
   desenharDetalheDiaCalendario(porDia);
 }
 
+// Clicar num dia (ou no "+N mais") abre uma janela com todos os eventos do
+// dia -- antes a lista aparecia la embaixo da grade e ficava fora da tela.
 function selecionarDiaCalendario(chave){
-  calendarioDiaSelecionado = (calendarioDiaSelecionado === chave) ? null : chave;
-  desenharCalendario();
+  calendarioDiaSelecionado = chave;
+  desenharCalendario(); // desenha a lista do dia (escondida) e marca o dia
+  const el = document.getElementById('calendarioDetalheDia');
+  document.getElementById('modalEventoCaixa').innerHTML = el.innerHTML +
+    `<div class="modal-botoes" style="margin-top:14px;"><button class="btn primary" onclick="fecharModalEvento()">Fechar</button></div>`;
+  document.getElementById('modalEvento').classList.remove('hidden');
 }
 
 // Versao celular do calendario: lista dia a dia (igual ao modo "Agenda" do
