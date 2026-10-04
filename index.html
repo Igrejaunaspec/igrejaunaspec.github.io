@@ -1225,7 +1225,7 @@
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
           <div style="flex:1;min-width:200px;">
             <h2>Agenda Pastoral</h2>
-            <p class="hint" style="margin:4px 0 0;">Atendimentos, reuniões e visitas do pastor. Clique num horário vazio para marcar.</p>
+            <p class="hint" style="margin:4px 0 0;">Atendimentos, reuniões e visitas do pastor. Toque num horário vazio para marcar.</p>
           </div>
           <button class="btn primary" onclick="novoPastoral()">+ Novo compromisso</button>
           <button class="btn" onclick="abrirTiposPastoral()">🏷️ Tipos</button>
@@ -6293,6 +6293,12 @@ let pasDia = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
 let pasItens = [];
 let pasEventosIgreja = [];
 let pasEdicao = null;
+let pasJaRolou = false;
+// volta para o app/aba: busca de novo (o pastor e a secretaria usam aparelhos diferentes)
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && cultoAtual === 'pastoral'
+     && document.getElementById('modalPastoral').classList.contains('hidden')) carregarAgendaPastoral();
+});
 
 function ehPastor(){ return !!(perfil && perfil.acesso_pastoral); }
 function pasInicioSemana(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; }
@@ -6301,16 +6307,18 @@ function pasISOData(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).pa
 
 async function abrirAgendaPastoral(){
   cultoAtual = 'pastoral';
+  pasJaRolou = false;
   marcarAba('pastoral');
   mostrarPagina('pastoral');
   await carregarTiposPastoral();
   await carregarAgendaPastoral();
 }
 function navegarAgendaPastoral(n){
+  pasJaRolou = false;
   pasDia.setDate(pasDia.getDate() + (ehCelular() ? n : n * 7));
   carregarAgendaPastoral();
 }
-function hojeAgendaPastoral(){ pasDia = new Date(); pasDia.setHours(0,0,0,0); carregarAgendaPastoral(); }
+function hojeAgendaPastoral(){ pasJaRolou = false; pasDia = new Date(); pasDia.setHours(0,0,0,0); carregarAgendaPastoral(); }
 function escolherDiaPastoral(iso){ pasDia = new Date(iso + 'T00:00:00'); desenharAgendaPastoral(); }
 
 async function carregarAgendaPastoral(){
@@ -6402,6 +6410,13 @@ function desenharAgendaPastoral(){
     return `<div class="pas-cab${k === hojeK ? ' hoje' : ''}"><span>${d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}</span> <b>${d.getDate()}</b>
       ${ig.map(g => `<div class="pas-igreja" title="Calendário da igreja">${escapar(g.nome || '')}</div>`).join('')}</div>`;
   }).join('');
+  // rola a grade ate o primeiro compromisso da semana (ou a hora atual)
+  const horasSemana = pasItens.map(x => new Date(x.inicio)).map(d => d.getHours() + d.getMinutes()/60);
+  const alvoH = horasSemana.length ? Math.min(...horasSemana) : new Date().getHours();
+  setTimeout(() => {
+    const corpo = el.querySelector('.pas-corpo');
+    if(corpo && !pasJaRolou){ corpo.scrollTop = Math.max(0, (alvoH - PAS_H_INI - 1) * PAS_PX_H); pasJaRolou = true; }
+  }, 0);
   el.innerHTML = `<div class="pas-grade">
     <div class="pas-cabs"><div></div>${cab}</div>
     <div class="pas-corpo"><div class="pas-horas">${horas.map(h => `<div>${String(h).padStart(2,'0')}h</div>`).join('')}</div>${colunas}</div>
