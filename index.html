@@ -403,7 +403,6 @@
   .hom-ponto{width:10px;height:10px;border-radius:50%;display:inline-block;margin-left:6px;}
   .hom-ponto.ok{background:#2e9d5b;} .hom-ponto.pend{background:#e0a526;} .hom-ponto.sem{background:#b9bfc9;}
   .hom-semana{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
-  .hom-semana.muitos{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));}
   .hom-culto .nome{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;}
   .hom-culto.extra{border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--accent) 6%,var(--panel));}
   .hom-culto .dia .rot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
@@ -5859,7 +5858,7 @@ function desenharHomiletico(){
     semanas.map(s => {
       // semana que comeca no sabado (dia 1 = sabado): deixa a coluna da sexta vazia
       const vazio = s.length === 1 && s[0].culto === 'sabado' ? '<div></div>' : '';
-      return `<div class="hom-semana${s.length > 2 ? ' muitos' : ''}">${vazio}${s.map(cartaoHomiletico).join('')}</div>`;
+      return `<div class="hom-semana">${vazio}${s.map(cartaoHomiletico).join('')}</div>`;
     }).join('');
 }
 
