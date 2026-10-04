@@ -3539,7 +3539,7 @@ async function abrirCalendario(){
     await carregarEtiquetasAgendamento();
     await carregarTiposEvento();
     const dados = await api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc');
-    calendarioAgendamentos = dados || [];
+    calendarioAgendamentos = (dados || []).concat(await pregacoesParaCalendario());
     desenharCalendario();
   }catch(e){
     document.getElementById('calendarioGrid').innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`;
@@ -3784,12 +3784,12 @@ function desenharDetalheDiaCalendario(porDia){
           <div class="meta">${escapar(a.nome_responsavel || '')}</div>
         </div>
         <div class="agendamento-linha2">
-          <button class="btn small" title="Abrir WhatsApp com este contato"
-            onclick="event.stopPropagation();window.open('${linkWhatsAppAgendamento(a, false)}', '_blank', 'noopener')">💬 WhatsApp</button>
+          ${a.homiletico ? '' : `<button class="btn small" title="Abrir WhatsApp com este contato"
+            onclick="event.stopPropagation();window.open('${linkWhatsAppAgendamento(a, false)}', '_blank', 'noopener')">💬 WhatsApp</button>`}
         </div>
       </div>
-      ${etiquetasBadgesHTML(a)}
-      ${setoresBadgeHTML(a)}
+      ${a.homiletico ? '' : etiquetasBadgesHTML(a)}
+      ${a.homiletico ? '' : setoresBadgeHTML(a)}
     </div>`).join('');
 }
 
@@ -3825,7 +3825,48 @@ function abrirModalEventoNovo(chaveDiaClicado){
   document.getElementById('modalEvento').classList.remove('hidden');
 }
 
+// Pregacoes CONFIRMADAS do Calendario Homiletico aparecem no Calendario como
+// eventos "de mentira" (id "hom-..."), so para quem tem ver_homiletico_calendario
+// marcado na aba Pessoas (o banco tambem confere). Nao vao para o Google Agenda.
+const COR_PREGACAO = '#6d4bb8';
+async function pregacoesParaCalendario(){
+  if(!perfil || !perfil.ver_homiletico_calendario) return [];
+  try{
+    const linhas = await api('homiletico?select=*&status=eq.confirmado&order=data.asc');
+    return (linhas || []).map(l => {
+      const [a, m, d] = l.data.split('-');
+      const culto = l.culto === 'extra' ? (l.nome_culto || 'Culto extra') : (l.culto === 'sexta' ? 'Culto de sexta' : 'Culto de sábado');
+      return {
+        id: 'hom-' + l.id, homiletico: l,
+        nome_evento: '🎤 ' + (l.pregador || 'Pregação') + ' · ' + culto,
+        data_inicio: `${d}/${m}/${a}`, data_saida: '', cor: COR_PREGACAO, etiquetas: [],
+        horarios_evento: l.titulo || '', espacos_utilizados: '', nome_responsavel: l.titulo || '',
+      };
+    });
+  }catch(e){ return []; }
+}
+function abrirPregacaoNoCalendario(id){
+  const ev = calendarioAgendamentos.find(x => x.id === id);
+  if(!ev) return;
+  const l = ev.homiletico;
+  const culto = l.culto === 'extra' ? (l.nome_culto || 'Culto extra') : (l.culto === 'sexta' ? 'Culto de sexta' : 'Culto de sábado');
+  const dataTxt = new Date(l.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  const podeEditar = perfil.admin || perfil.acesso_homiletico;
+  document.getElementById('modalEventoCaixa').innerHTML = `
+    <h3>🎤 ${escapar(l.pregador || 'Pregação')}</h3>
+    <p class="hint">${escapar(culto)} · ${escapar(dataTxt)} · <span style="color:#2e9d5b;font-weight:600;">confirmado</span></p>
+    ${l.titulo ? `<div class="field"><label>Título do sermão</label><div style="font-size:16px;font-weight:600;">${escapar(l.titulo)}</div></div>` : ''}
+    ${l.observacoes ? `<div class="field"><label>Observações</label><div style="white-space:pre-wrap;">${escapar(l.observacoes)}</div></div>` : ''}
+    <div class="modal-botoes">
+      ${l.link_youtube ? `<a class="btn" href="${escapar(l.link_youtube)}" target="_blank" rel="noopener">▶️ Live do sermão</a>` : ''}
+      ${podeEditar ? `<button class="btn" onclick="fecharModalEvento();homMes=new Date(${l.data.slice(0,4)},${Number(l.data.slice(5,7))-1},1);abrirHomiletico()">Abrir no Homilético</button>` : ''}
+      <button class="btn primary" onclick="fecharModalEvento()">Fechar</button>
+    </div>`;
+  document.getElementById('modalEvento').classList.remove('hidden');
+}
+
 function abrirModalEventoEditar(id){
+  if(String(id).startsWith('hom-')){ abrirPregacaoNoCalendario(id); return; }
   const a = calendarioAgendamentos.find(x => x.id === id);
   if(!a) return;
   eventoModalId = id;
@@ -6849,6 +6890,7 @@ function desenharPessoas(pessoas){
       <label class="chk"><input type="checkbox" data-c="acesso_escala" ${p.acesso_escala?'checked':''}> Escala</label>
       <label class="chk"><input type="checkbox" data-c="acesso_youtube" ${p.acesso_youtube?'checked':''}> YouTube</label>
       <label class="chk"><input type="checkbox" data-c="acesso_homiletico" ${p.acesso_homiletico?'checked':''}> Homilético</label>
+      <label class="chk" title="Mostra as pregações confirmadas no Calendário"><input type="checkbox" data-c="ver_homiletico_calendario" ${p.ver_homiletico_calendario?'checked':''}> Pregações no Calendário</label>
       <label class="chk"><input type="checkbox" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}> Administrador</label>
       <span style="width:1px;align-self:stretch;background:var(--border);"></span>
       <span style="font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;">Vê na agenda:</span>
