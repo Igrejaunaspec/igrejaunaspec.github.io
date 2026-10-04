@@ -4518,11 +4518,12 @@ function montarNavCelular(){
   const itens = [];
   if(abaPorChave('calendario')) itens.push({ id:'calendario', ico:'📅', txt:'Calendário', fn:() => abaPorChave('calendario').click() });
   if(abaPorChave('agendamentos')) itens.push({ id:'agendamentos', ico:'📝', txt:'Pedidos', fn:() => abaPorChave('agendamentos').click() });
+  if(abaPorChave('homiletico')) itens.push({ id:'homiletico', ico:'🎤', txt:'Homilético', fn:() => abaPorChave('homiletico').click() });
   const roteiros = botoesAbas().filter(ehAbaRoteiro);
   if(roteiros.length === 1) itens.push({ id:roteiros[0].dataset.culto, ico:'📖', txt:'Roteiro', fn:() => roteiros[0].click() });
   else if(roteiros.length > 1) itens.push({ id:'roteiros', ico:'📖', txt:'Roteiros', fn:() => abrirFolhaCelular('Roteiros', roteiros) });
   itens.push({ id:'mais', ico:'☰', txt:'Mais', fn:() => {
-    const usados = new Set(['calendario', 'agendamentos', ...roteiros.map(b => b.dataset.culto)]);
+    const usados = new Set(['calendario', 'agendamentos', 'homiletico', ...roteiros.map(b => b.dataset.culto)]);
     abrirFolhaCelular('Mais', botoesAbas().filter(b => !usados.has(b.dataset.culto) && !ehAbaRoteiro(b)), true);
   }});
   window._itensNavCelular = itens;
