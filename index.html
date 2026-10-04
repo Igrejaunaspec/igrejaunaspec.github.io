@@ -403,6 +403,15 @@
   .hom-ponto{width:10px;height:10px;border-radius:50%;display:inline-block;margin-left:6px;}
   .hom-ponto.ok{background:#2e9d5b;} .hom-ponto.pend{background:#e0a526;} .hom-ponto.sem{background:#b9bfc9;}
   .hom-semana{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+  .hom-item + .hom-item{margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);}
+  .hom-culto .preg{display:flex;align-items:center;}
+  .hom-dia-item{border:1px solid var(--border);border-left:6px solid #b9bfc9;border-radius:10px;padding:10px 12px;margin-top:8px;cursor:pointer;}
+  .hom-dia-item:hover{background:var(--panel2);}
+  .hom-dia-item .nome{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;}
+  .hom-dia-item .preg{font-size:17px;font-weight:700;margin:2px 0;}
+  .hom-dia-item .tit{font-size:14px;}
+  .hom-dia-item .obs{font-size:12.5px;color:var(--muted2);white-space:pre-wrap;margin:4px 0;}
+  .hom-dia-item .vz{color:var(--muted2);font-style:italic;font-weight:400;}
   .hom-culto .nome{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;}
   .hom-culto.extra{border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--accent) 6%,var(--panel));}
   .hom-culto .dia .rot{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
@@ -5825,47 +5834,109 @@ function cultosHomileticoDoMes(){
   return itens;
 }
 
-function cartaoHomiletico(it){
-  const l = it.linha;
-  const classe = !l || !l.pregador ? '' : (l.status === 'confirmado' ? 'ok' : 'pend');
-  const passado = it.iso < dataLocalISO(new Date()) ? ' passado' : '';
-  const nLives = (homLivesPorDia[it.iso] || []).length;
-  const data = dataDeISO(it.iso);
+// agrupa os cultos por data: um cartao por dia
+function diasComCultosHomiletico(){
+  const dias = [];
+  cultosHomileticoDoMes().forEach(it => {
+    const ult = dias[dias.length - 1];
+    if(ult && ult.iso === it.iso) ult.cultos.push(it);
+    else dias.push({ iso: it.iso, cultos: [it] });
+  });
+  // culto fixo (sexta/sabado) primeiro, extras depois
+  dias.forEach(d => d.cultos.sort((a,b) => (a.culto === 'extra') - (b.culto === 'extra')));
+  return dias;
+}
+function nomeCultoHomiletico(it){
+  if(it.culto === 'extra') return (it.linha && it.linha.nome_culto) || 'Culto extra';
+  return HOM_CULTO[it.culto];
+}
+
+function cartaoHomiletico(dia){
+  const cultos = dia.cultos;
+  const comPregador = cultos.filter(c => c.linha && c.linha.pregador);
+  const classe = !comPregador.length ? ''
+    : comPregador.every(c => c.linha.status === 'confirmado') && comPregador.length === cultos.length ? 'ok' : 'pend';
+  const passado = dia.iso < dataLocalISO(new Date()) ? ' passado' : '';
+  const temExtra = cultos.some(c => c.culto === 'extra');
+  const nLives = (homLivesPorDia[dia.iso] || []).length;
+  const data = dataDeISO(dia.iso);
   const dm = data.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' });
-  const rotulo = it.culto === 'sexta' ? 'Sexta' : it.culto === 'sabado' ? 'Sábado'
-    : data.toLocaleDateString('pt-BR', { weekday:'long' }).replace('-feira', '');
-  return `<div class="hom-culto ${classe}${passado}${it.culto === 'extra' ? ' extra' : ''}"
-      onclick="abrirModalHomiletico('${it.iso}','${it.culto}','${l && l.id ? l.id : ''}')"
-      title="${l && l.titulo ? escapar(l.titulo) : ''}">
-    <div class="dia"><span class="dm">${dm}</span> <span class="rot">${escapar(rotulo)}</span>${nLives ? `<span class="nl">▶️ ${nLives}</span>` : ''}</div>
-    ${it.culto === 'extra' ? `<div class="nome">${escapar((l && l.nome_culto) || 'Culto extra')}</div>` : ''}
-    ${l && l.pregador ? `<div class="preg">${escapar(l.pregador)}</div>` : '<div class="vz">Sem pregador</div>'}
+  const semana = data.toLocaleDateString('pt-BR', { weekday:'long' }).replace('-feira', '');
+  const mostrarNome = cultos.length > 1 || temExtra;
+  return `<div class="hom-culto ${classe}${passado}${temExtra ? ' extra' : ''}" onclick="abrirDiaHomiletico('${dia.iso}')">
+    <div class="dia"><span class="dm">${dm}</span> <span class="rot">${escapar(semana)}</span>${nLives ? `<span class="nl">▶️ ${nLives}</span>` : ''}</div>
+    ${cultos.map(c => {
+      const l = c.linha;
+      const ponto = !l || !l.pregador ? '' : `<span class="hom-ponto ${l.status === 'confirmado' ? 'ok' : 'pend'}" style="margin:0 6px 0 0;"></span>`;
+      return `<div class="hom-item">
+        ${mostrarNome ? `<div class="nome">${escapar(nomeCultoHomiletico(c))}</div>` : ''}
+        ${l && l.pregador ? `<div class="preg">${cultos.length > 1 ? ponto : ''}${escapar(l.pregador)}</div>` : '<div class="vz">Sem pregador</div>'}
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
 function desenharHomiletico(){
   const el = document.getElementById('homLista');
-  // agrupa por semana (domingo a sabado); cada semana vira uma linha
+  // agrupa por semana (domingo a sabado); cada semana vira uma linha de 2 colunas
   const semanas = [];
   let chaveAnt = null;
-  cultosHomileticoDoMes().forEach(it => {
-    const d = dataDeISO(it.iso); d.setDate(d.getDate() - d.getDay());
+  diasComCultosHomiletico().forEach(dia => {
+    const d = dataDeISO(dia.iso); d.setDate(d.getDate() - d.getDay());
     const chave = dataLocalISO(d);
     if(chave !== chaveAnt){ semanas.push([]); chaveAnt = chave; }
-    semanas[semanas.length - 1].push(it);
+    semanas[semanas.length - 1].push(dia);
   });
   el.innerHTML = (homErroLives ? `<div class="aviso erro" style="margin-top:10px;">Não consegui buscar as lives do YouTube: ${escapar(homErroLives)}</div>` : '') +
     semanas.map(s => {
-      // semana que comeca no sabado (dia 1 = sabado): deixa a coluna da sexta vazia
-      const vazio = s.length === 1 && s[0].culto === 'sabado' ? '<div></div>' : '';
+      // semana que tem so o sabado (mes comeca num sabado): deixa a coluna da sexta vazia
+      const vazio = s.length === 1 && dataDeISO(s[0].iso).getDay() === 6 ? '<div></div>' : '';
       return `<div class="hom-semana">${vazio}${s.map(cartaoHomiletico).join('')}</div>`;
     }).join('');
 }
 
-function novoCultoExtra(){
+// Ao tocar num dia: se so tem um culto, abre direto; se tem mais, mostra a lista do dia
+function abrirDiaHomiletico(iso){
+  const dia = diasComCultosHomiletico().find(d => d.iso === iso);
+  if(!dia) return;
+  if(dia.cultos.length === 1){
+    const c = dia.cultos[0];
+    abrirModalHomiletico(iso, c.culto, c.linha && c.linha.id ? c.linha.id : '');
+    return;
+  }
+  const dataTxt = dataDeISO(iso).toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  const lives = homLivesPorDia[iso] || [];
+  document.getElementById('modalHomileticoCaixa').innerHTML = `
+    <h3 style="text-transform:capitalize;">${escapar(dataTxt)}</h3>
+    <p class="hint">${dia.cultos.length} cultos neste dia. Toque em um para editar.</p>
+    ${dia.cultos.map(c => {
+      const l = c.linha || {};
+      const cor = !l.pregador ? '#b9bfc9' : (l.status === 'confirmado' ? '#2e9d5b' : '#e0a526');
+      return `<div class="hom-dia-item" style="border-left-color:${cor}"
+          onclick="abrirModalHomiletico('${iso}','${c.culto}','${l.id || ''}')">
+        <div class="nome">${escapar(nomeCultoHomiletico(c))}</div>
+        <div class="preg">${l.pregador ? escapar(l.pregador) : '<span class="vz">Sem pregador</span>'}</div>
+        ${l.titulo ? `<div class="tit">${escapar(l.titulo)}</div>` : ''}
+        ${l.observacoes ? `<div class="obs">${escapar(l.observacoes)}</div>` : ''}
+        ${l.link_youtube ? `<a class="btn small" href="${escapar(l.link_youtube)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">▶️ Live do sermão</a>` : ''}
+      </div>`;
+    }).join('')}
+    ${lives.length ? `<div class="field" style="margin-top:12px;"><label>Lives do dia no YouTube</label>
+      ${lives.map(v => `<div class="hom-live-op">
+        ${v.miniatura ? `<img src="${escapar(v.miniatura)}" alt="">` : ''}
+        <span style="min-width:0;"><strong>${escapar(new Date(v.inicio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}</strong> · ${escapar(v.titulo)}</span>
+        <a class="btn small" style="margin-left:auto;" href="${linkYoutube(v.id)}" target="_blank" rel="noopener">Abrir</a></div>`).join('')}</div>` : ''}
+    <div class="modal-botoes">
+      ${dia.cultos.some(c => c.culto === 'extra') ? '' : `<button class="btn" style="margin-right:auto;" onclick="novoCultoExtra('${iso}')">+ Outro culto neste dia</button>`}
+      <button class="btn primary" onclick="fecharModalHomiletico()">Fechar</button>
+    </div>`;
+  document.getElementById('modalHomiletico').classList.remove('hidden');
+}
+
+function novoCultoExtra(iso){
   const hoje = dataLocalISO(new Date());
   const ini = dataLocalISO(homMes);
-  abrirModalHomiletico(hoje.slice(0,7) === ini.slice(0,7) ? hoje : ini, 'extra', '');
+  abrirModalHomiletico(iso || (hoje.slice(0,7) === ini.slice(0,7) ? hoje : ini), 'extra', '');
 }
 
 function abrirModalHomiletico(iso, culto, id){
@@ -5875,6 +5946,8 @@ function abrirModalHomiletico(iso, culto, id){
   const vinculado = idDoLinkYoutube(l.link_youtube);
   const dataTxt = dataDeISO(iso).toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
   const ehExtra = culto === 'extra';
+  const diaAtual = diasComCultosHomiletico().find(d => d.iso === iso);
+  const variosNoDia = !!(l.id || !ehExtra) && diaAtual && diaAtual.cultos.length > 1;
   document.getElementById('modalHomileticoCaixa').innerHTML = `
     <h3>${ehExtra ? (l.id ? escapar(l.nome_culto || 'Culto extra') : 'Novo culto extra') : HOM_CULTO[culto]}</h3>
     ${ehExtra ? `<p class="hint">Para semana de oração, culto de última hora ou qualquer culto fora de sexta e sábado. Só aparece no calendário enquanto existir.</p>
@@ -5901,6 +5974,8 @@ function abrirModalHomiletico(iso, culto, id){
     </div>
     <div class="modal-botoes">
       ${l.id ? `<button class="btn" style="margin-right:auto;color:#c0392b;" onclick="limparHomiletico()">${ehExtra ? 'Excluir culto' : 'Limpar'}</button>` : ''}
+      ${variosNoDia ? `<button class="btn" onclick="abrirDiaHomiletico('${iso}')">‹ Voltar ao dia</button>`
+        : (!ehExtra && !homExtras.some(x => x.data === iso) ? `<button class="btn" onclick="novoCultoExtra('${iso}')">+ Outro culto neste dia</button>` : '')}
       <button class="btn" onclick="fecharModalHomiletico()">Cancelar</button>
       <button class="btn primary" id="btnSalvarHom" onclick="salvarHomiletico()">Salvar</button>
     </div>`;
