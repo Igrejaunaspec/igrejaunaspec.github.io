@@ -3296,16 +3296,24 @@ async function abrirAgendamentosLista(){
   cultoAtual = 'agendamentos';
   marcarAba('agendamentos');
   mostrarPagina('agendamentos');
-  document.getElementById('listaAgendamentos').innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
+  if(!agendamentos || !agendamentos.length)
+    document.getElementById('listaAgendamentos').innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
   document.getElementById('editorFormularioAgendamento').classList.add('hidden');
   document.getElementById('editorEtiquetasAgendamento').classList.add('hidden');
   document.getElementById('cardTopoAgendamentos').classList.remove('hidden');
   document.getElementById('listaAgendamentos').classList.remove('hidden');
   garantirFechamentoEtiquetaDropdown();
   try{
-    if(!schemaAgendamentoAtual) await carregarSchemaAgendamento();
-    await carregarEtiquetasAgendamento();
-    agendamentos = await api('agendamentos?select=*&order=criado_em.desc');
+    if(agendamentos && agendamentos.length && schemaAgendamentoAtual){
+      montarFiltrosAgendamentos(); montarFiltroAnoAgendamentos(); montarFiltrosEtiquetasAgendamentos(); desenharListaAgendamentos();
+    }
+    const [, , lista] = await Promise.all([
+      schemaAgendamentoAtual ? null : carregarSchemaAgendamento(),
+      carregarEtiquetasAgendamento(),
+      api('agendamentos?select=*&order=criado_em.desc'),
+    ]);
+    agendamentos = lista;
+    if(cultoAtual !== 'agendamentos') return;
     montarFiltrosAgendamentos();
     montarFiltroAnoAgendamentos();
     montarFiltrosEtiquetasAgendamentos();
@@ -3653,13 +3661,18 @@ async function abrirCalendario(){
   mostrarPagina('calendario');
   const hoje = new Date();
   if(calendarioAno === null){ calendarioAno = hoje.getFullYear(); calendarioMes = hoje.getMonth(); }
-  document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
+  // ja tem os dados da ultima vez? mostra na hora e atualiza por tras
+  if(calendarioAgendamentos.length) desenharCalendario();
+  else document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
-    await carregarEtiquetasAgendamento();
-    await carregarTiposEvento();
-    const dados = await api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc');
-    calendarioAgendamentos = (dados || []).concat(await pregacoesParaCalendario());
-    desenharCalendario();
+    const [, , dados, pregacoes] = await Promise.all([
+      carregarEtiquetasAgendamento(),
+      carregarTiposEvento(),
+      api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc'),
+      pregacoesParaCalendario(),
+    ]);
+    calendarioAgendamentos = (dados || []).concat(pregacoes);
+    if(cultoAtual === 'calendario' && document.getElementById('modalEvento').classList.contains('hidden')) desenharCalendario();
   }catch(e){
     document.getElementById('calendarioGrid').innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`;
   }
@@ -5853,40 +5866,55 @@ async function apagarRoteiro(){
    as lives pre-criadas, as ao vivo e as ja encerradas. Custa 1 unidade de cota
    por pagina (o search.list custava 100 e as vezes escondia as agendadas).
    Depois o videos.list traz o horario agendado/real de cada uma. */
-let cacheVideosCanal = null, cacheVideosCanalEm = 0;
+let cacheVideosCanal = null, cacheVideosCanalEm = 0, buscaVideosCanal = null;
+// guarda a lista no aparelho: abrir o app de novo nao espera o YouTube
+try{
+  const g = JSON.parse(localStorage.getItem('videosCanal') || 'null');
+  if(g && Array.isArray(g.lista)){ cacheVideosCanal = g.lista; cacheVideosCanalEm = g.em || 0; }
+}catch(e){}
 async function ytGet(caminho){
   const r = await fetch(`https://www.googleapis.com/youtube/v3/${caminho}&key=${YOUTUBE_API_KEY}`);
   const j = await r.json();
   if(!r.ok) throw new Error((j.error && j.error.message) || 'Erro ao consultar o YouTube.');
   return j;
 }
-async function videosDoCanal(forcar){
-  if(!forcar && cacheVideosCanal && Date.now() - cacheVideosCanalEm < 5*60*1000) return cacheVideosCanal;
-  const playlist = 'UU' + YOUTUBE_CHANNEL_ID.slice(2);
-  let ids = [], token = '';
-  for(let pag = 0; pag < 4; pag++){ // ate 200 videos mais recentes
-    const j = await ytGet(`playlistItems?part=contentDetails&playlistId=${playlist}&maxResults=50${token ? '&pageToken=' + token : ''}`);
-    ids.push(...(j.items || []).map(i => i.contentDetails.videoId));
-    token = j.nextPageToken;
-    if(!token) break;
-  }
+function converterVideos(j){
   const lista = [];
-  for(let i = 0; i < ids.length; i += 50){
-    const j = await ytGet(`videos?part=snippet,liveStreamingDetails&id=${ids.slice(i, i+50).join(',')}`);
-    (j.items || []).forEach(v => {
-      const det = v.liveStreamingDetails;
-      if(!det) return; // so transmissoes ao vivo (agendadas, ao vivo ou encerradas)
-      lista.push({
-        id: v.id,
-        titulo: v.snippet.title,
-        miniatura: (v.snippet.thumbnails && (v.snippet.thumbnails.medium || v.snippet.thumbnails.default) || {}).url || '',
-        estado: v.snippet.liveBroadcastContent, // 'live' | 'upcoming' | 'none'
-        inicio: det.actualStartTime || det.scheduledStartTime || v.snippet.publishedAt || null,
-      });
+  (j.items || []).forEach(v => {
+    const det = v.liveStreamingDetails;
+    if(!det) return; // so transmissoes ao vivo (agendadas, ao vivo ou encerradas)
+    lista.push({
+      id: v.id,
+      titulo: v.snippet.title,
+      miniatura: (v.snippet.thumbnails && (v.snippet.thumbnails.medium || v.snippet.thumbnails.default) || {}).url || '',
+      estado: v.snippet.liveBroadcastContent, // 'live' | 'upcoming' | 'none'
+      inicio: det.actualStartTime || det.scheduledStartTime || v.snippet.publishedAt || null,
     });
-  }
-  cacheVideosCanal = lista; cacheVideosCanalEm = Date.now();
+  });
   return lista;
+}
+// Lista de lives do canal (ate 200 videos mais recentes). Cada pagina de
+// videos e buscada ao mesmo tempo que a proxima pagina da playlist.
+async function videosDoCanal(forcar){
+  if(!forcar && cacheVideosCanal && Date.now() - cacheVideosCanalEm < 10*60*1000) return cacheVideosCanal;
+  if(buscaVideosCanal) return buscaVideosCanal; // ja tem uma busca andando: espera ela
+  buscaVideosCanal = (async () => {
+    const playlist = 'UU' + YOUTUBE_CHANNEL_ID.slice(2);
+    let token = '';
+    const detalhes = [];
+    for(let pag = 0; pag < 4; pag++){
+      const j = await ytGet(`playlistItems?part=contentDetails&playlistId=${playlist}&maxResults=50${token ? '&pageToken=' + token : ''}`);
+      const ids = (j.items || []).map(i => i.contentDetails.videoId);
+      if(ids.length) detalhes.push(ytGet(`videos?part=snippet,liveStreamingDetails&id=${ids.join(',')}`));
+      token = j.nextPageToken;
+      if(!token) break;
+    }
+    const lista = (await Promise.all(detalhes)).flatMap(converterVideos);
+    cacheVideosCanal = lista; cacheVideosCanalEm = Date.now();
+    try{ localStorage.setItem('videosCanal', JSON.stringify({ lista, em: cacheVideosCanalEm })); }catch(e){}
+    return lista;
+  })();
+  try{ return await buscaVideosCanal; } finally { buscaVideosCanal = null; }
 }
 function linkYoutube(id){ return 'https://www.youtube.com/watch?v=' + id; }
 function dataLocalISO(d){ // "AAAA-MM-DD" no fuso do aparelho
@@ -5965,31 +5993,41 @@ async function carregarHomiletico(forcar){
   const el = document.getElementById('homLista');
   document.getElementById('homTitulo').textContent =
     homMes.toLocaleDateString('pt-BR', { month:'long', year:'numeric' }).replace(/^./, c => c.toUpperCase());
-  el.innerHTML = '<div class="vazio">Carregando...</div>';
   const ini = dataLocalISO(homMes);
   const fim = dataLocalISO(new Date(homMes.getFullYear(), homMes.getMonth() + 1, 0));
-  try{
-    const [linhas, videos] = await Promise.all([
-      api(`homiletico?select=*&data=gte.${ini}&data=lte.${fim}`),
-      videosDoCanal(forcar).then(v => { homErroLives = ''; return v; })
-        .catch(e => { homErroLives = e.message; return []; }),
-    ]);
-    homDados = {}; homExtras = [];
-    (linhas || []).forEach(l => {
-      if(l.culto === 'extra') homExtras.push(l);
-      else homDados[l.data + '|' + l.culto] = l;
-    });
+  const mesPedido = ini;
+  if(!el.querySelector('.hom-semana')) el.innerHTML = '<div class="vazio">Carregando...</div>';
+  // as lives do YouTube nao seguram a tela: os cultos aparecem assim que o
+  // banco responde, e as lives entram quando chegarem
+  const montarLives = (videos) => {
     homLivesPorDia = {};
-    videos.forEach(v => {
+    (videos || []).forEach(v => {
       if(!v.inicio) return;
       const k = dataLocalISO(new Date(v.inicio));
       (homLivesPorDia[k] = homLivesPorDia[k] || []).push(v);
     });
     Object.values(homLivesPorDia).forEach(l => l.sort((a,b) => new Date(a.inicio) - new Date(b.inicio)));
+  };
+  montarLives(cacheVideosCanal);
+  const busca = videosDoCanal(forcar).then(v => { homErroLives = ''; return v; })
+    .catch(e => { homErroLives = e.message; return null; });
+  try{
+    const linhas = await api(`homiletico?select=*&data=gte.${ini}&data=lte.${fim}`);
+    if(dataLocalISO(homMes) !== mesPedido) return; // mudou de mes no meio
+    homDados = {}; homExtras = [];
+    (linhas || []).forEach(l => {
+      if(l.culto === 'extra') homExtras.push(l);
+      else homDados[l.data + '|' + l.culto] = l;
+    });
     desenharHomiletico();
   }catch(e){
     el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`;
+    return;
   }
+  const videos = await busca;
+  if(dataLocalISO(homMes) !== mesPedido || cultoAtual !== 'homiletico') return;
+  if(videos) montarLives(videos);
+  if(document.getElementById('modalHomiletico').classList.contains('hidden')) desenharHomiletico();
 }
 
 function idDoLinkYoutube(url){
@@ -6355,8 +6393,9 @@ async function abrirAgendaPastoral(){
   pasJaRolou = false;
   marcarAba('pastoral');
   mostrarPagina('pastoral');
-  await carregarTiposPastoral();
-  await carregarAgendaPastoral();
+  if(!Object.keys(PAS_TIPOS).length) pasMontarTipos(null);
+  await Promise.all([carregarTiposPastoral(), carregarAgendaPastoral()]);
+  desenharAgendaPastoral();
 }
 function navegarAgendaPastoral(n){
   pasJaRolou = false;
@@ -6370,22 +6409,36 @@ function pasTextoItem(x){ const t = pasTipo(x.tipo); return x.pessoa || t.nome; 
 
 async function carregarAgendaPastoral(){
   const el = document.getElementById('pasConteudo');
-  el.innerHTML = '<div class="vazio">Carregando...</div>';
+  if(!el.children.length || el.querySelector('.aviso')) el.innerHTML = '<div class="vazio">Carregando...</div>';
+  else el.style.opacity = '.55'; // mantem o que ja esta na tela enquanto busca
   const { ini, fim } = pasPeriodo();
   try{
-    pasItens = await api(`agenda_pastoral?select=*&inicio=gte.${ini.toISOString()}&inicio=lt.${fim.toISOString()}&order=inicio.asc`) || [];
-    // eventos do Calendario da igreja (so se a pessoa tiver acesso a ele; senao ignora)
-    try{
-      const ag = await api('agendamentos?select=nome_evento,data_inicio,data_saida,horarios_evento&status=eq.Agendado');
-      pasEventosIgreja = (ag || []).map(a => ({ nome: a.nome_evento, ini: parseDataBR(a.data_inicio), fim: parseDataBR(a.data_saida) }))
-        .filter(a => a.ini && a.ini < fim && (a.fim || a.ini) >= ini);
-    }catch(e){ pasEventosIgreja = []; }
+    const [itens, igreja] = await Promise.all([
+      api(`agenda_pastoral?select=*&inicio=gte.${ini.toISOString()}&inicio=lt.${fim.toISOString()}&order=inicio.asc`),
+      pasEventosIgrejaTodos(),
+    ]);
+    pasItens = itens || [];
+    pasEventosIgreja = igreja.filter(a => a.ini < fim && (a.fim || a.ini) >= ini);
+    el.style.opacity = '';
     desenharAgendaPastoral();
   }catch(e){
+    el.style.opacity = '';
     el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`;
   }
 }
 
+// eventos do Calendario da igreja: busca uma vez e guarda por 5 minutos
+// (so se a pessoa tiver acesso a eles; senao fica vazio)
+let pasIgrejaCache = null, pasIgrejaEm = 0;
+async function pasEventosIgrejaTodos(){
+  if(pasIgrejaCache && Date.now() - pasIgrejaEm < 5*60*1000) return pasIgrejaCache;
+  try{
+    const ag = await api('agendamentos?select=nome_evento,data_inicio,data_saida&status=eq.Agendado');
+    pasIgrejaCache = (ag || []).map(a => ({ nome: a.nome_evento, ini: parseDataBR(a.data_inicio), fim: parseDataBR(a.data_saida) })).filter(a => a.ini);
+  }catch(e){ pasIgrejaCache = []; }
+  pasIgrejaEm = Date.now();
+  return pasIgrejaCache;
+}
 function pasEventosIgrejaDoDia(d){
   const k = pasISOData(d);
   return pasEventosIgreja.filter(a => {
