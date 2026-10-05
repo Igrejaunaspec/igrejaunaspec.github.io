@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Médicos em Missão · Inscrição</title>
+<meta name="description" content="Inscrição para consultas gratuitas com médicos especialistas · Igreja UNASP EC">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Lexend:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#eef2f5; --card:#ffffff; --fg:#14222e; --muted:#51606c; --line:#cfd8df;
+  --brand:#0b3a5e; --brand-fg:#ffffff; --accent:#1f7a4d; --soft:#e2ecf3; --warn:#9a3b12; --warn-bg:#fbe9df;
+  --display:"Lexend",system-ui,sans-serif; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e161d; --card:#16222c; --fg:#eaf1f6; --muted:#a3b2bd; --line:#2c3c49;
+  --brand:#7cb7e3; --brand-fg:#0b1a26; --accent:#5fcf96; --soft:#1d2e3b; --warn:#ffb08a; --warn-bg:#3a2218; color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:20px;line-height:1.5;
+  padding:16px 16px calc(48px + env(safe-area-inset-bottom))}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.25}
+h1{font-size:30px;color:var(--brand)} h2{font-size:26px}
+p{margin:0}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.topo{max-width:520px;margin:0 auto 14px;display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;color:var(--brand);font-size:17px}
+.topo svg{flex-shrink:0}
+.wrap{max-width:520px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 22px;display:grid;gap:22px}
+.passo{font-size:16px;color:var(--muted)}
+.bar{height:8px;background:var(--soft);border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand);transition:width .3s}
+.hint{color:var(--muted);font-size:18px}
+.opts{display:grid;gap:12px}
+.opt{font-size:22px;text-align:left;padding:18px 20px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);min-height:64px}
+.opt[aria-pressed="true"]{border-color:var(--brand);background:var(--soft);font-weight:700}
+.opt small{display:block;font-size:16px;color:var(--muted);font-weight:400}
+input,textarea{font:inherit;font-size:24px;width:100%;padding:16px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg)}
+textarea{resize:vertical}
+.dob{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px}
+.dob label{font-size:16px;color:var(--muted);display:grid;gap:4px}
+.err{color:var(--warn);background:var(--warn-bg);padding:12px 14px;border-radius:10px;font-size:18px}
+.nav{display:flex;gap:12px}
+.btn{font-weight:700;font-size:22px;padding:18px;border-radius:14px;border:0;flex:1;min-height:64px}
+.go{background:var(--brand);color:var(--brand-fg)}
+.go[disabled]{opacity:.6}
+.back{background:var(--soft);color:var(--fg);flex:0 0 auto;padding-inline:22px}
+.notice{background:var(--soft);border-radius:12px;padding:16px;font-size:18px;display:grid;gap:6px}
+.ok{width:72px;height:72px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:18px}
+dt{color:var(--muted)} dd{margin:0;font-weight:700;min-width:0;overflow-wrap:anywhere}
+.foto{display:grid;gap:12px}
+.foto label.btn{display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;background:var(--soft);color:var(--fg);border:2px dashed var(--line)}
+.foto input{position:absolute;width:1px;height:1px;opacity:0}
+.foto img{max-height:220px;border-radius:12px;object-fit:contain;background:var(--soft);width:100%}
+.help{text-align:center;font-size:17px;color:var(--muted)}
+.carregando{text-align:center;color:var(--muted);padding:30px 0}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="topo">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 21s-7-4.4-9.3-9A5.4 5.4 0 0 1 12 6a5.4 5.4 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z"/><path d="M12 9v5M9.5 11.5h5"/></svg>
+  Médicos em Missão · Igreja UNASP EC
+</div>
+<main class="wrap"><div class="card" id="app" aria-live="polite"><div class="carregando">Carregando…</div></div></main>
+
+<script>
+/* ======================================================================
+   MÉDICOS EM MISSÃO · página pública de inscrição (sem login)
+   Grava direto no Supabase. Ninguém daqui consegue LER inscrições: a página
+   só busca data/local/especialidades do evento ativo e INSERE a inscrição.
+   A triagem (plano de saúde, CPF repetido) é feita no painel da equipe —
+   aqui todo mundo vê a mesma tela final, de propósito.
+====================================================================== */
+const SUPABASE_URL = 'https://exvmabfccztvgrjbzypk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_iYZdJp-1QUq2-gSs8rh1Hw_QxLfS9AU';
+const AJUDA_WHATSAPP = ''; // ex.: '5519999999999' (número da secretaria, com 55 e DDD)
+
+let EVENTO = null;
+const d = {};
+let foto = null; // { blob, tipo, ext, url }
+let i = 0, err = '', enviando = false;
+const app = document.getElementById('app');
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const digits = s => String(s || '').replace(/\D/g, '');
+const dataBR = iso => { const [a, m, dd] = String(iso).split('-'); return `${dd}/${m}/${a}`; };
+const diaSemana = iso => new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', { weekday:'long' });
+
+const steps = [
+  { k:'intro' },
+  { k:'tipo', t:'O que você precisa?', o:[['Consulta','Primeira consulta com um especialista'],['Retorno','Já foi atendido e o médico pediu retorno']] },
+  { k:'esp', t:'Qual especialidade?', o:() => (EVENTO.especialidades || []).map(e => [e, '']) },
+  { k:'nome', t:'Qual o seu nome completo?', type:'text', ph:'Ex.: Maria da Silva', ac:'name' },
+  { k:'nasc', t:'Qual a sua data de nascimento?', type:'dob' },
+  { k:'cpf', t:'Qual o seu CPF?', type:'cpf', ph:'000.000.000-00' },
+  { k:'tel', t:'Qual o seu WhatsApp?', hint:'É por ele que vamos confirmar a consulta.', type:'tel', ph:'(19) 99999-9999', ac:'tel' },
+  { k:'sexo', t:'Sexo', o:[['Feminino',''],['Masculino','']] },
+  { k:'email', t:'Qual o seu e-mail?', hint:'Se não tiver, pode deixar em branco.', type:'email', ph:'nome@email.com', opt:true, ac:'email' },
+  { k:'end', t:'Qual o seu endereço?', hint:'Rua, número e bairro.', type:'area', ac:'street-address' },
+  { k:'plano', t:'Você possui plano de saúde?', o:[['Não',''],['Sim','']] },
+  { k:'rel', t:'Qual a sua religião?', type:'text', ph:'Ex.: Adventista', opt:true },
+  { k:'foto', t:'Foto do pedido de retorno', hint:'Tire uma foto do pedido de retorno que o médico entregou.', type:'file', only:'Retorno' },
+  { k:'rev' }, { k:'fim' }
+];
+const vis = () => steps.filter(s => !s.only || s.only === d.tipo);
+
+const mask = {
+  cpf: v => v.replace(/\D/g,'').slice(0,11).replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2'),
+  tel: v => { v = v.replace(/\D/g,'').slice(0,11); return v.length > 6 ? `(${v.slice(0,2)}) ${v.slice(2,v.length-4)}-${v.slice(-4)}` : v.length > 2 ? `(${v.slice(0,2)}) ${v.slice(2)}` : v; }
+};
+function cpfOk(c){
+  c = digits(c);
+  if(c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  for(let t = 9; t < 11; t++){ let s = 0; for(let j = 0; j < t; j++) s += c[j] * (t + 1 - j); if(((s * 10) % 11) % 10 != c[t]) return false; }
+  return true;
+}
+function dataValida(dd, mm, aa){
+  const dt = new Date(aa, mm - 1, dd);
+  return dt.getFullYear() === aa && dt.getMonth() === mm - 1 && dt.getDate() === dd && dt <= new Date() && aa >= 1900;
+}
+
+function ajudaHTML(){
+  return AJUDA_WHATSAPP
+    ? `<p class="help">Precisa de ajuda? <a href="https://wa.me/${AJUDA_WHATSAPP}" target="_blank" rel="noopener">Chame a secretaria no WhatsApp</a>.</p>`
+    : `<p class="help">Precisa de ajuda? Fale com a secretaria da igreja.</p>`;
+}
+
+function render(){
+  if(!EVENTO || !EVENTO.abertas || !(EVENTO.especialidades || []).length){ telaFechada(); return; }
+  const S = vis(), s = S[i], n = S.length - 2;
+  let h = '';
+  if(s.k !== 'intro' && s.k !== 'fim')
+    h += `<div class="passo">Passo ${Math.min(i, n)} de ${n}</div><div class="bar"><i style="width:${Math.min(i, n) / n * 100}%"></i></div>`;
+  if(s.k === 'intro'){
+    h += `<h1>Médicos em Missão</h1>
+      <p>Consultas <b>gratuitas</b> com médicos especialistas no ${esc(diaSemana(EVENTO.data))}, <b>${esc(dataBR(EVENTO.data))}</b>${EVENTO.local ? `, no <b>${esc(EVENTO.local)}</b>` : ''}.</p>
+      <div class="notice"><b>Antes de começar</b><span>• Apenas uma inscrição por pessoa.</span><span>• As vagas são limitadas e preenchidas por ordem de envio.</span><span>• A confirmação chega pelo WhatsApp.</span></div>
+      <div class="nav"><button class="btn go" id="next">Começar inscrição</button></div>`;
+  }else if(s.k === 'rev'){
+    const rows = [['Tipo', d.tipo], ['Especialidade', d.esp], ['Nome', d.nome], ['Nascimento', d.nasc], ['CPF', d.cpf],
+      ['WhatsApp', d.tel], ['Sexo', d.sexo], ['E-mail', d.email], ['Endereço', d.end], ['Plano de saúde', d.plano], ['Religião', d.rel]];
+    if(d.tipo === 'Retorno') rows.push(['Foto do pedido', foto ? 'Enviada' : '—']);
+    h += `<h2>Confira seus dados</h2><dl>${rows.map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1] || '—')}</dd>`).join('')}</dl>
+      <p class="hint">Se algo estiver errado, toque em Voltar.</p>
+      ${err ? `<div class="err" role="alert">${esc(err)}</div>` : ''}
+      <div class="nav"><button class="btn back" id="back">Voltar</button><button class="btn go" id="next" ${enviando ? 'disabled' : ''}>${enviando ? 'Enviando…' : 'Enviar inscrição'}</button></div>`;
+  }else if(s.k === 'fim'){
+    h += `<div class="ok"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#fff" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></div>
+      <h2>Inscrição recebida!</h2>
+      <p>As vagas são limitadas e preenchidas por ordem de envio. <b>Aguarde a confirmação pelo WhatsApp</b> no número ${esc(d.tel)}.</p>
+      <p class="hint">Caso não receba a confirmação, significa que as vagas se esgotaram.</p>
+      <div class="nav"><button class="btn back" id="reset" style="flex:1">Fazer outra inscrição</button></div>`;
+  }else{
+    const opts = typeof s.o === 'function' ? s.o() : s.o;
+    h += `<h2 id="perg">${esc(s.t)}</h2>${s.hint ? `<p class="hint">${esc(s.hint)}</p>` : ''}`;
+    if(opts) h += `<div class="opts" role="group" aria-labelledby="perg">${opts.map(([v, sub]) =>
+      `<button class="opt" data-v="${esc(v)}" aria-pressed="${d[s.k] === v}">${esc(v)}${sub ? `<small>${esc(sub)}</small>` : ''}</button>`).join('')}</div>`;
+    else if(s.type === 'dob'){
+      const [a, b, c] = (d.nasc || '//').split('/');
+      h += `<div class="dob"><label>Dia<input id="dd" inputmode="numeric" maxlength="2" autocomplete="bday-day" value="${esc(a)}"></label>
+        <label>Mês<input id="mm" inputmode="numeric" maxlength="2" autocomplete="bday-month" value="${esc(b)}"></label>
+        <label>Ano<input id="aa" inputmode="numeric" maxlength="4" autocomplete="bday-year" value="${esc(c)}"></label></div>`;
+    }
+    else if(s.type === 'area') h += `<textarea id="f" rows="3" aria-labelledby="perg" autocomplete="${s.ac || 'off'}">${esc(d[s.k] || '')}</textarea>`;
+    else if(s.type === 'file') h += `<div class="foto">
+        ${foto ? `<img src="${foto.url}" alt="Foto do pedido de retorno">` : ''}
+        <label class="btn" for="f">${foto ? 'Trocar foto' : 'Tirar ou escolher foto'}</label>
+        <input id="f" type="file" accept="image/*,application/pdf"></div>`;
+    else h += `<input id="f" aria-labelledby="perg" ${s.type === 'email' ? 'type="email"' : 'type="text"'} ${s.type === 'cpf' || s.type === 'tel' ? 'inputmode="numeric"' : ''}
+        autocomplete="${s.ac || 'off'}" placeholder="${esc(s.ph || '')}" value="${esc(d[s.k] || '')}">`;
+    if(err) h += `<div class="err" role="alert">${esc(err)}</div>`;
+    h += `<div class="nav"><button class="btn back" id="back">Voltar</button><button class="btn go" id="next">Próximo</button></div>`;
+  }
+  if(s.k !== 'fim' && s.k !== 'intro') h += ajudaHTML();
+  app.innerHTML = h;
+
+  const f = document.getElementById('f');
+  if(f && mask[s.type]) f.addEventListener('input', () => f.value = mask[s.type](f.value));
+  if(f && s.type === 'file') f.addEventListener('change', () => escolherFoto(f.files[0]));
+  if(f && s.type !== 'file') f.addEventListener('keydown', e => { if(e.key === 'Enter' && s.type !== 'area'){ e.preventDefault(); next(s, f); } });
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => { d[s.k] = b.dataset.v; err = ''; i++; render(); window.scrollTo(0, 0); });
+  const nx = document.getElementById('next'), bk = document.getElementById('back'), rs = document.getElementById('reset');
+  if(nx) nx.onclick = () => next(s, f);
+  if(bk) bk.onclick = () => { err = ''; i--; render(); window.scrollTo(0, 0); };
+  if(rs) rs.onclick = () => { for(const k in d) delete d[k]; foto = null; i = 0; err = ''; render(); };
+  const foco = document.getElementById(s.type === 'dob' ? 'dd' : 'f');
+  if(foco && s.type !== 'file' && window.innerWidth > 700) foco.focus();
+}
+
+function telaFechada(){
+  app.innerHTML = `<h1>Médicos em Missão</h1>
+    <p>As inscrições <b>não estão abertas</b> no momento.</p>
+    <p class="hint">Acompanhe os avisos da igreja para saber quando abrirão as próximas inscrições.</p>`;
+}
+
+// Reduz a foto (fotos de celular passam de 5 MB) antes de enviar
+async function escolherFoto(arquivo){
+  if(!arquivo) return;
+  err = '';
+  try{
+    if(arquivo.type === 'application/pdf'){
+      foto = { blob: arquivo, tipo: 'application/pdf', ext: 'pdf', url: '' };
+    }else{
+      const url = URL.createObjectURL(arquivo);
+      const img = await new Promise((ok, falha) => { const im = new Image(); im.onload = () => ok(im); im.onerror = falha; im.src = url; setTimeout(() => falha(new Error('demorou')), 8000); });
+      const max = 1600, esc2 = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * esc2); cv.height = Math.round(img.height * esc2);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      const blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.82));
+      foto = { blob, tipo: 'image/jpeg', ext: 'jpg', url: URL.createObjectURL(blob) };
+    }
+  }catch(e){
+    // formato que o navegador não abre (ex.: HEIC em alguns aparelhos): envia o original
+    foto = { blob: arquivo, tipo: arquivo.type || 'image/heic', ext: (arquivo.name.split('.').pop() || 'jpg').toLowerCase(), url: '' };
+  }
+  if(foto.blob.size > 10 * 1024 * 1024){ foto = null; err = 'A foto ficou grande demais. Tente tirar de novo, um pouco mais de longe.'; }
+  render();
+}
+
+async function next(s, f){
+  err = '';
+  if(s.k === 'intro'){ i++; render(); return; }
+  if(s.o && !d[s.k]) err = 'Toque em uma das opções para continuar.';
+  else if(s.type === 'dob'){
+    const a = +document.getElementById('dd').value, b = +document.getElementById('mm').value, c = +document.getElementById('aa').value;
+    if(!dataValida(a, b, c)) err = 'Confira a data. Exemplo: dia 05, mês 03, ano 1960.';
+    else d.nasc = `${String(a).padStart(2,'0')}/${String(b).padStart(2,'0')}/${c}`;
+  }
+  else if(s.type === 'file'){ if(!foto) err = 'Envie a foto do pedido de retorno para continuar.'; }
+  else if(s.type){
+    const v = f.value.trim();
+    if(!v && !s.opt) err = 'Este campo precisa ser preenchido.';
+    else if(s.k === 'nome' && v.split(/\s+/).length < 2) err = 'Escreva o nome completo (nome e sobrenome).';
+    else if(s.type === 'cpf' && !cpfOk(v)) err = 'Este CPF não parece correto. Confira os 11 números.';
+    else if(s.type === 'tel' && digits(v).length < 10) err = 'Digite o WhatsApp com DDD. Exemplo: (19) 99999-9999.';
+    else if(s.type === 'email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) err = 'Confira o e-mail, ou deixe em branco.';
+    else d[s.k] = v;
+  }
+  if(!err && s.k === 'rev'){ await enviar(); return; }
+  if(!err){ i++; window.scrollTo(0, 0); }
+  render();
+}
+
+async function enviar(){
+  if(enviando) return;
+  enviando = true; err = ''; render();
+  try{
+    let caminho = '';
+    if(d.tipo === 'Retorno' && foto){
+      caminho = `${EVENTO.id}/${crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2)}.${foto.ext}`;
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/mm-retornos/${caminho}`, {
+        method:'POST', headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': foto.tipo, 'x-upsert':'false' },
+        body: foto.blob
+      });
+      if(!r.ok) throw new Error('foto');
+    }
+    const [dd, mm, aa] = d.nasc.split('/');
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/mm_inscricoes`, {
+      method:'POST',
+      headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type':'application/json', Prefer:'return=minimal' },
+      body: JSON.stringify({
+        evento_id: EVENTO.id, tipo: d.tipo === 'Retorno' ? 'retorno' : 'consulta', especialidade: d.esp,
+        nome: d.nome, nascimento: `${aa}-${mm}-${dd}`, cpf: digits(d.cpf), whatsapp: digits(d.tel),
+        sexo: d.sexo || '', email: d.email || '', endereco: d.end || '', plano_saude: d.plano === 'Sim',
+        religiao: d.rel || '', foto_retorno: caminho
+      })
+    });
+    if(!r.ok){
+      let m = ''; try{ m = (await r.json()).message || ''; }catch(e){}
+      if(/fechad/i.test(m)){ EVENTO.abertas = false; enviando = false; render(); return; }
+      throw new Error(m || 'erro');
+    }
+    enviando = false; i++; render(); window.scrollTo(0, 0);
+  }catch(e){
+    enviando = false;
+    err = 'Não conseguimos enviar agora. Verifique sua internet e toque em "Enviar inscrição" de novo.';
+    render();
+  }
+}
+
+(async function iniciar(){
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/mm_evento_publico`, {
+      method:'POST', headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type':'application/json' }, body:'{}'
+    });
+    EVENTO = r.ok ? await r.json() : null;
+  }catch(e){ EVENTO = null; }
+  render();
+})();
+</script>
+</body>
+</html>
