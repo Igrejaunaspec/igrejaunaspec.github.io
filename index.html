@@ -424,7 +424,8 @@
   .pas-cabs{overflow-y:hidden;scrollbar-gutter:stable;}
   .pas-horas div{height:52px;font-size:11px;color:var(--muted2);text-align:right;padding-right:6px;box-sizing:border-box;transform:translateY(-6px);}
   .pas-col{position:relative;border-left:1px solid var(--border);cursor:copy;}
-  .pas-col.hoje{background:rgba(47,85,127,.04);}
+  .pas-corpo > .pas-col:nth-child(odd),.pas-cabs > .pas-cab:nth-child(odd){background:#f3f5f9;}
+  .pas-col.hoje,.pas-corpo > .pas-col.hoje:nth-child(odd){background:#e8eef6;}
   .pas-hr{height:52px;border-top:1px solid var(--border);box-sizing:border-box;}
   .pas-hr:first-child{border-top:0;}
   .pas-ev{position:absolute;left:3px;right:3px;border:0;border-radius:7px;padding:4px 7px;font-family:inherit;font-size:11.5px;line-height:1.3;text-align:left;overflow:hidden;cursor:pointer;box-sizing:border-box;}
