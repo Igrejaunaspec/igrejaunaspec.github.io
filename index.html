@@ -448,6 +448,25 @@
   .pas-chips{display:flex;flex-wrap:wrap;gap:8px;}
   .pas-chips button{font-family:inherit;font-size:13px;font-weight:600;border-radius:20px;padding:8px 12px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;}
   .pas-chips button.on{background:var(--c);border-color:var(--c);color:#fff;}
+  .pas-visoes{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .pas-visoes button{border:0;background:var(--panel);font-family:inherit;font-size:13px;font-weight:600;color:var(--muted2);padding:7px 12px;cursor:pointer;}
+  .pas-visoes button + button{border-left:1px solid var(--border);}
+  .pas-visoes button.on{background:var(--accent);color:#fff;}
+  .pas-mes{margin-top:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .pas-mes-cab,.pas-mes-grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));}
+  .pas-mes-cab div{padding:8px;font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;background:var(--panel2);}
+  .pas-mes-dia{min-height:104px;border-top:1px solid var(--border);border-left:1px solid var(--border);padding:4px;display:flex;flex-direction:column;gap:3px;cursor:pointer;min-width:0;box-sizing:border-box;}
+  .pas-mes-dia:nth-child(7n+1){border-left:0;}
+  .pas-mes-dia:hover{background:var(--panel2);}
+  .pas-mes-dia.fora{background:#f6f7f9;}
+  .pas-mes-dia.fora .n{color:#b3b9c4;}
+  .pas-mes-dia .n{font-size:13px;font-weight:700;padding:2px 4px;}
+  .pas-mes-dia.hoje .n{background:var(--accent);color:#fff;border-radius:6px;align-self:flex-start;}
+  .pas-mes-ev{border:0;border-radius:5px;padding:2px 6px;font-family:inherit;font-size:11.5px;font-weight:600;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+  .pas-mes-mais{font-size:11px;color:var(--muted2);font-weight:600;padding:0 4px;}
+  .pas-mes-ig{font-size:11px;background:#e7e9ee;color:#3a4250;border-radius:5px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pas-mes-pontos{display:flex;gap:3px;flex-wrap:wrap;padding:0 4px;}
+  .pas-mes-pontos i{width:7px;height:7px;border-radius:50%;}
   .pas-tipo-ed{display:flex;align-items:center;gap:8px;margin-top:8px;}
   .pas-tipo-ed input[type=color]{width:44px;height:40px;padding:2px;border:1px solid var(--border);border-radius:8px;background:none;}
   .pas-tipo-ed input[type=text]{flex:1;min-width:0;}
@@ -464,7 +483,7 @@
   #modalPastoralCaixa .field{min-width:0;}
   #modalPastoralCaixa .pas-tipo-ed input[type=color]{width:44px;flex:0 0 44px;}
     .pas-tres{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px;}
-  @media (max-width:700px){ .pas-legenda{display:none;} .pas-chips button{font-size:13px;padding:7px 11px;} .pas-tres{grid-template-columns:1fr 1fr;} .pas-tres .field:first-child{grid-column:1 / -1;} }
+  @media (max-width:700px){ .pas-legenda{display:none;} .pas-visoes .so-pc{display:none;} .pas-mes-dia{min-height:58px;align-items:center;} .pas-chips button{font-size:13px;padding:7px 11px;} .pas-tres{grid-template-columns:1fr 1fr;} .pas-tres .field:first-child{grid-column:1 / -1;} }
 
   /* ---------- calendario homiletico ---------- */
   .hom-legenda{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted2);flex-wrap:wrap;margin-left:auto;}
@@ -1238,6 +1257,11 @@
           <div class="calendario-titulo" id="pasTitulo"></div>
           <button class="btn icon" onclick="navegarAgendaPastoral(1)" title="Próximo">›</button>
           <button class="btn small" onclick="hojeAgendaPastoral()">Hoje</button>
+          <div class="pas-visoes" id="pasVisoes">
+            <button data-v="dia" onclick="mudarVisaoPastoral('dia')">Dia</button>
+            <button data-v="semana" class="so-pc" onclick="mudarVisaoPastoral('semana')">Semana</button>
+            <button data-v="mes" onclick="mudarVisaoPastoral('mes')">Mês</button>
+          </div>
           <span class="pas-legenda" id="pasLegenda"></span>
         </div>
         <div id="pasConteudo"></div>
@@ -6296,6 +6320,25 @@ let pasItens = [];
 let pasEventosIgreja = [];
 let pasEdicao = null;
 let pasJaRolou = false;
+let pasVisao = 'semana'; // 'dia' | 'semana' | 'mes'
+try{ pasVisao = localStorage.getItem('pasVisao') || 'semana'; }catch(e){}
+function mudarVisaoPastoral(v){
+  pasVisao = v; pasJaRolou = false;
+  try{ localStorage.setItem('pasVisao', v); }catch(e){}
+  carregarAgendaPastoral();
+}
+function pasDiaDoMes(iso){ pasDia = new Date(iso + 'T00:00:00'); mudarVisaoPastoral('dia'); }
+// periodo carregado conforme a visao
+function pasPeriodo(){
+  if(pasVisao === 'mes'){
+    const ini = pasInicioSemana(new Date(pasDia.getFullYear(), pasDia.getMonth(), 1));
+    const fim = new Date(ini); fim.setDate(fim.getDate() + 42);
+    return { ini, fim };
+  }
+  const ini = pasInicioSemana(pasDia);
+  const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
+  return { ini, fim };
+}
 // volta para o app/aba: busca de novo (o pastor e a secretaria usam aparelhos diferentes)
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible' && cultoAtual === 'pastoral'
@@ -6317,17 +6360,18 @@ async function abrirAgendaPastoral(){
 }
 function navegarAgendaPastoral(n){
   pasJaRolou = false;
-  pasDia.setDate(pasDia.getDate() + (ehCelular() ? n : n * 7));
+  if(pasVisao === 'mes') pasDia = new Date(pasDia.getFullYear(), pasDia.getMonth() + n, 1);
+  else pasDia.setDate(pasDia.getDate() + ((pasVisao === 'dia' || ehCelular()) ? n : n * 7));
   carregarAgendaPastoral();
 }
 function hojeAgendaPastoral(){ pasJaRolou = false; pasDia = new Date(); pasDia.setHours(0,0,0,0); carregarAgendaPastoral(); }
 function escolherDiaPastoral(iso){ pasDia = new Date(iso + 'T00:00:00'); desenharAgendaPastoral(); }
+function pasTextoItem(x){ const t = pasTipo(x.tipo); return x.pessoa || t.nome; }
 
 async function carregarAgendaPastoral(){
   const el = document.getElementById('pasConteudo');
   el.innerHTML = '<div class="vazio">Carregando...</div>';
-  const ini = pasInicioSemana(pasDia);
-  const fim = new Date(ini); fim.setDate(fim.getDate() + 7);
+  const { ini, fim } = pasPeriodo();
   try{
     pasItens = await api(`agenda_pastoral?select=*&inicio=gte.${ini.toISOString()}&inicio=lt.${fim.toISOString()}&order=inicio.asc`) || [];
     // eventos do Calendario da igreja (so se a pessoa tiver acesso a ele; senao ignora)
@@ -6358,14 +6402,40 @@ function desenharAgendaPastoral(){
   const ini = pasInicioSemana(pasDia);
   const dias = Array.from({ length:7 }, (_, i) => { const d = new Date(ini); d.setDate(d.getDate() + i); return d; });
   const fimSem = dias[6];
-  document.getElementById('pasTitulo').textContent = ehCelular()
-    ? pasDia.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' })
-    : `${ini.getDate()} ${ini.getMonth() !== fimSem.getMonth() ? ini.toLocaleDateString('pt-BR',{month:'short'}).replace('.','') + ' ' : ''}– ${fimSem.toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' })}`;
+  const tit = document.getElementById('pasTitulo');
+  if(pasVisao === 'mes') tit.textContent = pasDia.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+  else if(pasVisao === 'dia' || ehCelular()) tit.textContent = pasDia.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
+  else tit.textContent = `${ini.getDate()} ${ini.getMonth() !== fimSem.getMonth() ? ini.toLocaleDateString('pt-BR',{month:'short'}).replace('.','') + ' ' : ''}– ${fimSem.toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' })}`;
+  const sel = document.getElementById('pasVisoes');
+  if(sel) sel.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === pasVisao || (ehCelular() && pasVisao !== 'mes' && b.dataset.v === 'dia')));
   const hojeK = pasISOData(new Date());
   const el = document.getElementById('pasConteudo');
 
+  if(pasVisao === 'mes'){
+    const ini0 = pasInicioSemana(new Date(pasDia.getFullYear(), pasDia.getMonth(), 1));
+    const MAX = ehCelular() ? 0 : 3;
+    let cels = '';
+    for(let i = 0; i < 42; i++){
+      const d = new Date(ini0); d.setDate(d.getDate() + i);
+      if(i === 35 && d.getMonth() !== pasDia.getMonth()) break;
+      const k = pasISOData(d), its = pasItensDoDia(d), ig = pasEventosIgrejaDoDia(d);
+      const fora = d.getMonth() !== pasDia.getMonth();
+      cels += `<div class="pas-mes-dia${fora ? ' fora' : ''}${k === hojeK ? ' hoje' : ''}" onclick="pasDiaDoMes('${k}')">
+        <div class="n">${d.getDate()}</div>
+        ${MAX ? its.slice(0, MAX).map(x => { const t = pasTipo(x.tipo);
+          return `<button class="pas-mes-ev st-${x.status}" style="background:${t.fundo};color:${t.texto};" onclick="event.stopPropagation();abrirModalPastoral('${x.id}')">${pasHora(new Date(x.inicio))} ${escapar(pasTextoItem(x))}</button>`; }).join('')
+          + (its.length > MAX ? `<div class="pas-mes-mais">+${its.length - MAX} mais</div>` : '')
+          + ig.slice(0, 1).map(g => `<div class="pas-mes-ig">${escapar(g.nome || '')}</div>`).join('')
+        : `<div class="pas-mes-pontos">${its.slice(0, 4).map(x => `<i style="background:${pasTipo(x.tipo).cor}"></i>`).join('')}</div>`}
+      </div>`;
+    }
+    el.innerHTML = `<div class="pas-mes"><div class="pas-mes-cab">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(s => `<div>${s}</div>`).join('')}</div>
+      <div class="pas-mes-grade">${cels}</div></div>`;
+    return;
+  }
+
   if(ehCelular()){
-    // faixa da semana + lista do dia
+    // celular (dia ou semana): faixa da semana + lista do dia
     const faixa = `<div class="pas-faixa">${dias.map(d => {
       const k = pasISOData(d), n = pasItensDoDia(d).filter(x => x.status !== 'cancelado').length;
       return `<button class="${k === pasISOData(pasDia) ? 'on' : ''}${k === hojeK ? ' hoje' : ''}" onclick="escolherDiaPastoral('${k}')">
@@ -6388,7 +6458,9 @@ function desenharAgendaPastoral(){
     return;
   }
 
-  // computador: grade da semana
+  // computador: grade da semana (ou de um dia so)
+  if(pasVisao === 'dia') dias.splice(0, 7, new Date(pasDia));
+  const gridCols = `52px repeat(${dias.length},minmax(0,1fr))`;
   const horas = [];
   for(let h = PAS_H_INI; h < PAS_H_FIM; h++) horas.push(h);
   const altura = (PAS_H_FIM - PAS_H_INI) * PAS_PX_H;
@@ -6413,15 +6485,15 @@ function desenharAgendaPastoral(){
       ${ig.map(g => `<div class="pas-igreja" title="Calendário da igreja">${escapar(g.nome || '')}</div>`).join('')}</div>`;
   }).join('');
   // rola a grade ate o primeiro compromisso da semana (ou a hora atual)
-  const horasSemana = pasItens.map(x => new Date(x.inicio)).map(d => d.getHours() + d.getMinutes()/60);
+  const horasSemana = pasItens.filter(x => dias.some(d => pasISOData(d) === pasISOData(new Date(x.inicio)))).map(x => new Date(x.inicio)).map(d => d.getHours() + d.getMinutes()/60);
   const alvoH = horasSemana.length ? Math.min(...horasSemana) : new Date().getHours();
   setTimeout(() => {
     const corpo = el.querySelector('.pas-corpo');
     if(corpo && !pasJaRolou){ corpo.scrollTop = Math.max(0, (alvoH - PAS_H_INI - 1) * PAS_PX_H); pasJaRolou = true; }
   }, 0);
   el.innerHTML = `<div class="pas-grade">
-    <div class="pas-cabs"><div></div>${cab}</div>
-    <div class="pas-corpo"><div class="pas-horas">${horas.map(h => `<div>${String(h).padStart(2,'0')}h</div>`).join('')}</div>${colunas}</div>
+    <div class="pas-cabs" style="grid-template-columns:${gridCols}"><div></div>${cab}</div>
+    <div class="pas-corpo" style="grid-template-columns:${gridCols}"><div class="pas-horas">${horas.map(h => `<div>${String(h).padStart(2,'0')}h</div>`).join('')}</div>${colunas}</div>
   </div>`;
 }
 
