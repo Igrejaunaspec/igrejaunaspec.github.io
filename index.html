@@ -4549,6 +4549,16 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
+  // Medicos em Missao: abre o painel da equipe (mesmo login)
+  if(perfil.acesso_medicos){
+    const b = document.createElement('button');
+    b.textContent = 'Médicos em Missão';
+    b.title = 'Painel de inscrições do Médicos em Missão';
+    b.onclick = () => { location.href = '/medicos-em-missao/admin.html'; };
+    b.dataset.culto = 'medicos';
+    abas.appendChild(b);
+  }
+
   // Agenda pastoral: pastor (com anotacoes) ou secretaria (so horarios)
   if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria){
     const b = document.createElement('button');
