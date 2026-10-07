@@ -53,6 +53,12 @@ dt{color:var(--muted)} dd{margin:0;font-weight:700;min-width:0;overflow-wrap:any
 .foto img{max-height:220px;border-radius:12px;object-fit:contain;background:var(--soft);width:100%}
 .help{text-align:center;font-size:17px;color:var(--muted)}
 .carregando{text-align:center;color:var(--muted);padding:30px 0}
+.consent{display:flex;gap:14px;align-items:flex-start;padding:16px;border:2px solid var(--line);border-radius:14px;font-size:18px;cursor:pointer}
+.consent input{width:30px;height:30px;flex:none;margin-top:2px;accent-color:var(--brand)}
+.consent.on{border-color:var(--brand);background:var(--soft)}
+details.priv{background:var(--soft);border-radius:12px;padding:12px 16px;font-size:17px}
+details.priv summary{cursor:pointer;font-weight:700;color:var(--brand)}
+details.priv div{display:grid;gap:8px;margin-top:10px}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
 </head>
@@ -73,7 +79,11 @@ dt{color:var(--muted)} dd{margin:0;font-weight:700;min-width:0;overflow-wrap:any
 ====================================================================== */
 const SUPABASE_URL = 'https://exvmabfccztvgrjbzypk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_iYZdJp-1QUq2-gSs8rh1Hw_QxLfS9AU';
-const AJUDA_WHATSAPP = ''; // ex.: '5519999999999' (número da secretaria, com 55 e DDD)
+const AJUDA_WHATSAPP = '';
+// LGPD: por quanto tempo os dados ficam guardados depois do evento
+const PRAZO_GUARDA_MESES = 6;
+const VERSAO_TERMO = '2026-10-07';
+const TEXTO_CONSENTIMENTO = `Autorizo a Igreja Adventista UNASP EC a usar os dados que informei (inclusive os de saúde e, se informada, a religião) somente para organizar meu atendimento no Médicos em Missão: selecionar as vagas, confirmar a consulta pelo WhatsApp e registrar o atendimento no sistema usado pelos médicos. Sei que meus dados não serão vendidos nem usados para outra finalidade, que serão apagados em até ${PRAZO_GUARDA_MESES} meses após o evento e que posso pedir para vê-los, corrigi-los ou apagá-los a qualquer momento.`; // ex.: '5519999999999' (número da secretaria, com 55 e DDD)
 
 let EVENTO = null;
 const d = {};
@@ -100,6 +110,7 @@ const steps = [
   { k:'plano', t:'Você possui plano de saúde?', o:[['Não',''],['Sim','']] },
   { k:'rel', t:'Qual a sua religião?', type:'text', ph:'Ex.: Adventista', opt:true },
   { k:'foto', t:'Foto do pedido de retorno', hint:'Tire uma foto do pedido de retorno que o médico entregou.', type:'file', only:'Retorno' },
+  { k:'lgpd', t:'Autorização para uso dos dados' },
   { k:'rev' }, { k:'fim' }
 ];
 const vis = () => steps.filter(s => !s.only || s.only === d.tipo);
@@ -119,6 +130,16 @@ function dataValida(dd, mm, aa){
   return dt.getFullYear() === aa && dt.getMonth() === mm - 1 && dt.getDate() === dd && dt <= new Date() && aa >= 1900;
 }
 
+function privacidadeHTML(aberto){
+  return `<details class="priv"${aberto ? ' open' : ''}><summary>Como usamos seus dados</summary><div>
+    <span><b>Quem cuida dos dados:</b> Igreja Adventista UNASP EC (secretaria da igreja).</span>
+    <span><b>Para quê:</b> só para organizar as consultas do Médicos em Missão: selecionar as vagas, confirmar pelo WhatsApp e registrar o atendimento no sistema usado pelos médicos.</span>
+    <span><b>Quem vê:</b> apenas a equipe do Médicos em Missão, com login e senha. A sua inscrição não fica visível para outras pessoas.</span>
+    <span><b>Por quanto tempo:</b> os dados são apagados em até ${PRAZO_GUARDA_MESES} meses depois do evento.</span>
+    <span><b>Seus direitos:</b> você pode pedir para ver, corrigir ou apagar seus dados a qualquer momento, falando com a secretaria da igreja.</span>
+  </div></details>`;
+}
+
 function ajudaHTML(){
   return AJUDA_WHATSAPP
     ? `<p class="help">Precisa de ajuda? <a href="https://wa.me/${AJUDA_WHATSAPP}" target="_blank" rel="noopener">Chame a secretaria no WhatsApp</a>.</p>`
@@ -135,7 +156,15 @@ function render(){
     h += `<h1>Médicos em Missão</h1>
       <p>Consultas <b>gratuitas</b> com médicos especialistas no ${esc(diaSemana(EVENTO.data))}, <b>${esc(dataBR(EVENTO.data))}</b>${EVENTO.local ? `, no <b>${esc(EVENTO.local)}</b>` : ''}.</p>
       <div class="notice"><b>Antes de começar</b><span>• Apenas uma inscrição por pessoa.</span><span>• As vagas são limitadas e preenchidas por ordem de envio.</span><span>• A confirmação chega pelo WhatsApp.</span></div>
+      ${privacidadeHTML(false)}
       <div class="nav"><button class="btn go" id="next">Começar inscrição</button></div>`;
+  }else if(s.k === 'lgpd'){
+    h += `<h2 id="perg">${esc(s.t)}</h2>
+      <p class="hint">Para fazer a inscrição, precisamos da sua autorização, como pede a Lei Geral de Proteção de Dados (LGPD).</p>
+      <label class="consent${d.consentimento ? ' on' : ''}"><input type="checkbox" id="chkLgpd" ${d.consentimento ? 'checked' : ''}><span>${esc(TEXTO_CONSENTIMENTO)}</span></label>
+      ${privacidadeHTML(false)}
+      ${err ? `<div class="err" role="alert">${esc(err)}</div>` : ''}
+      <div class="nav"><button class="btn back" id="back">Voltar</button><button class="btn go" id="next">Próximo</button></div>`;
   }else if(s.k === 'rev'){
     const rows = [['Tipo', d.tipo], ['Especialidade', d.esp], ['Nome', d.nome], ['Nascimento', d.nasc], ['CPF', d.cpf],
       ['WhatsApp', d.tel], ['Sexo', d.sexo], ['E-mail', d.email], ['Endereço', d.end], ['Plano de saúde', d.plano], ['Religião', d.rel]];
@@ -174,6 +203,8 @@ function render(){
   if(s.k !== 'fim' && s.k !== 'intro') h += ajudaHTML();
   app.innerHTML = h;
 
+  const chk = document.getElementById('chkLgpd');
+  if(chk) chk.addEventListener('change', () => { d.consentimento = chk.checked; chk.closest('.consent').classList.toggle('on', chk.checked); });
   const f = document.getElementById('f');
   if(f && mask[s.type]) f.addEventListener('input', () => f.value = mask[s.type](f.value));
   if(f && s.type === 'file') f.addEventListener('change', () => escolherFoto(f.files[0]));
@@ -221,6 +252,11 @@ async function escolherFoto(arquivo){
 async function next(s, f){
   err = '';
   if(s.k === 'intro'){ i++; render(); return; }
+  if(s.k === 'lgpd'){
+    if(!d.consentimento) err = 'Para continuar, marque a caixa de autorização.';
+    else { i++; window.scrollTo(0, 0); }
+    render(); return;
+  }
   if(s.o && !d[s.k]) err = 'Toque em uma das opções para continuar.';
   else if(s.type === 'dob'){
     const a = +document.getElementById('dd').value, b = +document.getElementById('mm').value, c = +document.getElementById('aa').value;
@@ -244,6 +280,7 @@ async function next(s, f){
 
 async function enviar(){
   if(enviando) return;
+  if(!d.consentimento){ err = 'Falta a autorização para uso dos dados.'; i = vis().findIndex(x => x.k === 'lgpd'); render(); return; }
   enviando = true; err = ''; render();
   try{
     let caminho = '';
@@ -263,7 +300,8 @@ async function enviar(){
         evento_id: EVENTO.id, tipo: d.tipo === 'Retorno' ? 'retorno' : 'consulta', especialidade: d.esp,
         nome: d.nome, nascimento: `${aa}-${mm}-${dd}`, cpf: digits(d.cpf), whatsapp: digits(d.tel),
         sexo: d.sexo || '', email: d.email || '', endereco: d.end || '', plano_saude: d.plano === 'Sim',
-        religiao: d.rel || '', foto_retorno: caminho
+        religiao: d.rel || '', foto_retorno: caminho,
+        consentimento_em: new Date().toISOString(), consentimento_versao: VERSAO_TERMO
       })
     });
     if(!r.ok){

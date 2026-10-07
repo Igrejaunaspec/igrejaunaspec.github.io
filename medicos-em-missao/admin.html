@@ -126,7 +126,8 @@ const CHAVE_SESSAO = 'roteiroEditor.sessao'; // a mesma do app: quem já entrou 
 const LINK_FORMULARIO = location.origin + location.pathname.replace(/admin\.html$/, '');
 const MSG_PADRAO = 'Olá, {nome}! Sua consulta de {especialidade} com {medico} no Médicos em Missão está agendada para {dia}, {data}, no {local}. Você confirma presença? Responda SIM ou NÃO.';
 const STATUS = [['pendente','Pendente'],['confirmado','Confirmado'],['nao_respondeu','Não respondeu'],['cancelado','Cancelado']];
-const ORIGEM_ROTULO = { formulario:'FORMULÁRIO', retorno:'RETORNO', prefeitura:'PREFEITURA', nasp:'NASP' };
+const PRAZO_GUARDA_MESES = 6; // LGPD: dados das inscrições são apagados depois desse prazo (o mesmo informado no formulário)
+const ORIGEM_ROTULO = { formulario:'FORMULÁRIO', retorno:'RETORNO', prefeitura:'PREFEITURA', nasp:'UNASP' };
 
 let sessao = null, perfil = null;
 let eventos = [], evento = null, medicos = [], inscricoes = [];
@@ -224,6 +225,7 @@ async function carregarTudo(){
         api(`mm_inscricoes?select=*&evento_id=eq.${evento.id}&order=enviado_em.asc`),
       ]);
     }else{ medicos = []; inscricoes = []; }
+    await contarVencidas();
     mostrarAba();
   }catch(e){ T.innerHTML = `<div class="panel"><div class="aviso erro">${esc(e.message)}</div></div>`; }
 }
@@ -313,7 +315,7 @@ function abaMes(){
       <label class="campo">Data<input type="date" value="${evento.data}" onchange="salvarEvento('data',this.value)"></label>
       <label class="campo">Local<input value="${esc(evento.local)}" placeholder="Ex.: CEVISA" onchange="salvarEvento('local',this.value)"></label>
       <label class="campo">Prefeitura (%)<input type="number" min="0" max="100" value="${pf}" onchange="salvarEvento('pct_prefeitura',+this.value||0)"></label>
-      <label class="campo">NASP (%)<input type="number" min="0" max="100" value="${pn}" onchange="salvarEvento('pct_nasp',+this.value||0)"></label>
+      <label class="campo">UNASP (%)<input type="number" min="0" max="100" value="${pn}" onchange="salvarEvento('pct_nasp',+this.value||0)"></label>
     </div>
     <div class="row">
       <label class="tog"><input type="checkbox" ${evento.ativo ? 'checked' : ''} onchange="definirAtivo(this.checked)"> Evento ativo (é o que aparece no formulário)</label>
@@ -325,7 +327,7 @@ function abaMes(){
   </div>
   <div class="panel">
     <div class="row" style="justify-content:space-between"><h2>Médicos e vagas</h2><button class="sbtn pri" onclick="novoMedico()">+ Médico</button></div>
-    <div class="tw"><table><thead><tr><th>Especialidade</th><th>Médico</th><th>Pacientes</th><th class="num">Formulário ${pform}%</th><th class="num">Prefeitura ${pf}%</th><th class="num">NASP ${pn}%</th><th></th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Especialidade</th><th>Médico</th><th>Pacientes</th><th class="num">Formulário ${pform}%</th><th class="num">Prefeitura ${pf}%</th><th class="num">UNASP ${pn}%</th><th></th></tr></thead>
     <tbody>${rows || '<tr><td colspan="7" class="vazio">Nenhum médico ainda.</td></tr>'}</tbody>
     <tfoot><tr><th>Total</th><th></th><th>${tot.n}</th><th class="num">${tot.form}</th><th class="num">${tot.pref}</th><th class="num">${tot.nasp}</th><th></th></tr></tfoot></table></div>
     <p class="ex">Os retornos entram dentro das vagas do formulário e são chamados primeiro. Só as especialidades desta tabela aparecem no formulário.</p>
@@ -333,16 +335,81 @@ function abaMes(){
   <div class="panel">
     <h2>Mensagens prontas</h2>
     <div class="row"><b>Prefeitura</b><button class="sbtn" onclick="copiar(document.getElementById('mpref').textContent,this)">Copiar</button></div><pre class="msg" id="mpref">${esc(msg('pref','a Prefeitura'))}</pre>
-    <div class="row"><b>NASP</b><button class="sbtn" onclick="copiar(document.getElementById('mnasp').textContent,this)">Copiar</button></div><pre class="msg" id="mnasp">${esc(msg('nasp','o NASP'))}</pre>
+    <div class="row"><b>UNASP</b><button class="sbtn" onclick="copiar(document.getElementById('mnasp').textContent,this)">Copiar</button></div><pre class="msg" id="mnasp">${esc(msg('nasp','a UNASP'))}</pre>
   </div>
   <div class="panel">
     <h2>Mensagem de confirmação (WhatsApp)</h2>
     <label class="campo">Modelo<textarea rows="4" onchange="salvarEvento('msg_whatsapp',this.value)">${esc(evento.msg_whatsapp || MSG_PADRAO)}</textarea></label>
     <p class="ex">Use {nome}, {especialidade}, {medico}, {dia}, {data} e {local}: eles são trocados pelos dados de cada paciente.</p>
   </div>
+  ${painelLgpdHTML()}
   <div class="panel"><div class="row" style="justify-content:space-between"><span class="ex">Apagar este evento remove também os médicos, as inscrições e as listas dele.</span>
     <button class="sbtn perigo" onclick="apagarEvento()">Apagar evento</button></div></div>`;
 }
+/* ---------------- LGPD: prazo de guarda e exclusão ---------------- */
+function eventosVencidos(){
+  const limite = new Date(); limite.setMonth(limite.getMonth() - PRAZO_GUARDA_MESES);
+  const lim = limite.toISOString().slice(0, 10);
+  return eventos.filter(e => e.data && e.data < lim);
+}
+let totalVencidas = null;
+async function contarVencidas(){
+  const venc = eventosVencidos();
+  if(!venc.length){ totalVencidas = 0; return; }
+  try{
+    const r = await api(`mm_inscricoes?select=id&evento_id=in.(${venc.map(e => e.id).join(',')})`);
+    totalVencidas = (r || []).length;
+  }catch(e){ totalVencidas = null; }
+}
+function painelLgpdHTML(){
+  const venc = eventosVencidos();
+  const info = totalVencidas === null ? 'Verificando…' : totalVencidas === 0
+    ? 'Nenhum dado vencido para apagar.'
+    : `<b>${totalVencidas}</b> inscrição(ões) de ${venc.length} evento(s) com mais de ${PRAZO_GUARDA_MESES} meses ainda guardadas.`;
+  return `<div class="panel">
+    <h2>Privacidade (LGPD)</h2>
+    <p class="ex">O formulário informa que os dados são apagados em até ${PRAZO_GUARDA_MESES} meses depois do evento. Os médicos e os números de vagas dos eventos antigos continuam guardados (não são dados pessoais); só as inscrições e as fotos são apagadas.</p>
+    <div class="row"><span>${info}</span>
+      ${totalVencidas ? `<button class="sbtn perigo" onclick="apagarVencidas()">Apagar dados vencidos</button>` : ''}</div>
+  </div>`;
+}
+async function apagarFotos(caminhos){
+  caminhos = caminhos.filter(Boolean);
+  if(!caminhos.length) return true;
+  try{
+    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/mm-retornos`, { method:'DELETE',
+      headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + await token(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ prefixes: caminhos }) });
+    return r.ok;
+  }catch(e){ return false; }
+}
+async function excluirDadosPessoa(id){
+  const x = inscricoes.find(y => y.id === id);
+  if(!x) return;
+  if(!confirm(`Excluir TODOS os dados de ${x.nome || 'esta pessoa'} (inscrição e foto do pedido)? Não dá para desfazer.`)) return;
+  try{
+    const fotoOk = await apagarFotos([x.foto_retorno]);
+    await api(`mm_inscricoes?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    inscricoes = inscricoes.filter(y => y.id !== id);
+    mostrarAba();
+    toast(fotoOk ? 'Dados excluídos.' : 'Inscrição excluída, mas a foto não pôde ser apagada. Avise o administrador.');
+  }catch(e){ toast('Não consegui excluir: ' + e.message); }
+}
+async function apagarVencidas(){
+  const venc = eventosVencidos();
+  if(!venc.length) return;
+  if(!confirm(`Apagar as inscrições (nomes, CPF, telefones, endereços e fotos) de ${venc.length} evento(s) com mais de ${PRAZO_GUARDA_MESES} meses? Não dá para desfazer.`)) return;
+  try{
+    const ids = venc.map(e => e.id).join(',');
+    const lista = await api(`mm_inscricoes?select=id,foto_retorno&evento_id=in.(${ids})`) || [];
+    const fotoOk = await apagarFotos(lista.map(x => x.foto_retorno));
+    await api(`mm_inscricoes?evento_id=in.(${ids})`, { method:'DELETE', prefer:'return=minimal' });
+    totalVencidas = 0;
+    await carregarTudo();
+    toast(fotoOk ? `${lista.length} inscrição(ões) apagadas.` : 'Inscrições apagadas, mas algumas fotos não puderam ser apagadas.');
+  }catch(e){ toast('Não consegui apagar: ' + e.message); }
+}
+
 async function salvarEvento(campo, valor){
   try{ await api(`mm_eventos?id=eq.${evento.id}`, { method:'PATCH', prefer:'return=minimal', body:{ [campo]: valor } });
     evento[campo] = valor; toast('Salvo.'); if(campo !== 'msg_whatsapp') await carregarTudo(); }
@@ -393,13 +460,15 @@ function abaIns(){
   T.innerHTML = `<div class="panel"><h2>Inscrições recebidas</h2>
     <div class="stats"><div class="stat"><b>${form.length}</b><span>recebidas</span></div><div class="stat"><b>${c.ok}</b><span>válidas</span></div>
       <div class="stat"><b>${c.ret}</b><span>retornos</span></div><div class="stat"><b>${c.plano}</b><span>com plano de saúde</span></div><div class="stat"><b>${c.dup}</b><span>duplicadas</span></div></div>
-    <p class="ex">A triagem é automática. O paciente nunca vê estes status.</p>
+    <p class="ex">A triagem é automática. O paciente nunca vê estes status. Se alguém pedir para apagar os seus dados (direito previsto na LGPD), use <b>Excluir dados</b>: apaga a inscrição e a foto do pedido, sem volta.</p>
     <input type="search" placeholder="Buscar por nome, CPF, telefone ou especialidade" value="${esc(filtroIns)}" oninput="filtroIns=this.value;abaIns();this.focus();this.setSelectionRange(this.value.length,this.value.length)" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg)">
-    <div class="tw"><table><thead><tr><th>Envio</th><th>Nome</th><th>Especialidade</th><th>Tipo</th><th>Situação</th><th>Nascimento</th><th>CPF</th><th>WhatsApp</th><th>Pedido</th></tr></thead><tbody>
+    <div class="tw"><table><thead><tr><th>Envio</th><th>Nome</th><th>Especialidade</th><th>Tipo</th><th>Situação</th><th>Nascimento</th><th>CPF</th><th>WhatsApp</th><th>Pedido</th><th>Autorização</th><th></th></tr></thead><tbody>
     ${lista.map(x => `<tr><td>${hora(x.enviado_em)}</td><td>${esc(x.nome)}</td><td>${esc(x.especialidade)}</td><td>${x.tipo === 'retorno' ? 'Retorno' : 'Consulta'}</td>
       <td>${chipClasse(x)}</td><td>${dataBR(x.nascimento)}</td><td>${fmtCPF(x.cpf)}</td><td>${fmtTel(x.whatsapp)}</td>
-      <td>${x.foto_retorno ? `<button class="sbtn" onclick="verFoto('${esc(x.foto_retorno)}')">Ver foto</button>` : ''}</td></tr>`).join('') ||
-      '<tr><td colspan="9" class="vazio">Nenhuma inscrição.</td></tr>'}
+      <td>${x.foto_retorno ? `<button class="sbtn" onclick="verFoto('${esc(x.foto_retorno)}')">Ver foto</button>` : ''}</td>
+      <td>${x.consentimento_em ? `<span class="ex" title="Termo ${esc(x.consentimento_versao || '')}">✓ ${hora(x.consentimento_em)}</span>` : '<span class="ex">—</span>'}</td>
+      <td><button class="sbtn perigo" title="Excluir os dados desta pessoa (pedido do titular)" onclick="excluirDadosPessoa('${x.id}')">Excluir dados</button></td></tr>`).join('') ||
+      '<tr><td colspan="11" class="vazio">Nenhuma inscrição.</td></tr>'}
     </tbody></table></div></div>`;
 }
 async function verFoto(caminho){
@@ -431,10 +500,10 @@ function abaLis(){
       <td><input type="date" value="${x.nascimento || ''}" onchange="salvarIns('${x.id}','nascimento',this.value||null)"></td>
       <td><input value="${fmtCPF(x.cpf)}" inputmode="numeric" placeholder="CPF" onchange="salvarIns('${x.id}','cpf',this.value.replace(/\\D/g,''))"></td>
       <td><input value="${fmtTel(x.whatsapp)}" inputmode="numeric" placeholder="Telefone" onchange="salvarIns('${x.id}','whatsapp',this.value.replace(/\\D/g,''))"></td>
-      <td>${selStatus(x)}</td><td>${o.toUpperCase()} <button class="sbtn perigo" title="Liberar linha" aria-label="Liberar linha" onclick="removerIns('${x.id}')">✕</button></td>
+      <td>${selStatus(x)}</td><td>${ORIGEM_ROTULO[o]} <button class="sbtn perigo" title="Liberar linha" aria-label="Liberar linha" onclick="removerIns('${x.id}')">✕</button></td>
       <td>${digits(x.whatsapp).length >= 10 ? `<a class="wa" target="_blank" rel="noopener" href="${linkWA(x, m)}">WhatsApp</a>` : ''}</td></tr>`;
-    const vazias = (n, o) => Array.from({ length: Math.max(0, n) }, () => `<tr class="linha-reserva"><td colspan="5" class="ex">Reservado para ${o === 'prefeitura' ? 'a Prefeitura' : 'o NASP'}</td>
-      <td>${o.toUpperCase()}</td><td><button class="sbtn" onclick="adicionarManual('${m.id}','${o}')">+ Preencher</button></td></tr>`).join('');
+    const vazias = (n, o) => Array.from({ length: Math.max(0, n) }, () => `<tr class="linha-reserva"><td colspan="5" class="ex">Reservado para ${o === 'prefeitura' ? 'a Prefeitura' : 'a UNASP'}</td>
+      <td>${ORIGEM_ROTULO[o]}</td><td><button class="sbtn" onclick="adicionarManual('${m.id}','${o}')">+ Preencher</button></td></tr>`).join('');
     const pref = manuais('prefeitura'), nasp = manuais('nasp');
     const ocupadas = sel.length + pref.length + nasp.length;
     const conf = [...sel, ...pref, ...nasp].filter(x => x.status === 'confirmado').length;
@@ -485,7 +554,7 @@ function abaMs(){
   const tudo = blocos.map(b => b.txt).join('\n\n');
   T.innerHTML = `<div class="panel"><div class="row" style="justify-content:space-between"><h2>Pronto para lançar no Medical Shift</h2>
       <button class="sbtn pri" onclick="copiar(document.getElementById('msTudo').textContent,this)">Copiar tudo</button></div>
-    <p class="ex">Só aparecem os confirmados (formulário, prefeitura e NASP), agrupados por médico.</p>
+    <p class="ex">Só aparecem os confirmados (formulário, prefeitura e UNASP), agrupados por médico.</p>
     <pre class="msg hidden" id="msTudo">${esc(tudo)}</pre>
     ${blocos.map((b, k) => `<div class="row" style="justify-content:space-between"><b>${esc(b.m.especialidade)}${b.m.nome ? ' · ' + esc(b.m.nome) : ''} (${b.lista.length})</b>
       <button class="sbtn" onclick="copiar(document.getElementById('ms${k}').textContent,this)">Copiar</button></div><pre class="msg" id="ms${k}">${esc(b.txt)}</pre>`).join('')}
