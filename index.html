@@ -19,6 +19,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -914,6 +915,74 @@
   .ag-linha-layout input[type=number]{width:64px;}
   .ag-cor-input{width:28px;height:24px;padding:0;border:1px solid var(--border-soft);
     border-radius:4px;cursor:pointer;background:none;}
+  /* ==========================================================
+     NOVO VISUAL (out/2026): azul-tinta do logo, dourado da chama
+     so para "hoje", Bricolage nos titulos e Atkinson no texto,
+     menu lateral agrupado no computador.
+     ========================================================== */
+  :root{
+    --accent:#1D3A5C; --bg:#F2F4F7;
+    --sans:'Atkinson Hyperlegible',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --display:'Bricolage Grotesque',var(--sans);
+    --dourado:#E2A33B; --menu:#1D3A5C;
+  }
+  body{background:var(--bg);font-family:var(--sans);}
+  h1,h2,h3,.card h2{font-family:var(--display);letter-spacing:-.01em;}
+  .btn.primary{background:var(--accent);border-color:var(--accent);}
+  .marca-lateral{display:none;}
+
+  /* calendario */
+  .calendario-titulo{font-family:var(--display);font-weight:800;font-size:44px;line-height:1;color:var(--accent);letter-spacing:-.02em;}
+  .calendario-dia .numero{font-family:var(--display);font-size:15px;color:#1A2433;}
+  .calendario-dia.hoje{border-color:var(--dourado);box-shadow:inset 0 0 0 1px var(--dourado);background:#FDF6E9;}
+  .calendario-dia.hoje .numero{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--dourado);color:#1A2433;align-items:center;justify-content:center;margin:-3px 0 0 -3px;}
+  .calendario-legenda{display:none !important;}
+  .legenda-tipos{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:13.5px;color:#3E4A5A;}
+  .legenda-tipos span{display:inline-flex;align-items:center;gap:6px;}
+  .legenda-tipos i{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  #paginaCalendario:not(.hidden){display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;}
+  #paginaCalendario > .card:first-child{flex:999 1 640px;min-width:0;margin-bottom:0;}
+  .proximos{flex:1 1 280px;max-width:340px;display:flex;flex-direction:column;gap:14px;}
+  .proximos-hoje{background:var(--accent);color:#fff;border-radius:14px;padding:20px 22px;}
+  .proximos-hoje small{font-size:14px;color:#C9D4E3;}
+  .proximos-hoje b{display:block;font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margin-top:4px;}
+  .proximos-hoje p{margin:12px 0 0;font-size:15px;color:#E4EAF2;}
+  .proximos-lista{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  .proximos-lista h3{margin:0 0 6px;font-size:19px;color:var(--accent);}
+  .proximo-item{display:flex;gap:12px;padding:10px 0;border:0;border-top:1px solid var(--border-soft);background:none;width:100%;text-align:left;font-family:inherit;color:inherit;cursor:pointer;}
+  .proximo-item:hover{background:var(--panel2);}
+  .proximo-data{width:40px;flex:none;text-align:center;}
+  .proximo-data small{display:block;font-size:12px;color:var(--muted);}
+  .proximo-data b{display:block;font-family:var(--display);font-size:21px;line-height:1.1;}
+  .proximo-txt{min-width:0;}
+  .proximo-txt b{display:flex;align-items:center;gap:7px;font-size:14.5px;}
+  .proximo-txt b i{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block;}
+  .proximo-txt span{display:block;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* menu lateral (so no computador) */
+  @media screen and (min-width:701px){
+    body.lateral:not(.celular) #abasTopo{position:fixed;left:0;top:0;bottom:0;width:248px;box-sizing:border-box;
+      flex-direction:column;gap:2px;padding:18px 12px 24px;background:var(--menu);border:0;overflow-y:auto;z-index:60;}
+    body.lateral:not(.celular) #abasTopo button{color:#C9D4E3;border:0;border-radius:8px;text-align:left;padding:9px 12px;
+      font-size:15px;font-weight:400;white-space:normal;}
+    body.lateral:not(.celular) #abasTopo button:hover{background:#27486F;color:#fff;}
+    body.lateral:not(.celular) #abasTopo button.on{background:#fff;color:var(--menu);font-weight:700;}
+    body.lateral:not(.celular) #abasTopo .grupo-titulo{color:#8FA3BD;font-size:13px;padding:16px 12px 6px;}
+    body.lateral:not(.celular) .marca-lateral{display:flex;align-items:center;gap:10px;padding:2px 10px 6px;
+      font-family:var(--display);font-weight:800;font-size:17px;line-height:1.15;color:#fff;}
+    body.lateral:not(.celular) .marca-lateral span{width:26px;height:26px;flex:none;filter:brightness(0) invert(1);}
+    body.lateral:not(.celular) header{margin-left:248px;}
+    body.lateral:not(.celular) header .logo,body.lateral:not(.celular) header .sub{display:none;}
+    body.lateral:not(.celular) .wrap{margin-left:248px;margin-right:auto;}
+  }
+  @media screen and (min-width:701px) and (max-width:1000px){
+    .calendario-titulo{font-size:34px;}
+  }
+  @media screen and (max-width:700px){
+    .calendario-titulo{font-size:30px;}
+    .proximos{display:none;}
+  }
+
 </style>
 </head>
 <body>
@@ -1214,7 +1283,9 @@
         </div>
         <div class="calendario-grid" id="calendarioGrid"></div>
         <div class="calendario-lista" id="calendarioLista"></div>
+        <div class="legenda-tipos" id="calendarioLegendaTipos"></div>
       </div>
+      <aside class="proximos" id="calendarioProximos" aria-label="Próximos dias"></aside>
       <div class="card calendario-detalhe-dia hidden" id="calendarioDetalheDia" style="display:none !important;"></div>
     </div>
 
@@ -3817,6 +3888,7 @@ function desenharCalendario(){
   }
   document.getElementById('calendarioGrid').innerHTML = html;
   desenharListaCalendario(porDia);
+  desenharLegendaETProximos();
 
   desenharDetalheDiaCalendario(porDia);
 }
@@ -3888,6 +3960,96 @@ function desenharListaCalendario(porDia){
     </div>`;
   }
   el.innerHTML = html || '<div class="vazio">Nenhum evento neste mês.</div>';
+}
+
+
+// Novo visual: legenda dos tipos de evento + coluna "Proximos dias"
+function desenharLegendaETProximos(){
+  const leg = document.getElementById('calendarioLegendaTipos');
+  if(leg){
+    const tipos = (typeof tiposEvento !== 'undefined' ? tiposEvento : []) || [];
+    leg.innerHTML = tipos.map(t => `<span><i style="background:${escapar(t.cor)}"></i>${escapar(t.nome)}</span>`).join('');
+  }
+  const el = document.getElementById('calendarioProximos');
+  if(!el) return;
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const DIAS = 14, itens = [];
+  (calendarioAgendamentos || []).forEach(a => {
+    const di = parseDataBR(a.data_inicio); if(!di) return;
+    const ini = new Date(di.getFullYear(), di.getMonth(), di.getDate());
+    const dfB = parseDataBR(a.data_saida);
+    let fim = dfB ? new Date(dfB.getFullYear(), dfB.getMonth(), dfB.getDate()) : ini;
+    if(fim < ini) fim = ini;
+    const limite = new Date(hoje); limite.setDate(limite.getDate() + DIAS);
+    if(fim < hoje || ini > limite) return;
+    const quando = ini < hoje ? hoje : ini;
+    itens.push({ a, quando, ini, fim });
+  });
+  itens.sort((x, y) => (x.quando - y.quando) || (x.a.data_inicio || '').localeCompare(y.a.data_inicio || ''));
+  const deHoje = itens.filter(x => x.quando.getTime() === hoje.getTime());
+  const futuros = itens.filter(x => x.quando > hoje);
+  const semana = hoje.toLocaleDateString('pt-BR', { weekday:'long' });
+  const dataLonga = hoje.toLocaleDateString('pt-BR', { day:'numeric', month:'long' });
+  let frase;
+  if(deHoje.length) frase = deHoje.length === 1 ? `Hoje: ${escapar(deHoje[0].a.nome_evento || '')}.` : `${deHoje.length} eventos hoje.`;
+  else if(futuros.length){
+    const p = futuros[0].quando.toLocaleDateString('pt-BR', { weekday:'long' });
+    frase = `Nada agendado para hoje. O próximo é ${escapar(p)}.`;
+  } else frase = 'Nada agendado nos próximos dias.';
+  const cor = a => { const t = tipoDoEvento(a); return (t && t.cor) || a.cor || corPadraoPorEspaco(a.espacos_utilizados) || '#16a34a'; };
+  const lista = [...deHoje, ...futuros].slice(0, 8).map(x => {
+    const a = x.a, sem = x.quando.toLocaleDateString('pt-BR', { weekday:'short' }).replace('.', '');
+    const local = a.espacos_utilizados ? ` · ${a.espacos_utilizados}` : '';
+    const hor = a.horarios_evento && a.horarios_evento !== '.' ? a.horarios_evento : '';
+    return `<button class="proximo-item" onclick="abrirModalEventoEditar('${a.id}')">
+      <div class="proximo-data"><small>${escapar(sem)}</small><b>${x.quando.getDate()}</b></div>
+      <div class="proximo-txt"><b><i style="background:${cor(a)}"></i>${escapar(a.nome_evento || '(sem nome)')}</b>
+        <span>${escapar((hor || '') + local) || '&nbsp;'}</span></div></button>`;
+  }).join('');
+  el.innerHTML = `<div class="proximos-hoje"><small>Hoje, ${escapar(semana)}</small><b>${escapar(dataLonga)}</b><p>${frase}</p></div>
+    <div class="proximos-lista"><h3>Próximos dias</h3>${lista || '<p class="hint" style="margin:6px 0 0;">Nenhum evento nas próximas duas semanas.</p>'}</div>`;
+}
+
+// Novo visual: menu lateral agrupado (computador). Reordena os botoes que
+// montarAbas() criou e insere titulos de grupo -- os botoes e seus cliques
+// continuam os mesmos, e a barra do celular continua lendo deles.
+const GRUPOS_MENU = [
+  ['Culto', ['sexta', 'sabado', 'homiletico', 'escala']],
+  ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'agenda']],
+  ['Comunidade', ['medicos', 'youtube']],
+  ['Acessos', ['pessoas', 'visualizadores', 'compartilhar']],
+];
+function agruparMenuLateral(){
+  const abas = document.getElementById('abasTopo');
+  if(!abas) return;
+  const botoes = Array.from(abas.querySelectorAll('button'));
+  if(!botoes.length) return;
+  const chave = b => b.dataset.culto || (b.textContent === 'Escala' ? 'escala' : '');
+  abas.querySelectorAll('.grupo-titulo,.marca-lateral').forEach(x => x.remove());
+  const usados = new Set();
+  const marca = document.createElement('div');
+  marca.className = 'marca-lateral';
+  marca.innerHTML = '<span class="logo-ico"></span>Igreja UNASP EC';
+  const logoOrig = document.querySelector('header .logo span');
+  if(logoOrig) marca.querySelector('span').style.background = getComputedStyle(logoOrig).background;
+  abas.appendChild(marca);
+  GRUPOS_MENU.forEach(([titulo, chaves]) => {
+    const doGrupo = chaves.map(k => botoes.find(b => chave(b) === k)).filter(Boolean);
+    if(!doGrupo.length) return;
+    const h = document.createElement('div');
+    h.className = 'grupo-titulo';
+    h.textContent = titulo;
+    abas.appendChild(h);
+    doGrupo.forEach(b => { abas.appendChild(b); usados.add(b); });
+  });
+  const resto = botoes.filter(b => !usados.has(b));
+  if(resto.length){
+    const h = document.createElement('div');
+    h.className = 'grupo-titulo'; h.textContent = 'Outros';
+    abas.appendChild(h);
+    resto.forEach(b => abas.appendChild(b));
+  }
+  document.body.classList.add('lateral');
 }
 
 function desenharDetalheDiaCalendario(porDia){
@@ -4614,6 +4776,7 @@ function montarAbas(){
   }
 
   montarNavCelular();
+  agruparMenuLateral();
 
   // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
   // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
