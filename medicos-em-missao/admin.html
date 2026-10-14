@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Médicos em Missão · Equipe</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f2f3f6; --card:#ffffff; --fg:#1c1f26; --muted:#5b6472; --line:#dde1e8;
@@ -71,6 +72,43 @@ pre.msg{white-space:pre-wrap;background:var(--soft);border-radius:10px;padding:1
 @media (max-width:700px){ body{padding:12px} .panel{padding:14px} .panel.doc{padding:0} }
 .doc td{white-space:nowrap}
 .doc td input{min-width:120px}
+
+/* NOVO VISUAL (painel da equipe) */
+.trocar{font-size:13px;padding:5px 6px;border:1px solid var(--line);border-radius:8px;width:112px;margin:0 4px}
+.doc td{padding:8px 6px}
+.doc td:first-child,.doc td:nth-child(6){white-space:normal}
+.doc td:first-child{min-width:150px}
+.add-pac td{background:#F7F9FB}.add-pac select{font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;min-width:280px;font-weight:400}
+
+:root{--bg:#F2F4F7;--fg:#1A2433;--muted:#5B6879;--line:#DCE2EA;--brand:#1D3A5C;--soft:#EEF2F6;--accent:#1E8E4E;
+ --display:'Bricolage Grotesque',-apple-system,sans-serif;--body:'Atkinson Hyperlegible',-apple-system,sans-serif}
+.panel{border:0;border-radius:18px;box-shadow:0 1px 2px #1D3A5C14,0 6px 18px #1D3A5C0d;padding:24px}
+.panel h2{font-size:24px;font-weight:800;color:var(--brand);letter-spacing:-.01em}
+.sbtn{border-radius:999px;background:#fff}
+.sbtn.pri{background:var(--brand)}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;min-width:140px}
+.stat b{font-size:30px;font-weight:800;color:var(--brand)}
+th{color:#7A8697}
+.doc header{background:var(--brand)}
+.tabs{border:0;gap:8px;overflow-x:auto;flex-wrap:nowrap}
+.tabs button{border:0;margin:0;border-radius:999px;padding:9px 16px;background:#fff;white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--brand);color:#fff}
+.tabs .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--soft);color:var(--brand);font-weight:800}
+.tabs button[aria-selected="true"] .n{background:#E2A33B;color:#1A2433}
+.cab .marca{font-size:15px}
+.titulo-mm{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;color:var(--brand);letter-spacing:-.02em;margin:4px 0 2px}
+@media (min-width:901px){
+ body{padding:0}
+ #telaApp.adm{max-width:none;margin:0 0 0 260px;padding:28px 36px 48px}
+ #telaApp .tabs{position:fixed;left:0;top:0;bottom:0;width:260px;flex-direction:column;background:var(--brand);padding:96px 16px 20px;gap:4px;z-index:5}
+ #telaApp .tabs::before{content:"Médicos em Missão";position:absolute;top:28px;left:24px;right:16px;color:#fff;font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1}
+ #telaApp .tabs::after{content:"Etapas do mês";position:absolute;top:66px;left:24px;color:#8FA3BD;font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+ #telaApp .tabs button{background:none;color:#C9D4E2;text-align:left;border-radius:12px;padding:12px 14px;font-size:16px}
+ #telaApp .tabs button:hover{background:#ffffff14}
+ #telaApp .tabs button[aria-selected="true"]{background:#fff;color:var(--brand)}
+ #telaApp .tabs .n{background:#ffffff22;color:#fff;margin-right:10px}
+ #telaApp .tabs button[aria-selected="true"] .n{background:#E2A33B;color:#1A2433}
+}
 </style>
 </head>
 <body>
@@ -95,7 +133,7 @@ pre.msg{white-space:pre-wrap;background:var(--soft);border-radius:10px;padding:1
 <!-- ---------- painel ---------- -->
 <div id="telaApp" class="adm hidden">
   <div class="cab">
-    <span class="marca"><a href="/" class="sbtn" style="text-decoration:none;margin-right:8px">← App da igreja</a>Médicos em Missão · Equipe</span>
+    <div><a href="/" class="sbtn" style="text-decoration:none;display:inline-block">← App da igreja</a><div class="titulo-mm">Painel da equipe</div></div>
     <div class="row">
       <label class="campo" style="min-width:230px">Evento
         <select id="selEvento" onchange="trocarEvento(this.value)"></select></label>
@@ -269,11 +307,15 @@ function distribuicao(){
   const res = {};
   const porEsp = {};
   medicos.forEach(m => (porEsp[m.especialidade] = porEsp[m.especialidade] || []).push(m));
+  // escolhidos pela equipe (medico_id preenchido numa inscrição do formulário) entram primeiro
+  const fixo = m => inscricoes.filter(x => !ehManual(x) && x.medico_id === m.id && !saiu(x));
+  const fixados = new Set(inscricoes.filter(x => !ehManual(x) && x.medico_id && !saiu(x)).map(x => x.id));
   Object.entries(porEsp).forEach(([esp, ms]) => {
-    const ok = inscricoes.filter(x => x.especialidade === esp && classe(x) === 'ok' && !saiu(x));
+    const ok = inscricoes.filter(x => x.especialidade === esp && classe(x) === 'ok' && !saiu(x) && !fixados.has(x.id));
     const fila = [...ok.filter(x => x.tipo === 'retorno'), ...ok.filter(x => x.tipo !== 'retorno')];
     let pos = 0;
-    ms.forEach(m => { const v = vagas(m); res[m.id] = { v, sel: fila.slice(pos, pos + v.form), espera: [] }; pos += v.form; });
+    ms.forEach(m => { const v = vagas(m); const f = fixo(m); const livres = Math.max(0, v.form - f.length);
+      res[m.id] = { v, sel: [...f, ...fila.slice(pos, pos + livres)], espera: [] }; pos += livres; });
     if(ms.length) res[ms[ms.length - 1].id].espera = fila.slice(pos);
   });
   return res;
@@ -493,8 +535,10 @@ function abaLis(){
     const { v, sel, espera } = dist[m.id];
     const manuais = o => inscricoes.filter(x => x.origem === o && x.medico_id === m.id);
     const linhaForm = x => `<tr class="${saiu(x) ? 'linha-fora' : ''}"><td>${esc(x.nome)}</td><td>${dataBR(x.nascimento)}</td><td>${fmtCPF(x.cpf)}</td><td>${fmtTel(x.whatsapp)}</td>
-      <td>${selStatus(x)}</td><td>${ORIGEM_ROTULO[x.origem]}${x.obs ? ' · ' + esc(x.obs) : ''}</td>
-      <td><a class="wa" target="_blank" rel="noopener" href="${linkWA(x, m)}">WhatsApp</a></td></tr>`;
+      <td>${selStatus(x)}</td><td>${x.medico_id === m.id ? '<span class="chip c-gold">ESCOLHIDO</span> ' : ''}${ORIGEM_ROTULO[x.origem]}${x.obs ? ' · ' + esc(x.obs) : ''}</td>
+      <td style="white-space:nowrap"><a class="wa" target="_blank" rel="noopener" href="${linkWA(x, m)}">WhatsApp</a>
+        <select class="trocar" aria-label="Trocar por" onchange="trocarPaciente('${x.id}','${m.id}',this.value)"><option value="">Trocar por…</option>${opcoesPacientes(m, x.id)}</select>
+        <button class="sbtn perigo" style="padding:6px 10px" title="Retirar da lista" aria-label="Retirar da lista" onclick="retirarPaciente('${x.id}')">✕</button></td></tr>`;
     const linhaManual = (x, o) => `<tr class="linha-reserva">
       <td><input value="${esc(x.nome)}" placeholder="Nome" onchange="salvarIns('${x.id}','nome',this.value)"></td>
       <td><input type="date" value="${x.nascimento || ''}" onchange="salvarIns('${x.id}','nascimento',this.value||null)"></td>
@@ -512,6 +556,8 @@ function abaLis(){
       <div class="tw" style="padding:0 12px"><table><thead><tr><th>Nome</th><th>Nascimento</th><th>CPF</th><th>Telefone</th><th>Confirmação</th><th>Obs.</th><th></th></tr></thead>
       <tbody>${sel.map(linhaForm).join('')}
         ${sel.length < v.form ? `<tr><td colspan="7" class="ex">${v.form - sel.length} vaga(s) do formulário ainda sem inscrito.</td></tr>` : ''}
+        <tr class="add-pac"><td colspan="7"><label class="tog">+ Adicionar paciente
+          <select onchange="adicionarPaciente('${m.id}',this.value)"><option value="">Escolha uma pessoa inscrita…</option>${opcoesPacientes(m)}</select></label></td></tr>
         ${pref.map(x => linhaManual(x, 'prefeitura')).join('')}${vazias(v.pref - pref.length, 'prefeitura')}
         ${nasp.map(x => linhaManual(x, 'nasp')).join('')}${vazias(v.nasp - nasp.length, 'nasp')}
       </tbody></table></div>
@@ -519,6 +565,43 @@ function abaLis(){
         ${fora.length ? `<br>Saíram (cancelado ou não respondeu): ${fora.map(x => `${esc(x.nome)} <button class="sbtn" style="padding:2px 8px" onclick="mudarStatus('${x.id}','pendente')">voltar</button>`).join(', ')}` : ''}
         <br>Quem é marcado como "Cancelado" ou "Não respondeu" libera a vaga para o próximo da lista de espera.</p></div>`;
   }).join('');
+}
+
+// ---- escolher / trocar / retirar pacientes manualmente
+function opcoesPacientes(m, excetoId){
+  const dist = distribuicao();
+  const naLista = new Set(Object.values(dist).flatMap(d => d.sel.map(x => x.id)));
+  const cand = inscricoes.filter(x => !ehManual(x) && !saiu(x) && x.id !== excetoId && !naLista.has(x.id));
+  cand.sort((a, b) => (b.especialidade === m.especialidade) - (a.especialidade === m.especialidade) || String(a.nome).localeCompare(String(b.nome)));
+  return cand.map(x => `<option value="${x.id}">${esc(x.nome)}${x.especialidade !== m.especialidade ? ' (inscrito em ' + esc(x.especialidade) + ')' : ''}${classe(x) === 'plano' ? ' · tem plano' : classe(x) === 'dup' ? ' · duplicada' : ''}</option>`).join('');
+}
+async function fixarPaciente(id, m){
+  await api(`mm_inscricoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ medico_id: m.id, especialidade: m.especialidade, status:'pendente', atualizado_por: perfil.email } });
+  const x = inscricoes.find(y => y.id === id); if(x){ x.medico_id = m.id; x.especialidade = m.especialidade; x.status = 'pendente'; }
+}
+async function adicionarPaciente(medicoId, id){
+  if(!id) return; const m = medicos.find(x => x.id === medicoId);
+  try{ await fixarPaciente(id, m); toast('Paciente adicionado.'); abaLis(); }
+  catch(e){ toast('Não consegui adicionar: ' + e.message); }
+}
+async function retirarSemPerguntar(id){
+  const x = inscricoes.find(y => y.id === id);
+  const obs = ((x && x.obs ? x.obs + ' · ' : '') + 'Retirado pela equipe').slice(0, 300);
+  await api(`mm_inscricoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ status:'cancelado', medico_id: null, obs, atualizado_por: perfil.email } });
+  if(x){ x.status = 'cancelado'; x.medico_id = null; x.obs = obs; }
+}
+async function retirarPaciente(id){
+  const x = inscricoes.find(y => y.id === id);
+  if(!confirm(`Retirar ${x ? x.nome : 'esta pessoa'} da lista? A vaga vai para o próximo da espera.`)) return;
+  try{ await retirarSemPerguntar(id); toast('Retirado.'); abaLis(); }
+  catch(e){ toast('Não consegui retirar: ' + e.message); }
+}
+async function trocarPaciente(saiId, medicoId, entraId){
+  if(!entraId) return;
+  const m = medicos.find(x => x.id === medicoId), a = inscricoes.find(y => y.id === saiId), b = inscricoes.find(y => y.id === entraId);
+  if(!confirm(`Trocar ${a ? a.nome : ''} por ${b ? b.nome : ''}?`)){ abaLis(); return; }
+  try{ await retirarSemPerguntar(saiId); await fixarPaciente(entraId, m); toast('Troca feita.'); abaLis(); }
+  catch(e){ toast('Não consegui trocar: ' + e.message); abaLis(); }
 }
 async function mudarStatus(id, st){
   try{ await api(`mm_inscricoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ status: st, atualizado_por: perfil.email } });
