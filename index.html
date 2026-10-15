@@ -1026,6 +1026,7 @@
 
 body.so-ver-cal .calendario-dia-add, body.so-ver-cal #fabCelular, body.so-ver-cal .btn-novo-evento{display:none!important}
 .aviso-so-ver{margin-bottom:12px;background:#FFF6E5;color:#6B4A00;border-radius:10px;padding:10px 14px;font-weight:700}
+body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 </style>
 </head>
 <body>
@@ -1281,8 +1282,8 @@ body.so-ver-cal .calendario-dia-add, body.so-ver-cal #fabCelular, body.so-ver-ca
             </p>
           </div>
           <button class="btn" onclick="abrirAgendamentosLista()">↻ Atualizar</button>
-          <button class="btn" onclick="abrirEditorFormularioAgendamento()">✏️ Editar formulário</button>
-          <button class="btn" onclick="abrirEditorEtiquetasAgendamento()">🏷️ Editar etiquetas</button>
+          <button class="btn so-adm-secretaria" onclick="abrirEditorFormularioAgendamento()">✏️ Editar formulário</button>
+          <button class="btn so-adm-secretaria" onclick="abrirEditorEtiquetasAgendamento()">🏷️ Editar etiquetas</button>
           <button class="btn primary" onclick="abrirModalLinkFormulario()">
             🔗 Link do formulário
           </button>
@@ -2985,6 +2986,7 @@ function idCampoFormularioNovo(){
 }
 
 async function abrirEditorFormularioAgendamento(){
+  if(!(perfil && (perfil.admin || perfil.acesso_pastoral_secretaria))){ toast('Só a secretaria e os administradores podem editar isso.', 'err'); return; }
   if(!schemaAgendamentoAtual) await carregarSchemaAgendamento();
   schemaEmEdicaoForm = JSON.parse(JSON.stringify(schemaAgendamentoAtual));
   document.getElementById('cardTopoAgendamentos').classList.add('hidden');
@@ -3217,6 +3219,8 @@ function idEtiquetaFormularioNova(){
 }
 
 async function abrirEditorEtiquetasAgendamento(){
+  if(!(perfil && (perfil.admin || perfil.acesso_pastoral_secretaria))){ toast('Só a secretaria e os administradores podem editar isso.', 'err'); return; }
+  if(!(perfil && (perfil.admin || perfil.acesso_pastoral_secretaria))){ toast('Só a secretaria e os administradores podem editar isso.', 'err'); return; }
   await carregarEtiquetasAgendamento();
   etiquetasEmEdicao = JSON.parse(JSON.stringify(etiquetasAgendamentoAtual));
   document.getElementById('cardTopoAgendamentos').classList.add('hidden');
@@ -4735,6 +4739,7 @@ function podeEditarAgenda(){
 }
 
 function montarAbas(){
+  document.body.classList.toggle('pode-editar-form', !!(perfil && (perfil.admin || perfil.acesso_pastoral_secretaria)));
   try{ registrarAtividade(null); }catch(e){}
   const abas = document.getElementById('abasTopo');
   const permitidos = cultosPermitidos();
