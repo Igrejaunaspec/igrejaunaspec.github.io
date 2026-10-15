@@ -1071,6 +1071,13 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 .tutorial video{width:100%;aspect-ratio:16/10;border-radius:12px;background:#1D3A5C;display:block}
 .tutorial-passos{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px;line-height:1.45}
 @media (max-width:700px){ .tutoriais{grid-template-columns:1fr} }
+/* filtros de Agendamentos como pastas suspensas */
+#filtrosAgendamentos{gap:0;align-items:flex-end;border-bottom:3px solid #1D3A5C;padding-left:6px;margin-bottom:12px;flex-wrap:wrap}
+#filtrosAgendamentos .chip-filtro{border-radius:10px 10px 0 0;border:1px solid #CBD3DE;border-bottom:0;margin-right:-4px;background:#E4E9F0;color:#5B6879;padding:8px 14px 7px;font-weight:700;position:relative;transition:padding .2s ease,background .2s ease}
+#filtrosAgendamentos .chip-filtro:hover{background:#EDF1F6;color:#1D3A5C;z-index:2}
+#filtrosAgendamentos .chip-filtro.on{background:#1D3A5C;color:#fff;border-color:#1D3A5C;padding-top:11px;z-index:3}
+#filtrosEtiquetasAgendamentos{gap:8px}
+#filtrosEtiquetasAgendamentos .chip-filtro{border-radius:4px 4px 10px 10px;border-width:0!important;border-top:5px solid currentColor!important;background:#F4F6F9;padding:7px 14px;font-weight:700;box-shadow:0 1px 2px #0001}
 </style>
 </head>
 <body>
