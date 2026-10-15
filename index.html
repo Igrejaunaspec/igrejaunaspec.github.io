@@ -2622,10 +2622,43 @@ async function api(caminho, opcoes){
       throw new Error('Você não tem permissão para isso. ' + detalhe);
     throw new Error(detalhe || `Erro ${r.status} ao falar com o banco.`);
   }
-  if(r.status === 204) return null;
+  if(r.status === 204){ anotarAlteracao(caminho, o.method); return null; }
+  anotarAlteracao(caminho, o.method);
   const txt = await r.text();
   return txt ? JSON.parse(txt) : null;
 }
+
+/* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
+const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Culto de Sábado', homiletico:'Homilético', escala:'Escala',
+  calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', agenda:'Agenda', medicos:'Médicos em Missão',
+  youtube:'YouTube', pessoas:'Pessoas', visualizadores:'Visualizadores', compartilhar:'Compartilhar' };
+let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
+function nomeAbaAtividade(caminho){
+  if(/^formulario_schema/.test(caminho || '')){
+    const ed = document.getElementById('editorFormularioAgendamento');
+    if(ed && !ed.classList.contains('hidden')) return 'Formulário de agendamento';
+    if(cultoAtual === 'calendario' || cultoAtual === 'agendamentos') return 'Tipos/etiquetas de evento';
+  }
+  return NOMES_ABA_ATIVIDADE[cultoAtual] || (cultoAtual ? String(cultoAtual) : 'App');
+}
+function registrarAtividade(aba){
+  if(!sessao) return;
+  const agora = Date.now();
+  if(!aba && agora - atividadeUltimoEnvio < 5 * 60 * 1000) return;
+  if(aba && aba === atividadeUltimaAba && agora - atividadeUltimaAbaEm < 60 * 1000) return;
+  atividadeUltimoEnvio = agora;
+  if(aba){ atividadeUltimaAba = aba; atividadeUltimaAbaEm = agora; }
+  tokenValido().then(t => fetch(`${SUPABASE_URL}/rest/v1/rpc/registrar_atividade`, {
+    method:'POST', headers:{ apikey: SUPABASE_KEY, Authorization:'Bearer ' + t, 'Content-Type':'application/json' },
+    body: JSON.stringify({ p_aba: aba || null })
+  })).catch(() => {});
+}
+function anotarAlteracao(caminho, metodo){
+  const m = String(metodo || 'GET').toUpperCase();
+  if(m === 'GET' || /^rpc\//.test(caminho)) return;
+  try{ registrarAtividade(nomeAbaAtividade(caminho)); }catch(e){}
+}
+['pointerdown','keydown'].forEach(ev => window.addEventListener(ev, () => { try{ registrarAtividade(null); }catch(e){} }, { passive:true }));
 
 // Igual ao api(), mas SEM tentar usar sessao de login -- usada pelo
 // formulario publico de agendamento (?agendar=1), que roda sem ninguem
@@ -4702,6 +4735,7 @@ function podeEditarAgenda(){
 }
 
 function montarAbas(){
+  try{ registrarAtividade(null); }catch(e){}
   const abas = document.getElementById('abasTopo');
   const permitidos = cultosPermitidos();
   abas.innerHTML = '';
@@ -7690,6 +7724,8 @@ async function abrirPessoas(){
   document.getElementById('listaPessoas').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
     const pessoas = await api('perfis?select=*&order=criado_em.asc');
+    try{ const lg = await api('rpc/ultimos_logins', { method:'POST', body:{} }) || [];
+      const mapa = {}; lg.forEach(x => mapa[x.id] = x.ultimo_login); pessoas.forEach(p => p.ultimo_login = mapa[p.id] || null); }catch(e){}
     desenharPessoas(pessoas);
   }catch(e){
     document.getElementById('listaPessoas').innerHTML =
@@ -7697,6 +7733,11 @@ async function abrirPessoas(){
   }
 }
 
+function quandoAtividade(iso){
+  if(!iso) return '—';
+  const d = new Date(iso); const z = n => String(n).padStart(2, '0');
+  return `${z(d.getDate())}/${z(d.getMonth() + 1)}/${d.getFullYear()} às ${z(d.getHours())}:${z(d.getMinutes())}`;
+}
 function desenharPessoas(pessoas){
   const el = document.getElementById('listaPessoas');
   if(!pessoas.length){ el.innerHTML = '<div class="vazio">Ninguém cadastrado ainda.</div>'; return; }
@@ -7709,6 +7750,7 @@ function desenharPessoas(pessoas){
       <div class="email">${escapar(p.nome || p.email)}
         ${eu ? '<span class="badge rascunho">você</span>' : ''}
         <div class="meta" style="font-weight:400;color:var(--muted2);font-size:12.5px;">${escapar(p.email||'')}</div>
+        <div class="meta" style="font-weight:400;color:var(--muted2);font-size:12.5px;">Último login: <b>${p.ultimo_login ? quandoAtividade(p.ultimo_login) : '—'}</b> · Último uso: <b>${p.ultimo_acesso ? quandoAtividade(p.ultimo_acesso) : '—'}</b>${p.ultima_aba_alterada ? ` · Última alteração: <b>${escapar(p.ultima_aba_alterada)}</b> (${quandoAtividade(p.ultima_alteracao_em)})` : ''}</div>
       </div>
       <label class="chk"><input type="checkbox" data-c="acesso_sexta"  ${p.acesso_sexta?'checked':''}> Sexta</label>
       <label class="chk"><input type="checkbox" data-c="acesso_sabado" ${p.acesso_sabado?'checked':''}> Sábado</label>
