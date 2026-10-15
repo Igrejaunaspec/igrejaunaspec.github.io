@@ -1027,11 +1027,11 @@
 body.so-ver-cal .calendario-dia-add, body.so-ver-cal #fabCelular, body.so-ver-cal .btn-novo-evento{display:none!important}
 .aviso-so-ver{margin-bottom:12px;background:#FFF6E5;color:#6B4A00;border-radius:10px;padding:10px 14px;font-weight:700}
 body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
-.subabas{display:flex;gap:0;align-items:flex-end;margin:0;padding:0 0 0 2px;position:relative;z-index:2;flex-wrap:wrap}
+.subabas{display:flex;gap:0;align-items:flex-end;margin:0;padding:0;position:relative;z-index:2;flex-wrap:wrap}
 .subabas button{position:relative;border:1px solid #CBD3DE;border-bottom:0;background:#E4E9F0;color:#5B6879;font-weight:700;font-size:14.5px;
   padding:10px 22px 9px;border-radius:12px 12px 0 0;cursor:pointer;margin-bottom:-1px;box-shadow:inset 0 -6px 8px -6px #1D3A5C22}
 .subabas button:hover{background:#EDF1F6;color:#1D3A5C}
-.subabas button.on{background:#fff;color:#1D3A5C;border-color:#DCE2EA;padding-top:13px;box-shadow:none;z-index:3}
+.subabas button.on{background:#fff;color:#1D3A5C;border-color:var(--border,#DDE1E8);padding-top:13px;box-shadow:none;z-index:3}
 .subabas button.on::before{content:"";position:absolute;left:12px;right:12px;top:0;height:4px;border-radius:0 0 4px 4px;background:#E2A33B}
 .subabas button{display:inline-flex;align-items:center;margin-right:-1px}
 .subabas .ico{display:inline-flex;line-height:1}
@@ -1040,7 +1040,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 .subabas button:not(.on){padding-left:16px;padding-right:16px}
 .subabas button.on .rot, .subabas button:hover .rot, .subabas button:focus-visible .rot{max-width:220px;opacity:1;margin-left:8px}
 @media (prefers-reduced-motion:reduce){.subabas .rot{transition:none}}
-#cardTopoAgendamentos, #editorFormularioAgendamento > .card:first-child, #editorEtiquetasAgendamento > .card:first-child{border-top-left-radius:0}
+#paginaAgendamentos:has(.subabas button:first-child.on) #cardTopoAgendamentos{border-top-left-radius:0}
 
 /* menu lateral recolhível (computador) */
 @media (min-width:701px){
