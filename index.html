@@ -983,6 +983,8 @@
     .proximos{display:none;}
   }
 
+body.so-ver-cal .calendario-dia-add, body.so-ver-cal #fabCelular, body.so-ver-cal .btn-novo-evento{display:none!important}
+.aviso-so-ver{margin-bottom:12px;background:#FFF6E5;color:#6B4A00;border-radius:10px;padding:10px 14px;font-weight:700}
 </style>
 </head>
 <body>
@@ -3727,6 +3729,7 @@ let calendarioAgendamentos = [];
 let calendarioDiaSelecionado = null; // chave "AAAA-MM-DD"
 
 async function abrirCalendario(){
+  document.body.classList.toggle('so-ver-cal', soVerCalendario());
   cultoAtual = 'calendario';
   marcarAba('calendario');
   mostrarPagina('calendario');
@@ -4067,7 +4070,7 @@ function desenharDetalheDiaCalendario(porDia){
   el.classList.remove('hidden');
   const cabecalho = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
     <h3 style="margin:0;">${escapar(dataFormatada)}</h3>
-    <button class="btn small" onclick="abrirModalEventoNovo('${calendarioDiaSelecionado}')">+ Novo evento</button>
+    <button class="btn small btn-novo-evento" onclick="abrirModalEventoNovo('${calendarioDiaSelecionado}')">+ Novo evento</button>
   </div>`;
   if(!eventos.length){
     el.innerHTML = `${cabecalho}<div class="vazio">Nenhum agendamento confirmado neste dia.</div>`;
@@ -4112,6 +4115,7 @@ function formatarDataISO(d){
 }
 
 function abrirModalEventoNovo(chaveDiaClicado){
+  if(soVerCalendario()){ if(typeof selecionarDiaCalendario === 'function') selecionarDiaCalendario(chaveDiaClicado); return; }
   eventoModalId = null;
   eventoModalDados = null;
   const [ano, mes, dia] = chaveDiaClicado.split('-').map(Number);
@@ -4758,7 +4762,7 @@ function montarAbas(){
     abas.appendChild(ba);
   }
 
-  if(perfil.admin || perfil.acesso_calendario){
+  if(perfil.admin || perfil.acesso_calendario || perfil.acesso_calendario_ver){
     const bc = document.createElement('button');
     bc.textContent = 'Calendário';
     bc.title = 'Pedidos já agendados, em formato de calendário';
@@ -4781,7 +4785,7 @@ function montarAbas(){
   // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
   // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
   // de quem nao tem nenhum culto/agenda liberado.
-  const temPaginaExtra = perfil.admin || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria;
+  const temPaginaExtra = perfil.admin || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_calendario_ver || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria;
 
   if(permitidos.length === 0 && !podeEditarAgenda() && !temPaginaExtra){
     // Sem acesso de edicao a nenhum culto, agenda, ou aba extra: pode ser (a)
@@ -4793,11 +4797,11 @@ function montarAbas(){
     return;
   }
   // no celular, quem tem o Calendario comeca por ele (e o uso mais comum no celular)
-  if(ehCelular() && (perfil.admin || perfil.acesso_calendario)) abrirCalendario();
+  if(ehCelular() && (perfil.admin || perfil.acesso_calendario || perfil.acesso_calendario_ver)) abrirCalendario();
   else if(permitidos.length > 0) abrirCulto(permitidos[0]);
   else if(podeEditarAgenda()) abrirAgendaLista();
   else if(perfil.admin || perfil.acesso_agendamentos) abrirAgendamentosLista();
-  else if(perfil.admin || perfil.acesso_calendario) abrirCalendario();
+  else if(perfil.admin || perfil.acesso_calendario || perfil.acesso_calendario_ver) abrirCalendario();
   else if(perfil.admin || perfil.acesso_youtube) abrirYoutubeLista();
   else if(perfil.acesso_homiletico) abrirHomiletico();
   else if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria) abrirAgendaPastoral();
@@ -7670,6 +7674,7 @@ function desenharPessoas(pessoas){
       <label class="chk"><input type="checkbox" data-c="acesso_agenda" ${p.acesso_agenda?'checked':''}> Agenda</label>
       <label class="chk"><input type="checkbox" data-c="acesso_agendamentos" ${p.acesso_agendamentos?'checked':''}> Agendamentos</label>
       <label class="chk"><input type="checkbox" data-c="acesso_calendario" ${p.acesso_calendario?'checked':''}> Calendário</label>
+      <label class="chk" title="Vê o calendário, mas não cria, edita nem apaga eventos"><input type="checkbox" data-c="acesso_calendario_ver" ${p.acesso_calendario_ver?'checked':''}> Calendário (só ver)</label>
       <label class="chk"><input type="checkbox" data-c="acesso_escala" ${p.acesso_escala?'checked':''}> Escala</label>
       <label class="chk"><input type="checkbox" data-c="acesso_youtube" ${p.acesso_youtube?'checked':''}> YouTube</label>
       <label class="chk"><input type="checkbox" data-c="acesso_homiletico" ${p.acesso_homiletico?'checked':''}> Homilético</label>
@@ -8470,6 +8475,35 @@ document.addEventListener('keydown', ev => {
   const obs = new MutationObserver(atualizar);
   function ligar(){ obs.observe(document.body, { subtree:true, childList:true, attributes:true, attributeFilter:['class'] }); }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ligar); else ligar();
+})();
+
+/* ---------- calendário só para ver (perfil.acesso_calendario_ver) ----------
+   O banco também garante: esse acesso só tem permissão de LER agendamentos. */
+function soVerCalendario(){
+  return !!(perfil && !perfil.admin && !perfil.acesso_calendario && perfil.acesso_calendario_ver);
+}
+(function(){
+  const original = desenharModalEvento;
+  desenharModalEvento = function(){
+    const r = original.apply(this, arguments);
+    if(soVerCalendario()){
+      const cx = document.getElementById('modalEventoCaixa');
+      cx.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = true; });
+      cx.querySelectorAll('button').forEach(b => {
+        const t = (b.textContent || '').trim().toLowerCase();
+        if(!/fechar|cancelar|voltar|✕|×/.test(t) && !b.classList.contains('fechar')) b.style.display = 'none';
+      });
+      cx.querySelectorAll('h1,h2,h3').forEach(h => { if(/editar evento/i.test(h.textContent)) h.textContent = 'Detalhes do evento'; });
+      cx.querySelectorAll('button').forEach(b => { if(b.textContent.trim() === 'Cancelar') b.textContent = 'Fechar'; });
+      if(!cx.querySelector('.aviso-so-ver')){
+        const a = document.createElement('div');
+        a.className = 'aviso aviso-so-ver';
+        a.textContent = 'Somente visualização — você não pode alterar eventos.';
+        cx.prepend(a);
+      }
+    }
+    return r;
+  };
 })();
 </script>
 </body>
