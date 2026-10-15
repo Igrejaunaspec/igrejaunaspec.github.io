@@ -2,6 +2,47 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<script>
+/* Sai sozinho depois de 30 minutos sem uso (vale para o app e o painel do Médicos em Missão).
+   A hora do último uso fica guardada no navegador, então vale também com a aba fechada. */
+(function(){
+  var LIMITE = 30 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
+  function agora(){ return Date.now(); }
+  function ultimo(){ try{ return +localStorage.getItem(ULT) || 0; }catch(e){ return 0; } }
+  function temSessao(){ try{ return !!localStorage.getItem(CHAVE); }catch(e){ return false; } }
+  function marcar(){ try{ localStorage.setItem(ULT, String(agora())); }catch(e){} }
+  function expirou(){ var u = ultimo(); return temSessao() && u && agora() - u > LIMITE; }
+  // ao abrir a página: se ficou parado mais de 30 min, apaga a sessão antes do app carregar
+  if(expirou()){ try{ localStorage.removeItem(CHAVE); }catch(e){} }
+  if(temSessao() && !ultimo()) marcar();
+  var ultimaMarca = 0;
+  function atividade(){ var t = agora(); if(t - ultimaMarca > 20000){ ultimaMarca = t; marcar(); } }
+  ['pointerdown','keydown','scroll','touchstart','wheel'].forEach(function(ev){
+    window.addEventListener(ev, atividade, { passive:true, capture:true });
+  });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) verificar(); });
+  function verificar(){
+    if(!expirou()) return;
+    try{ localStorage.removeItem(CHAVE); }catch(e){}
+    try{ sessionStorage.setItem('saiuPorInatividade', '1'); }catch(e){}
+    location.reload();
+  }
+  setInterval(verificar, 30000);
+  // depois de recarregar, avisa na tela de login
+  try{
+    if(sessionStorage.getItem('saiuPorInatividade') === '1'){
+      sessionStorage.removeItem('saiuPorInatividade');
+      window.addEventListener('load', function(){
+        var d = document.createElement('div');
+        d.textContent = 'Você saiu automaticamente depois de 30 minutos sem uso. Entre de novo.';
+        d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#1D3A5C;color:#fff;padding:12px 18px;border-radius:12px;font:600 15px system-ui,sans-serif;box-shadow:0 6px 20px #0003;max-width:92vw;text-align:center';
+        document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 8000);
+      });
+    }
+  }catch(e){}
+})();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>APP IGREJA UNASP EC</title>
 <meta name="description" content="Calendário, agendamentos e roteiros da Igreja Adventista UNASP EC.">
