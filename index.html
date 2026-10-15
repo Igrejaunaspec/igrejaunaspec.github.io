@@ -173,7 +173,9 @@
   .pasta-cabecalho.alvo-arraste-pasta{border-style:solid;border-color:var(--accent);
     background:var(--panel);box-shadow:0 0 0 2px var(--accent) inset;}
   .icone-toggle-pasta{font-size:11px;color:var(--muted2);width:12px;flex:none;
-    text-align:center;transition:transform .12s;}
+    text-align:center;transition:transform .25s ease;}
+  .pasta-secao:not(.fechada):not(.fechando) > .pasta-cabecalho .icone-toggle-pasta{transform:rotate(90deg);}
+  .pasta-cabecalho .icone-pasta{display:inline-block;}
   .pasta-secao.fechada .pasta-itens{display:none;}
   .pasta-itens{padding-left:16px;border-left:2px solid var(--border-soft);margin-left:10px;}
   .pasta-vazia{color:var(--muted2);font-size:12.5px;padding:2px 0 12px 4px;}
@@ -5326,8 +5328,8 @@ function pastaSecaoHTML(p, porPai, porPasta, nivel){
         ondragover="arrastarSobrePasta(event)"
         ondragleave="sairDoAlvoPasta(event)"
         ondrop="soltarEmPasta('${p.id}', event)">
-      <span class="icone-toggle-pasta">${aberta ? '▾' : '▸'}</span>
-      <span class="icone-pasta">📁</span>
+      <span class="icone-toggle-pasta">▸</span>
+      <span class="icone-pasta">${aberta ? '📂' : '📁'}</span>
       <span class="nome-pasta" id="nomePasta-${p.id}">${escapar(p.nome)}</span>
       <span class="contagem-pasta">${total} ${total === 1 ? 'roteiro' : 'roteiros'}</span>
       <button class="btn icon small" type="button" title="Nova subpasta" onclick="event.stopPropagation();mostrarFormNovaSubpasta('${p.id}')">📁+</button>
@@ -5350,9 +5352,32 @@ function pastaSecaoHTML(p, porPai, porPasta, nivel){
 }
 
 function alternarPasta(id){
-  if(pastasAbertas.has(id)) pastasAbertas.delete(id);
-  else pastasAbertas.add(id);
-  desenharLista();
+  const abrir = !pastasAbertas.has(id);
+  if(abrir) pastasAbertas.add(id); else pastasAbertas.delete(id);
+  const nome = document.getElementById('nomePasta-' + id);
+  const sec = nome && nome.closest('.pasta-secao');
+  const semAnimacao = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!sec || semAnimacao || !sec.animate){ desenharLista(); return; }
+  const itens = sec.querySelector(':scope > .pasta-itens');
+  const icone = sec.querySelector(':scope > .pasta-cabecalho .icone-pasta');
+  if(sec._anim) sec._anim.cancel();
+  itens.style.overflow = 'hidden';
+  if(abrir){
+    sec.classList.remove('fechada'); sec.classList.remove('fechando');
+    if(icone){ icone.textContent = '📂'; icone.animate([{ transform:'scale(1)' }, { transform:'scale(1.25) rotate(-8deg)' }, { transform:'scale(1)' }], { duration:320, easing:'ease-out' }); }
+    const h = itens.scrollHeight;
+    sec._anim = itens.animate([{ height:'0px', opacity:0 }, { height:h + 'px', opacity:1 }], { duration:300, easing:'cubic-bezier(.2,.8,.2,1)' });
+    Array.from(itens.children).forEach((c, i) => c.animate(
+      [{ opacity:0, transform:'translateY(-8px)' }, { opacity:1, transform:'none' }],
+      { duration:260, delay:70 + Math.min(i, 8) * 45, easing:'ease-out', fill:'backwards' }));
+    sec._anim.onfinish = () => { itens.style.overflow = ''; sec._anim = null; };
+  }else{
+    const h = itens.offsetHeight;
+    if(icone) icone.textContent = '📁';
+    sec.classList.add('fechando');
+    sec._anim = itens.animate([{ height:h + 'px', opacity:1 }, { height:'0px', opacity:0 }], { duration:220, easing:'ease-in' });
+    sec._anim.onfinish = () => { sec.classList.add('fechada'); sec.classList.remove('fechando'); itens.style.overflow = ''; sec._anim = null; };
+  }
 }
 
 /* ---------- pastas: criar, renomear, apagar, arrastar roteiro para dentro ---------- */
