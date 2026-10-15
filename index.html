@@ -1125,6 +1125,9 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 .tour-pontos i.on{width:20px;border-radius:4px;background:#E2A33B}
 .tour-acoes{display:flex;justify-content:space-between;gap:8px}
 @media (prefers-reduced-motion:reduce){.tour-buraco,.tour-balao{transition:none}.tour-balao.entra{animation:none}}
+#avisoAoVivo{position:fixed;right:20px;bottom:84px;z-index:8000;background:#1D3A5C;color:#fff;font-weight:700;font-size:14px;padding:10px 16px;border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none}
+#avisoAoVivo.on{opacity:1;transform:none}
 </style>
 </head>
 <body>
@@ -5681,6 +5684,7 @@ function abrirTelaEditor(){
   desenharLegendaCores();
   desenharLegendaEscrita();
   desenharTabela();
+  iniciarAoVivo();
 }
 
 function primeiroHorario(){
@@ -6243,6 +6247,7 @@ function recalcularHorarios(){
 }
 
 function voltarParaLista(){
+  pararAoVivo();
   if(sujo && !confirm('Você tem alterações não salvas. Voltar mesmo assim?')) return;
   sujo = false;
   clearTimeout(autoSalvarTimer);
@@ -6281,6 +6286,10 @@ async function salvarRoteiro(auto){
     document.getElementById('statusSalvo').textContent = 'salvando automaticamente…';
   }
 
+  if(emEdicao.id){ try{ await verificarRoteiroRemoto(true); }catch(e){} }
+  const linhasFinal = emEdicao.dados.rows.filter(r =>
+    (r.momento || '').trim() || (r.obs || '').trim() ||
+    (r.participante || '').trim() || (r.gc || '').trim() || (r.audio || '').trim());
   const corpo = {
     culto: emEdicao.culto,
     nome:  emEdicao.nome,
@@ -6288,7 +6297,7 @@ async function salvarRoteiro(auto){
     // preserva qualquer outro campo que ja exista em dados (legendaTextos,
     // notasEsquerda, notasDireita, etc.) -- antes o salvamento reconstruia
     // "dados" so com {title, rows} e apagava esses campos extras sem querer.
-    dados: { ...emEdicao.dados, title: emEdicao.titulo || emEdicao.nome, rows: linhas },
+    dados: { ...emEdicao.dados, title: emEdicao.titulo || emEdicao.nome, rows: linhasFinal },
     publicado: true
   };
 
@@ -6300,6 +6309,8 @@ async function salvarRoteiro(auto){
       salvo = await api('roteiros', { method:'POST', body: corpo });
     }
     if(Array.isArray(salvo) && salvo[0]) emEdicao.id = salvo[0].id;
+    aoVivoBase = JSON.parse(JSON.stringify({ nome: corpo.nome, titulo: corpo.titulo, dados: corpo.dados }));
+    if(!aoVivoTimer) iniciarAoVivo();
 
     sujo = false;
     document.getElementById('btnApagar').style.display = '';
@@ -9007,6 +9018,86 @@ function fecharTour(silencioso){
   document.removeEventListener('keydown', teclaTour);
   window.removeEventListener('resize', mostrarPassoTour);
   if(!silencioso){ try{ localStorage.setItem(tourChave, '1'); }catch(e){} }
+}
+
+/* =====================================================================
+   ROTEIRO AO VIVO: quando outra pessoa muda o roteiro aberto, a mudança
+   aparece aqui em poucos segundos, sem recarregar. Se as duas pessoas
+   mexerem ao mesmo tempo, junta linha por linha (a sua linha não é perdida).
+===================================================================== */
+let aoVivoTimer = null, aoVivoBase = null, aoVivoChecando = false;
+const conteudoRoteiro = r => JSON.stringify({ n: r.nome || '', t: r.titulo || '', d: r.dados || {} });
+function iniciarAoVivo(){
+  pararAoVivo();
+  aoVivoBase = emEdicao && emEdicao.id ? JSON.parse(JSON.stringify({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados })) : null;
+  aoVivoTimer = setInterval(() => verificarRoteiroRemoto(false), 3000);
+}
+function pararAoVivo(){ clearInterval(aoVivoTimer); aoVivoTimer = null; }
+function mesclarLinhas(base, local, remoto){
+  const n = Math.max(base.length, local.length, remoto.length), out = [];
+  for(let i = 0; i < n; i++){
+    const b = JSON.stringify(base[i]), l = JSON.stringify(local[i]), r = JSON.stringify(remoto[i]);
+    let x;
+    if(l === b) x = remoto[i];          // só o outro mexeu (ou ninguém)
+    else if(r === b) x = local[i];      // só você mexeu
+    else x = local[i];                  // os dois mexeram na mesma linha: fica a sua
+    if(x !== undefined) out.push(x);
+  }
+  return out;
+}
+function guardarFoco(){
+  const campos = Array.from(document.querySelectorAll('#paginaEditor input, #paginaEditor textarea, #paginaEditor select'));
+  const a = document.activeElement, i = campos.indexOf(a);
+  if(i < 0) return null;
+  let ini = null, fim = null; try{ ini = a.selectionStart; fim = a.selectionEnd; }catch(e){}
+  return { i, ini, fim };
+}
+function voltarFoco(f){
+  if(!f) return;
+  const campos = Array.from(document.querySelectorAll('#paginaEditor input, #paginaEditor textarea, #paginaEditor select'));
+  const el = campos[f.i]; if(!el) return;
+  el.focus({ preventScroll: true });
+  try{ if(f.ini != null) el.setSelectionRange(f.ini, f.fim); }catch(e){}
+}
+async function verificarRoteiroRemoto(antesDeSalvar){
+  if(!emEdicao || !emEdicao.id || !aoVivoBase) return;
+  if(document.getElementById('paginaEditor').classList.contains('hidden')){ pararAoVivo(); return; }
+  if(!antesDeSalvar && (document.hidden || salvando || aoVivoChecando)) return;
+  aoVivoChecando = true;
+  try{
+    const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados,atualizado_por`);
+    const remoto = l && l[0]; if(!remoto) return;
+    if(conteudoRoteiro(remoto) === conteudoRoteiro(aoVivoBase)) return;     // nada novo
+    const local = { nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados };
+    if(conteudoRoteiro(remoto) === conteudoRoteiro(local)){ aoVivoBase = JSON.parse(JSON.stringify(remoto)); return; }
+    const foco = guardarFoco();
+    if(!sujo){
+      emEdicao.nome = remoto.nome; emEdicao.titulo = remoto.titulo; emEdicao.dados = JSON.parse(JSON.stringify(remoto.dados || { rows: [] }));
+    }else{
+      emEdicao.dados = Object.assign({}, remoto.dados, emEdicao.dados, {
+        rows: mesclarLinhas((aoVivoBase.dados && aoVivoBase.dados.rows) || [], emEdicao.dados.rows || [], (remoto.dados && remoto.dados.rows) || [])
+      });
+      if(emEdicao.nome === aoVivoBase.nome) emEdicao.nome = remoto.nome;
+      if((emEdicao.titulo || '') === (aoVivoBase.titulo || '')) emEdicao.titulo = remoto.titulo;
+    }
+    if(!Array.isArray(emEdicao.dados.rows)) emEdicao.dados.rows = [];
+    aoVivoBase = JSON.parse(JSON.stringify(remoto));
+    const n = document.getElementById('edNome'), t = document.getElementById('edTitulo');
+    if(n && document.activeElement !== n) n.value = emEdicao.nome || '';
+    if(t && document.activeElement !== t) t.value = emEdicao.titulo || '';
+    desenharTabela();
+    voltarFoco(foco);
+    const quem = remoto.atualizado_por && remoto.atualizado_por !== (sessao && sessao.email) ? remoto.atualizado_por.split('@')[0] : 'outra pessoa';
+    avisoAoVivo(`Atualizado agora por ${quem}`);
+  }catch(e){ /* sem internet: tenta de novo no próximo ciclo */ }
+  finally{ aoVivoChecando = false; }
+}
+function avisoAoVivo(txt){
+  let el = document.getElementById('avisoAoVivo');
+  if(!el){ el = document.createElement('div'); el.id = 'avisoAoVivo'; document.body.appendChild(el); }
+  el.textContent = '🔄 ' + txt;
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 3500);
 }
 </script>
 </body>
