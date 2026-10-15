@@ -1128,6 +1128,9 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 #avisoAoVivo{position:fixed;right:20px;bottom:84px;z-index:8000;background:#1D3A5C;color:#fff;font-weight:700;font-size:14px;padding:10px 16px;border-radius:12px;
   box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none}
 #avisoAoVivo.on{opacity:1;transform:none}
+#editandoJunto{position:fixed;right:20px;top:16px;z-index:8000;background:#fff;color:#1D3A5C;border:1px solid #DCE2EA;font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+#editandoJunto .ponto-vivo{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1E8E4E;margin-right:6px;animation:pulsoVivo 1.4s infinite}
+@keyframes pulsoVivo{50%{opacity:.3}}
 </style>
 </head>
 <body>
@@ -5694,6 +5697,7 @@ function primeiroHorario(){
 
 function marcarSujo(){
   sujo = true;
+  try{ enviarMudancaAoVivo(); }catch(e){}
   document.getElementById('statusSalvo').textContent = 'alterações não salvas';
   agendarAutoSalvar();
 }
@@ -6310,6 +6314,7 @@ async function salvarRoteiro(auto){
     }
     if(Array.isArray(salvo) && salvo[0]) emEdicao.id = salvo[0].id;
     aoVivoBase = JSON.parse(JSON.stringify({ nome: corpo.nome, titulo: corpo.titulo, dados: corpo.dados }));
+    aoVivoUltimoBanco = conteudoRoteiro(aoVivoBase);
     if(!aoVivoTimer) iniciarAoVivo();
 
     sujo = false;
@@ -9025,14 +9030,74 @@ function fecharTour(silencioso){
    aparece aqui em poucos segundos, sem recarregar. Se as duas pessoas
    mexerem ao mesmo tempo, junta linha por linha (a sua linha não é perdida).
 ===================================================================== */
-let aoVivoTimer = null, aoVivoBase = null, aoVivoChecando = false;
+let aoVivoTimer = null, aoVivoBase = null, aoVivoChecando = false, aoVivoUltimoBanco = null, aoVivoCanal = null, aoVivoEnvio = null;
 const conteudoRoteiro = r => JSON.stringify({ n: r.nome || '', t: r.titulo || '', d: r.dados || {} });
 function iniciarAoVivo(){
   pararAoVivo();
   aoVivoBase = emEdicao && emEdicao.id ? JSON.parse(JSON.stringify({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados })) : null;
-  aoVivoTimer = setInterval(() => verificarRoteiroRemoto(false), 3000);
+  aoVivoUltimoBanco = aoVivoBase ? conteudoRoteiro(aoVivoBase) : null;
+  aoVivoTimer = setInterval(() => verificarRoteiroRemoto(false), 4000);   // reserva, caso a conexão instantânea caia
+  conectarCanalAoVivo();
 }
-function pararAoVivo(){ clearInterval(aoVivoTimer); aoVivoTimer = null; }
+function pararAoVivo(){
+  clearInterval(aoVivoTimer); aoVivoTimer = null;
+  if(aoVivoCanal){ try{ aoVivoCanal.unsubscribe(); }catch(e){} aoVivoCanal = null; }
+  mostrarEditandoJunto([]);
+}
+/* ---- conexão instantânea (Supabase Realtime: canal só deste roteiro) ---- */
+let clienteRealtime = null, carregandoRealtime = null;
+function carregarRealtime(){
+  if(clienteRealtime) return Promise.resolve(clienteRealtime);
+  if(carregandoRealtime) return carregandoRealtime;
+  carregandoRealtime = new Promise((ok, erro) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
+    sc.onload = () => { try{ clienteRealtime = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false, autoRefreshToken:false } }); ok(clienteRealtime); }catch(e){ erro(e); } };
+    sc.onerror = erro;
+    document.head.appendChild(sc);
+  });
+  return carregandoRealtime;
+}
+async function conectarCanalAoVivo(){
+  if(!emEdicao || !emEdicao.id) return;
+  const id = emEdicao.id;
+  try{
+    const cli = await carregarRealtime();
+    try{ cli.realtime.setAuth(await tokenValido()); }catch(e){}
+    if(!emEdicao || emEdicao.id !== id) return;
+    if(aoVivoCanal){ try{ aoVivoCanal.unsubscribe(); }catch(e){} }
+    const eu = (sessao && sessao.email) || 'alguém';
+    aoVivoCanal = cli.channel('roteiro-' + id, { config:{ broadcast:{ self:false }, presence:{ key: eu + '#' + Math.random().toString(36).slice(2, 7) } } });
+    aoVivoCanal
+      .on('broadcast', { event:'mudou' }, ({ payload }) => receberMudancaAoVivo(payload))
+      .on('presence', { event:'sync' }, () => {
+        const st = aoVivoCanal.presenceState();
+        const outros = [...new Set(Object.values(st).flat().map(p => p.email).filter(e => e && e !== eu))];
+        mostrarEditandoJunto(outros);
+      })
+      .subscribe(status => { if(status === 'SUBSCRIBED') aoVivoCanal.track({ email: eu }); });
+  }catch(e){ /* sem a conexão instantânea, continua valendo a verificação a cada 4 s */ }
+}
+function enviarMudancaAoVivo(){
+  if(!aoVivoCanal || !emEdicao || !emEdicao.id) return;
+  if(aoVivoEnvio) return;
+  aoVivoEnvio = setTimeout(() => {
+    aoVivoEnvio = null;
+    const snap = JSON.parse(JSON.stringify({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados }));
+    aoVivoBase = snap;
+    try{ aoVivoCanal.send({ type:'broadcast', event:'mudou', payload:{ quem: (sessao && sessao.email) || '', r: snap } }); }catch(e){}
+  }, 200);
+}
+function receberMudancaAoVivo(payload){
+  if(!payload || !payload.r || !emEdicao) return;
+  aplicarRemoto(payload.r, payload.quem, true);
+}
+function mostrarEditandoJunto(lista){
+  let el = document.getElementById('editandoJunto');
+  if(!lista.length){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('div'); el.id = 'editandoJunto'; document.body.appendChild(el); }
+  el.innerHTML = '<span class="ponto-vivo"></span> Editando junto: ' + lista.map(e => escapar(e.split('@')[0])).join(', ');
+}
 function mesclarLinhas(base, local, remoto){
   const n = Math.max(base.length, local.length, remoto.length), out = [];
   for(let i = 0; i < n; i++){
@@ -9059,26 +9124,19 @@ function voltarFoco(f){
   el.focus({ preventScroll: true });
   try{ if(f.ini != null) el.setSelectionRange(f.ini, f.fim); }catch(e){}
 }
-async function verificarRoteiroRemoto(antesDeSalvar){
-  if(!emEdicao || !emEdicao.id || !aoVivoBase) return;
-  if(document.getElementById('paginaEditor').classList.contains('hidden')){ pararAoVivo(); return; }
-  if(!antesDeSalvar && (document.hidden || salvando || aoVivoChecando)) return;
-  aoVivoChecando = true;
-  try{
-    const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados,atualizado_por`);
-    const remoto = l && l[0]; if(!remoto) return;
-    if(conteudoRoteiro(remoto) === conteudoRoteiro(aoVivoBase)) return;     // nada novo
+function aplicarRemoto(remoto, quemEmail, instantaneo){
     const local = { nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados };
     if(conteudoRoteiro(remoto) === conteudoRoteiro(local)){ aoVivoBase = JSON.parse(JSON.stringify(remoto)); return; }
     const foco = guardarFoco();
+    const base = aoVivoBase || remoto;
     if(!sujo){
       emEdicao.nome = remoto.nome; emEdicao.titulo = remoto.titulo; emEdicao.dados = JSON.parse(JSON.stringify(remoto.dados || { rows: [] }));
     }else{
       emEdicao.dados = Object.assign({}, remoto.dados, emEdicao.dados, {
-        rows: mesclarLinhas((aoVivoBase.dados && aoVivoBase.dados.rows) || [], emEdicao.dados.rows || [], (remoto.dados && remoto.dados.rows) || [])
+        rows: mesclarLinhas((base.dados && base.dados.rows) || [], emEdicao.dados.rows || [], (remoto.dados && remoto.dados.rows) || [])
       });
-      if(emEdicao.nome === aoVivoBase.nome) emEdicao.nome = remoto.nome;
-      if((emEdicao.titulo || '') === (aoVivoBase.titulo || '')) emEdicao.titulo = remoto.titulo;
+      if(emEdicao.nome === base.nome) emEdicao.nome = remoto.nome;
+      if((emEdicao.titulo || '') === (base.titulo || '')) emEdicao.titulo = remoto.titulo;
     }
     if(!Array.isArray(emEdicao.dados.rows)) emEdicao.dados.rows = [];
     aoVivoBase = JSON.parse(JSON.stringify(remoto));
@@ -9087,8 +9145,27 @@ async function verificarRoteiroRemoto(antesDeSalvar){
     if(t && document.activeElement !== t) t.value = emEdicao.titulo || '';
     desenharTabela();
     voltarFoco(foco);
-    const quem = remoto.atualizado_por && remoto.atualizado_por !== (sessao && sessao.email) ? remoto.atualizado_por.split('@')[0] : 'outra pessoa';
-    avisoAoVivo(`Atualizado agora por ${quem}`);
+    const quem = quemEmail && quemEmail !== (sessao && sessao.email) ? quemEmail.split('@')[0] : 'outra pessoa';
+    if(!instantaneo) avisoAoVivo(`Atualizado agora por ${quem}`);
+    else marcarQuemMexeu(quem);
+}
+function marcarQuemMexeu(quem){
+  let el = document.getElementById('avisoAoVivo');
+  if(el && el.classList.contains('on')){ clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2500); return; }
+  avisoAoVivo(`${quem} está editando`);
+}
+async function verificarRoteiroRemoto(antesDeSalvar){
+  if(!emEdicao || !emEdicao.id || !aoVivoBase) return;
+  if(document.getElementById('paginaEditor').classList.contains('hidden')){ pararAoVivo(); return; }
+  if(!antesDeSalvar && (document.hidden || salvando || aoVivoChecando)) return;
+  aoVivoChecando = true;
+  try{
+    const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados,atualizado_por`);
+    const remoto = l && l[0]; if(!remoto) return;
+    const c = conteudoRoteiro(remoto);
+    if(c === aoVivoUltimoBanco) return;      // o banco não mudou desde a última olhada
+    aoVivoUltimoBanco = c;
+    aplicarRemoto(remoto, remoto.atualizado_por, false);
   }catch(e){ /* sem internet: tenta de novo no próximo ciclo */ }
   finally{ aoVivoChecando = false; }
 }
