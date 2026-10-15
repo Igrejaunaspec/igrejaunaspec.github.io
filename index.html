@@ -6817,7 +6817,7 @@ document.addEventListener('visibilitychange', () => {
      && document.getElementById('modalPastoral').classList.contains('hidden')) carregarAgendaPastoral();
 });
 
-function ehPastor(){ return !!(perfil && perfil.acesso_pastoral); }
+function ehPastor(){ return !!(perfil && (perfil.acesso_pastoral || perfil.admin)); }
 function pasInicioSemana(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - x.getDay()); return x; }
 function pasHora(d){ return d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); }
 function pasISOData(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -7029,7 +7029,7 @@ async function abrirModalPastoral(id, iso, hora){
       <input type="text" id="pasEndereco" placeholder="Endereço ou link (opcional)" value="${escapar(x && !PAS_LOCAIS.includes(x.local) ? x.local || '' : (x && x.endereco) || '')}" style="margin-top:8px;"></div>
     <div class="field"><label for="pasStatus">Status</label><select id="pasStatus">${Object.entries(PAS_STATUS).map(([k, n]) =>
       `<option value="${k}" ${(x ? x.status : 'confirmado') === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-    ${ehPastor() ? `<div class="field"><label for="pasNotas">🔒 Anotações privadas <span style="text-transform:none;font-weight:500;">(só o pastor vê)</span></label>
+    ${ehPastor() ? `<div class="field"><label for="pasNotas">🔒 Anotações privadas <span style="text-transform:none;font-weight:500;">(só o pastor e os administradores veem)</span></label>
       <textarea id="pasNotas" rows="4" placeholder="Assunto, pedidos de oração, próximos passos...">${escapar(notas)}</textarea></div>` : ''}
     <div class="field"><label for="pasRetorno">Retorno sugerido</label><select id="pasRetorno">
       ${[['','Sem retorno'],['7','Em 1 semana'],['15','Em 15 dias'],['30','Em 1 mês']].map(([v, n]) =>
