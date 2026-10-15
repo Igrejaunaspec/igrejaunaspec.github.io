@@ -291,10 +291,10 @@ async function iniciar(){
   if(!sessao){ mostrar('telaLogin'); return; }
   try{
     const id = (decodificar(await token()) || {}).sub;
-    const p = await api(`perfis?select=id,email,acesso_medicos&id=eq.${id}`);
+    const p = await api(`perfis?select=id,email,admin,acesso_medicos&id=eq.${id}`);
     perfil = p && p[0];
   }catch(e){ mostrar('telaLogin'); return; }
-  if(!perfil || !perfil.acesso_medicos){ mostrar('telaSemAcesso'); return; }
+  if(!perfil || !(perfil.admin || perfil.acesso_medicos)){ mostrar('telaSemAcesso'); return; }
   registrarAtividade(false);
   document.getElementById('eu').textContent = perfil.email || '';
   mostrar('telaApp');
