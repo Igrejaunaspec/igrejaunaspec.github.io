@@ -1087,6 +1087,21 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 .filtros-suspensos .painel .agendamento-filtros:last-child{margin-bottom:0}
 @media (max-width:700px){ .filtros-suspensos .painel{right:auto;left:0} }
 .agendamento-topo-filtros .agendamento-busca,.agendamento-topo-filtros .select-ano{height:42px;box-sizing:border-box}
+/* sem a barra branca no computador: conta e Sair vão para o rodapé do menu */
+@media (min-width:701px){
+  body.lateral:not(.celular) #telaApp > header, body.lateral:not(.celular) header:has(#meuEmail){display:none}
+  body.lateral:not(.celular) .wrap{padding-top:22px}
+  body.lateral:not(.celular) #abasTopo{display:flex;flex-direction:column}
+  body.lateral:not(.celular) .conta-lateral{margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px 8px 4px;border-top:1px solid #ffffff22;white-space:nowrap;overflow:hidden}
+  .conta-lateral .conta-ini{flex:none;width:32px;height:32px;border-radius:50%;background:#E2A33B;color:#1A2433;display:grid;place-items:center;font-weight:800;font-size:14px}
+  .conta-lateral .conta-email{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;color:#C9D4E3;font-size:12.5px}
+  .conta-lateral .conta-sair{flex:none;width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:#C9D4E3;cursor:pointer}
+  .conta-lateral .conta-sair:hover{background:#ffffff1a;color:#fff}
+  body.lateral.menu-recolhido:not(.celular) #abasTopo:not(:hover) .conta-email,
+  body.lateral.menu-recolhido:not(.celular) #abasTopo:not(:hover) .conta-sair{display:none}
+  body.lateral:not(.celular) #btnRecolherMenu{top:28px}
+}
+@media (max-width:700px){ .conta-lateral{display:none} }
 </style>
 </head>
 <body>
@@ -4268,6 +4283,16 @@ function agruparMenuLateral(){
   }
   try{ if(localStorage.getItem('menuRecolhido') === '1') document.body.classList.add('menu-recolhido'); }catch(e){}
   atualizarBtnRecolher();
+  if(!abas.querySelector('.conta-lateral')){
+    const c = document.createElement('div');
+    c.className = 'conta-lateral';
+    const email = (typeof sessao !== 'undefined' && sessao && sessao.email) || '';
+    c.innerHTML = `<span class="conta-ini" aria-hidden="true">${escapar((email[0] || '?').toUpperCase())}</span>
+      <span class="conta-email" title="${escapar(email)}">${escapar(email)}</span>
+      <a class="conta-sair" role="button" tabindex="0" title="Sair" aria-label="Sair" onclick="sair()" onkeydown="if(event.key==='Enter')sair()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></a>`;
+    abas.appendChild(c);
+  }
   document.body.classList.add('lateral');
 }
 function alternarMenuLateral(){
