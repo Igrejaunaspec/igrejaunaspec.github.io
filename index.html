@@ -1104,6 +1104,27 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
   body.lateral:not(.celular) #btnRecolherMenu{top:28px}
 }
 @media (max-width:700px){ .conta-lateral{display:none} }
+/* tour guiado */
+#tourCamada{position:fixed;inset:0;z-index:9000}
+.tour-buraco{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(12,24,40,.62);outline:3px solid #E2A33B;outline-offset:2px;
+  transition:left .35s cubic-bezier(.3,.8,.3,1),top .35s cubic-bezier(.3,.8,.3,1),width .35s cubic-bezier(.3,.8,.3,1),height .35s cubic-bezier(.3,.8,.3,1);pointer-events:none}
+#tourCamada.centro .tour-buraco{outline:0}
+.tour-balao{position:fixed;width:min(340px,calc(100vw - 24px));background:#fff;color:#1A2433;border-radius:16px;padding:16px 18px 14px;box-shadow:0 18px 40px rgba(0,0,0,.35);
+  transition:left .35s cubic-bezier(.3,.8,.3,1),top .35s cubic-bezier(.3,.8,.3,1)}
+#tourCamada.centro .tour-balao{left:50%!important;top:50%!important;transform:translate(-50%,-50%)}
+.tour-balao.entra{animation:tourEntra .3s ease-out}
+@keyframes tourEntra{from{opacity:0;scale:.94}to{opacity:1;scale:1}}
+.tour-balao h3{margin:6px 0 6px;font-size:19px;color:#1D3A5C}
+.tour-balao p{margin:0 0 12px;font-size:15px;line-height:1.45}
+.tour-topo{display:flex;justify-content:space-between;align-items:center}
+.tour-cont{font-size:12px;font-weight:700;color:#9A6A10;background:#FFF3DC;border-radius:999px;padding:3px 10px}
+.tour-pular{border:0;background:none;color:#5B6879;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;padding:4px 6px;border-radius:8px}
+.tour-pular:hover{background:#F2F4F7;color:#1A2433}
+.tour-pontos{display:flex;gap:5px;margin-bottom:12px}
+.tour-pontos i{width:7px;height:7px;border-radius:50%;background:#DCE2EA;transition:all .25s}
+.tour-pontos i.on{width:20px;border-radius:4px;background:#E2A33B}
+.tour-acoes{display:flex;justify-content:space-between;gap:8px}
+@media (prefers-reduced-motion:reduce){.tour-buraco,.tour-balao{transition:none}.tour-balao.entra{animation:none}}
 </style>
 </head>
 <body>
@@ -1351,6 +1372,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       <div class="card inicio-topo">
         <h2>Como usar o app</h2>
         <p class="hint">Vídeos curtos mostrando, passo a passo, onde clicar. Assista só o que você precisa. Os nomes e telefones dos vídeos são de exemplo.</p>
+        <button class="btn primary" style="margin-top:10px" onclick="try{Object.keys(TOURS_ABA).forEach(k=>localStorage.removeItem('tourAba_'+k))}catch(e){};iniciarTour()">▶ Fazer o tour guiado</button>
       </div>
       <div id="listaTutoriais" class="tutoriais"></div>
     </div>
@@ -5053,7 +5075,8 @@ function montarAbas(){
     return;
   }
   let jaViuInicio = true; try{ jaViuInicio = localStorage.getItem('viuComoUsar') === '1'; }catch(e){}
-  if(!jaViuInicio && !ehCelular()){ abrirInicio(); return; }
+  let jaFezTour = true; try{ jaFezTour = localStorage.getItem('tourFeito') === '1'; }catch(e){}
+  if(!jaFezTour) setTimeout(iniciarTour, 900);
   // no celular, quem tem o Calendario comeca por ele (e o uso mais comum no celular)
   if(ehCelular() && (perfil.admin || perfil.acesso_calendario || perfil.acesso_calendario_ver)) abrirCalendario();
   else if(permitidos.length > 0) abrirCulto(permitidos[0]);
@@ -5164,6 +5187,7 @@ function fecharFolhaCelular(){
 })();
 
 function marcarAba(qual){
+  try{ dicasDaAba(qual); }catch(e){}
   document.querySelectorAll('#abasTopo button').forEach(b =>
     b.classList.toggle('on', b.dataset.culto === qual));
   // no celular, rola a barra de abas pra deixar a aba ativa visivel
@@ -8855,6 +8879,135 @@ document.addEventListener('click', ev => {
   if(w && w.classList.contains('aberto') && ev.target.isConnected && !w.contains(ev.target)){ w.classList.remove('aberto'); w.querySelector('button').setAttribute('aria-expanded', 'false'); }
 });
 document.addEventListener('keydown', ev => { if(ev.key === 'Escape'){ const w = document.getElementById('filtrosSuspensos'); if(w) w.classList.remove('aberto'); } });
+
+/* =====================================================================
+   TOUR GUIADO (primeira vez): destaca cada parte e explica, com Pular
+===================================================================== */
+const PASSOS_TOUR = [
+  { titulo:'Bem-vindo ao app da igreja! 👋', texto:'Vou mostrar rapidinho onde fica cada coisa. Leva menos de 1 minuto. Se preferir, clique em <b>Pular</b>.' },
+  { alvo:['#abasTopo', '#navCelular'], titulo:'Este é o menu', texto:'Aqui ficam todas as áreas que você pode acessar. Clique em um nome para abrir.' },
+  { alvo:['#abasTopo [data-culto="inicio"]'], titulo:'Como usar', texto:'Aqui tem <b>vídeos curtos</b> ensinando cada parte, passo a passo.' },
+  { alvo:['#abasTopo [data-culto="calendario"]', '#navCelular [data-nav="calendario"]'], titulo:'Calendário', texto:'Todos os eventos já agendados da igreja, com a cor de cada tipo de evento.' },
+  { alvo:['#abasTopo [data-culto="agendamentos"]', '#navCelular [data-nav="agendamentos"]'], titulo:'Agendamentos', texto:'Os pedidos de uso da igreja chegam aqui. Você muda o status e manda a confirmação pelo WhatsApp.' },
+  { alvo:['#abasTopo [data-culto="sabado"]', '#abasTopo [data-culto="sexta"]', '#navCelular [data-nav="roteiros"]', '#navCelular [data-nav="sabado"]', '#navCelular [data-nav="sexta"]'], titulo:'Roteiros do culto', texto:'Monte e edite o roteiro do culto. Tudo é salvo sozinho.' },
+  { alvo:['#btnRecolherMenu'], titulo:'Recolher o menu', texto:'Clique nesta setinha para esconder o menu e ganhar espaço. Passe o mouse em cima para ver os nomes.' },
+  { alvo:['.conta-lateral', '#navCelular [data-nav="mais"]'], titulo:'Sua conta', texto:'Aqui aparece a sua conta e o botão de <b>Sair</b>. O app também sai sozinho depois de 30 minutos parado.' },
+  { titulo:'Pronto! 🎉', texto:'Quando você abrir cada área pela primeira vez, eu mostro as dicas de dentro dela. Para rever, abra <b>Como usar</b> no menu.' },
+];
+/* dicas de dentro de cada aba (aparecem na primeira vez que a aba é aberta) */
+const TOURS_ABA = {
+  calendario: [
+    { alvo:['#calendarioGrid'], titulo:'Calendário', texto:'Cada evento agendado aparece no dia, com a cor do tipo de evento. Clique num evento para ver os detalhes.' },
+    { alvo:['button[onclick="navegarCalendario(1)"]'], titulo:'Trocar de mês', texto:'Use as setas para ir ao próximo mês ou voltar. <b>Hoje</b> volta para o mês atual.' },
+    { alvo:['#calendarioProximos'], titulo:'Próximos dias', texto:'Aqui ficam os próximos eventos em ordem. Clique para abrir.' },
+    { alvo:['#paginaCalendario a[href="?agendar=1"]'], titulo:'Pedir a igreja', texto:'Para marcar um evento, clique em <b>Preencher formulário</b> e mande o pedido.' },
+  ],
+  agendamentos: [
+    { alvo:['#listaAgendamentos .agendamento-item'], titulo:'Os pedidos', texto:'Cada cartão é um pedido de uso da igreja, com o nome do evento, a data e quem pediu.' },
+    { alvo:['#listaAgendamentos .status-select'], titulo:'Aprovar um pedido', texto:'Mude o <b>status</b> aqui. Ao marcar <b>Agendado</b>, o WhatsApp abre com a mensagem de confirmação pronta.' },
+    { alvo:['#listaAgendamentos button[onclick^="toggleEtiquetaDropdown"]'], titulo:'Etiquetas e detalhes', texto:'<b>Etiquetas</b> marca urgente, recorrente ou grupo externo. <b>Ver tudo</b> mostra todas as respostas do formulário.' },
+    { alvo:['#buscaAgendamentos'], titulo:'Buscar', texto:'Digite o nome do evento, do responsável ou o telefone para achar um pedido.' },
+    { alvo:['#filtrosSuspensos > button'], titulo:'Filtros', texto:'Mostre só os pendentes, os agendados, os urgentes e assim por diante.' },
+    { alvo:['#cardTopoAgendamentos button[onclick="abrirModalLinkFormulario()"]'], titulo:'Link do formulário', texto:'Copie o endereço do formulário para mandar a quem quer pedir a igreja.' },
+    { alvo:['#subabasAgendamentos [data-sub="form"]'], titulo:'Editar formulário e etiquetas', texto:'Nestas abas a secretaria e os administradores mudam as perguntas do formulário e as etiquetas.' },
+  ],
+  culto: [
+    { alvo:['#paginaLista button[onclick="novoRoteiro()"]'], titulo:'Novo roteiro', texto:'Crie o roteiro de um culto. Ele fica salvo na nuvem para a equipe.' },
+    { alvo:['#paginaLista button[onclick="mostrarFormNovaPasta()"]'], titulo:'Pastas', texto:'Organize os roteiros em pastas, por exemplo uma para cada mês. Dá para arrastar um roteiro para dentro da pasta.' },
+    { alvo:['#paginaLista .lista-item button.primary', '#paginaLista button.primary.small'], titulo:'Abrir um roteiro', texto:'Clique em <b>Abrir</b> para editar. Tudo é salvo sozinho enquanto você mexe.' },
+  ],
+};
+function dicasDaAba(qual){
+  const chaveAba = (qual === 'sexta' || qual === 'sabado') ? 'culto' : qual;
+  const passos = TOURS_ABA[chaveAba];
+  if(!passos || document.getElementById('tourCamada')) return;
+  let feito = true, geral = true;
+  try{ feito = localStorage.getItem('tourAba_' + chaveAba) === '1'; geral = localStorage.getItem('tourFeito') === '1'; }catch(e){}
+  if(feito || !geral) return;
+  setTimeout(() => {
+    if(document.getElementById('tourCamada')) return;
+    const atual = (cultoAtual === 'sexta' || cultoAtual === 'sabado') ? 'culto' : cultoAtual;
+    if(atual === chaveAba) iniciarTour(passos, 'tourAba_' + chaveAba);
+  }, 1200);
+}
+let tourPasso = 0, tourLista = [], tourChave = 'tourFeito';
+function tourAlvo(p){
+  for(const sel of (p.alvo || [])){
+    const el = document.querySelector(sel);
+    if(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'){ const r = el.getBoundingClientRect(); if(r.width && r.height) return el; }
+  }
+  return null;
+}
+function iniciarTour(passos, chave){
+  fecharTour(true);
+  tourChave = chave || 'tourFeito';
+  tourLista = (passos || PASSOS_TOUR).filter(p => !p.alvo || tourAlvo(p));
+  if(!tourLista.length) return;
+  tourPasso = 0;
+  const f = document.createElement('div');
+  f.id = 'tourCamada';
+  f.innerHTML = `<div class="tour-buraco" id="tourBuraco"></div>
+    <div class="tour-balao" id="tourBalao" role="dialog" aria-live="polite">
+      <div class="tour-topo"><span class="tour-cont" id="tourCont"></span><button type="button" class="tour-pular" onclick="fecharTour()">Pular ✕</button></div>
+      <h3 id="tourTitulo"></h3><p id="tourTexto"></p>
+      <div class="tour-pontos" id="tourPontos"></div>
+      <div class="tour-acoes"><button type="button" class="btn" id="tourVoltar" onclick="passoTour(-1)">Voltar</button>
+        <button type="button" class="btn primary" id="tourProximo" onclick="passoTour(1)">Próximo</button></div>
+    </div>`;
+  document.body.appendChild(f);
+  document.addEventListener('keydown', teclaTour);
+  window.addEventListener('resize', mostrarPassoTour);
+  mostrarPassoTour();
+}
+function teclaTour(e){
+  if(e.key === 'Escape') fecharTour();
+  else if(e.key === 'ArrowRight' || e.key === 'Enter') passoTour(1);
+  else if(e.key === 'ArrowLeft') passoTour(-1);
+}
+function passoTour(d){
+  const n = tourPasso + d;
+  if(n >= tourLista.length){ fecharTour(); return; }
+  if(n < 0) return;
+  tourPasso = n; mostrarPassoTour();
+}
+function mostrarPassoTour(){
+  const camada = document.getElementById('tourCamada'); if(!camada) return;
+  const p = tourLista[tourPasso];
+  const buraco = document.getElementById('tourBuraco'), balao = document.getElementById('tourBalao');
+  document.getElementById('tourTitulo').innerHTML = p.titulo;
+  document.getElementById('tourTexto').innerHTML = p.texto;
+  document.getElementById('tourCont').textContent = `${tourPasso + 1} de ${tourLista.length}`;
+  document.getElementById('tourPontos').innerHTML = tourLista.map((_, i) => `<i class="${i === tourPasso ? 'on' : ''}"></i>`).join('');
+  document.getElementById('tourVoltar').style.visibility = tourPasso ? 'visible' : 'hidden';
+  document.getElementById('tourProximo').textContent = tourPasso === tourLista.length - 1 ? 'Começar a usar' : 'Próximo';
+  const el = tourAlvo(p);
+  balao.classList.remove('entra'); void balao.offsetWidth; balao.classList.add('entra');
+  if(!el){
+    camada.classList.add('centro');
+    buraco.style.cssText = 'left:50%;top:50%;width:0;height:0';
+    balao.style.left = ''; balao.style.top = '';
+    return;
+  }
+  camada.classList.remove('centro');
+  const r = el.getBoundingClientRect(), m = 6;
+  const alto = Math.min(r.height, window.innerHeight - 24);
+  buraco.style.cssText = `left:${r.left - m}px;top:${Math.max(6, r.top - m)}px;width:${r.width + m * 2}px;height:${alto + m * 2}px`;
+  const bw = balao.offsetWidth, bh = balao.offsetHeight, W = window.innerWidth, H = window.innerHeight;
+  let x, y;
+  if(r.right + 18 + bw < W && r.height > H * 0.5){ x = r.right + 18; y = 24; }            // menu inteiro: balão ao lado
+  else if(r.right + 18 + bw < W){ x = r.right + 18; y = r.top + r.height / 2 - bh / 2; }   // à direita do alvo
+  else if(r.bottom + 14 + bh < H){ x = r.left; y = r.bottom + 14; }                         // abaixo
+  else { x = r.left; y = r.top - bh - 14; }                                                 // acima
+  balao.style.left = Math.max(12, Math.min(W - bw - 12, x)) + 'px';
+  balao.style.top = Math.max(12, Math.min(H - bh - 12, y)) + 'px';
+}
+function fecharTour(silencioso){
+  const c = document.getElementById('tourCamada');
+  if(c) c.remove();
+  document.removeEventListener('keydown', teclaTour);
+  window.removeEventListener('resize', mostrarPassoTour);
+  if(!silencioso){ try{ localStorage.setItem(tourChave, '1'); }catch(e){} }
+}
 </script>
 </body>
 </html>
