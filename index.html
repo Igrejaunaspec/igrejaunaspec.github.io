@@ -4945,7 +4945,7 @@ function montarAbas(){
   }
 
   // Medicos em Missao: abre o painel da equipe (mesmo login)
-  if(perfil.acesso_medicos){
+  if(perfil.admin || perfil.acesso_medicos){
     const b = document.createElement('button');
     b.textContent = 'Médicos em Missão';
     b.title = 'Painel de inscrições do Médicos em Missão';
@@ -4955,7 +4955,7 @@ function montarAbas(){
   }
 
   // Agenda pastoral: pastor (com anotacoes) ou secretaria (so horarios)
-  if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria){
+  if(perfil.admin || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria){
     const b = document.createElement('button');
     b.textContent = 'Agenda Pastoral';
     b.title = 'Atendimentos e compromissos do pastor';
