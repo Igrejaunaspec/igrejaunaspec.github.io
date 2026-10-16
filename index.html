@@ -1379,7 +1379,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       <div class="card inicio-topo">
         <h2>Como usar o app</h2>
         <p class="hint">Vídeos curtos mostrando, passo a passo, onde clicar. Assista só o que você precisa. Os nomes e telefones dos vídeos são de exemplo.</p>
-        <button class="btn primary" style="margin-top:10px" onclick="try{Object.keys(TOURS_ABA).forEach(k=>localStorage.removeItem('tourAba_'+k))}catch(e){};iniciarTour()">▶ Fazer o tour guiado</button>
+        <button class="btn primary" style="margin-top:10px" onclick="try{Object.keys(TOURS_ABA).forEach(k=>localStorage.removeItem('tourAba_'+k))}catch(e){};usuarioNovoNestaSessao=true;iniciarTour()">▶ Fazer o tour guiado</button>
       </div>
       <div id="listaTutoriais" class="tutoriais"></div>
     </div>
@@ -5082,8 +5082,8 @@ function montarAbas(){
     return;
   }
   let jaViuInicio = true; try{ jaViuInicio = localStorage.getItem('viuComoUsar') === '1'; }catch(e){}
-  let jaFezTour = true; try{ jaFezTour = localStorage.getItem('tourFeito') === '1'; }catch(e){}
-  if(!jaFezTour) setTimeout(iniciarTour, 900);
+  // tutorial só para usuário novo (campo tutorial_pendente no perfil; quem já existia não vê)
+  if(perfil && perfil.tutorial_pendente === true){ usuarioNovoNestaSessao = true; setTimeout(iniciarTour, 900); }
   // no celular, quem tem o Calendario comeca por ele (e o uso mais comum no celular)
   if(ehCelular() && (perfil.admin || perfil.acesso_calendario || perfil.acesso_calendario_ver)) abrirCalendario();
   else if(permitidos.length > 0) abrirCulto(permitidos[0]);
@@ -8959,16 +8959,17 @@ function dicasDaAba(qual){
   const chaveAba = (qual === 'sexta' || qual === 'sabado') ? 'culto' : qual;
   const passos = TOURS_ABA[chaveAba];
   if(!passos || document.getElementById('tourCamada')) return;
-  let feito = true, geral = true;
-  try{ feito = localStorage.getItem('tourAba_' + chaveAba) === '1'; geral = localStorage.getItem('tourFeito') === '1'; }catch(e){}
-  if(feito || !geral) return;
+  if(!usuarioNovoNestaSessao) return;          // dicas das abas: só para quem é novo (ou pediu o tour de novo)
+  let feito = true;
+  try{ feito = localStorage.getItem('tourAba_' + chaveAba) === '1'; }catch(e){}
+  if(feito) return;
   setTimeout(() => {
     if(document.getElementById('tourCamada')) return;
     const atual = (cultoAtual === 'sexta' || cultoAtual === 'sabado') ? 'culto' : cultoAtual;
     if(atual === chaveAba) iniciarTour(passos, 'tourAba_' + chaveAba);
   }, 1200);
 }
-let tourPasso = 0, tourLista = [], tourChave = 'tourFeito';
+let tourPasso = 0, tourLista = [], tourChave = 'tourFeito', usuarioNovoNestaSessao = false;
 function tourAlvo(p){
   for(const sel of (p.alvo || [])){
     const el = document.querySelector(sel);
@@ -9044,7 +9045,13 @@ function fecharTour(silencioso){
   if(c) c.remove();
   document.removeEventListener('keydown', teclaTour);
   window.removeEventListener('resize', mostrarPassoTour);
-  if(!silencioso){ try{ localStorage.setItem(tourChave, '1'); }catch(e){} }
+  if(!silencioso){
+    try{ localStorage.setItem(tourChave, '1'); }catch(e){}
+    if(tourChave === 'tourFeito' && perfil && perfil.tutorial_pendente){
+      perfil.tutorial_pendente = false;
+      api('rpc/marcar_tutorial_visto', { method:'POST', body:{} }).catch(() => {});
+    }
+  }
 }
 
 /* =====================================================================
