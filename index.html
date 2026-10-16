@@ -6305,7 +6305,7 @@ async function salvarRoteiro(auto){
       if(db){
         const rowsDb = ((db.dados && db.dados.rows) || []).map((r, i) => (r._id ? r : Object.assign({}, r, { _id: 'p' + i })));
         const juntas = juntar3(aoVivoDb.rows || [], emEdicao.dados.rows || [], rowsDb);
-        if(JSON.stringify(juntas) !== JSON.stringify(emEdicao.dados.rows)){
+        if(jsonOrdenado(juntas) !== jsonOrdenado(emEdicao.dados.rows)){
           emEdicao.dados.rows = juntas;
           redesenharMantendoFoco();
           enviarMudancaAoVivo();
@@ -9072,7 +9072,9 @@ const CORES_PESSOAS = ['#E8590C','#7048E8','#0CA678','#D6336C','#1C7ED6','#F59F0
 function corDaPessoa(email){ let h = 0; for(const ch of String(email)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return CORES_PESSOAS[h % CORES_PESSOAS.length]; }
 function nomeCurto(email){ const n = String(email || '').split('@')[0].split(/[._-]/)[0]; return n ? n[0].toUpperCase() + n.slice(1) : 'Alguém'; }
 const linhaVaziaAoVivo = r => !((r.momento || '').trim() || (r.obs || '').trim() || (r.participante || '').trim() || (r.gc || '').trim() || (r.audio || '').trim());
-const conteudoRoteiro = r => { const d = Object.assign({}, r.dados || {}); d.rows = (d.rows || []).filter(x => !linhaVaziaAoVivo(x)); return JSON.stringify({ n: r.nome || '', t: r.titulo || '', d }); };
+// compara sem ligar para a ordem dos campos (o banco devolve os campos em outra ordem)
+const jsonOrdenado = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v)) ? Object.keys(v).sort().reduce((o, c) => { o[c] = v[c]; return o; }, {}) : v);
+const conteudoRoteiro = r => { const d = Object.assign({}, r.dados || {}); d.rows = (d.rows || []).filter(x => !linhaVaziaAoVivo(x)); return jsonOrdenado({ n: r.nome || '', t: r.titulo || '', d }); };
 function novoIdLinha(){ return 'l' + Math.random().toString(36).slice(2, 9); }
 // linhas antigas (sem _id) ganham um id fixo pela posição, igual em todas as telas que abriram a mesma versão
 function garantirIdsLinhas(){ if(emEdicao && emEdicao.dados && Array.isArray(emEdicao.dados.rows)){ const vistos = new Set(); emEdicao.dados.rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; if(vistos.has(r._id)) r._id = novoIdLinha(); vistos.add(r._id); }); } }
@@ -9089,7 +9091,7 @@ const estruturaDe = rows => rows.map(r => r._id + '|' + (r.color || '') + '|' + 
 function juntar3(base, local, remoto){
   const porId = l => { const m = new Map(); (l || []).forEach(r => r && r._id && m.set(r._id, r)); return m; };
   const B = porId(base), L = porId(local), R = porId(remoto);
-  const igual = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  const igual = (a, b) => jsonOrdenado(a === undefined ? null : a) === jsonOrdenado(b === undefined ? null : b);
   const mudouLinha = (x, b) => !b || Object.keys(Object.assign({}, x, b)).some(k => !igual(x[k], b[k]));
   const out = [];
   (local || []).forEach(l => {
@@ -9307,13 +9309,13 @@ async function verificarRoteiroRemoto(antesDeSalvar){
     aoVivoDb = JSON.parse(JSON.stringify({ nome: remoto.nome || '', titulo: remoto.titulo || '', rows }));
     const extras = Object.assign({}, remoto.dados || {}); delete extras.rows;
     emEdicao.dados = Object.assign({}, emEdicao.dados, extras);
-    if(JSON.stringify(juntas) !== JSON.stringify(emEdicao.dados.rows)){
+    if(jsonOrdenado(juntas) !== jsonOrdenado(emEdicao.dados.rows)){
       emEdicao.dados.rows = juntas;
       redesenharMantendoFoco();
     }
     aoVivoEnviado = fotoRoteiro();
     // tenho algo que o banco não tem: grava, para não depender de quem criou
-    const semVazias = x => JSON.stringify(x.filter(r => !linhaVaziaAoVivo(r)));
+    const semVazias = x => jsonOrdenado(x.filter(r => !linhaVaziaAoVivo(r)).map(r => { const o = {}; Object.keys(r).forEach(k => { if(r[k] !== undefined && r[k] !== null && r[k] !== '') o[k] = r[k]; }); return o; }));
     if(semVazias(juntas) !== semVazias(rows)){ sujo = true; agendarAutoSalvar(); }
   }catch(e){}
 }
