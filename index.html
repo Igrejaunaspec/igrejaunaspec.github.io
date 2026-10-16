@@ -5665,6 +5665,7 @@ async function moverRoteiroCulto(i){
 }
 
 function abrirTelaEditor(){
+  try{ garantirIdsLinhas(); }catch(e){}
   mostrarPagina('editor');
   document.getElementById('edNome').value   = emEdicao.nome || '';
   document.getElementById('edTitulo').value = emEdicao.titulo || '';
@@ -5854,7 +5855,6 @@ function desenharTabela(){
         };
       }
       campo.value = linha[c.k] || '';
-      if(!linha._id) garantirIdsLinhas();
       if(!linha._id) linha._id = novoIdLinha();
       campo.dataset.rid = linha._id; campo.dataset.k = c.k;
       if(c.k === 'horario') { campo.placeholder = '19:30'; inputsHorario[i] = campo; }
@@ -6295,6 +6295,23 @@ async function salvarRoteiro(auto){
     document.getElementById('statusSalvo').textContent = 'salvando automaticamente…';
   }
 
+  if(emEdicao.id && aoVivoDb){
+    try{
+      const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados`);
+      const db = l && l[0];
+      if(db){
+        const rowsDb = ((db.dados && db.dados.rows) || []).map((r, i) => (r._id ? r : Object.assign({}, r, { _id: 'p' + i })));
+        const juntas = juntar3(aoVivoDb.rows || [], emEdicao.dados.rows || [], rowsDb);
+        if(JSON.stringify(juntas) !== JSON.stringify(emEdicao.dados.rows)){
+          emEdicao.dados.rows = juntas;
+          redesenharMantendoFoco();
+          enviarMudancaAoVivo();
+        }
+        if(emEdicao.nome === aoVivoDb.nome && db.nome) emEdicao.nome = db.nome;
+        if((emEdicao.titulo || '') === (aoVivoDb.titulo || '') && db.titulo !== undefined) emEdicao.titulo = db.titulo;
+      }
+    }catch(e){}
+  }
   const linhasFinal = emEdicao.dados.rows.filter(r =>
     (r.momento || '').trim() || (r.obs || '').trim() ||
     (r.participante || '').trim() || (r.gc || '').trim() || (r.audio || '').trim());
@@ -6318,6 +6335,7 @@ async function salvarRoteiro(auto){
     }
     if(Array.isArray(salvo) && salvo[0]) emEdicao.id = salvo[0].id;
     aoVivoBase = JSON.parse(JSON.stringify({ nome: corpo.nome, titulo: corpo.titulo, dados: corpo.dados }));
+    aoVivoDb = JSON.parse(JSON.stringify({ nome: corpo.nome || '', titulo: corpo.titulo || '', rows: corpo.dados.rows || [] }));
     aoVivoUltimoBanco = conteudoRoteiro(aoVivoBase);
     if(!aoVivoTimer) iniciarAoVivo();
 
@@ -9046,17 +9064,50 @@ const linhaVaziaAoVivo = r => !((r.momento || '').trim() || (r.obs || '').trim()
 const conteudoRoteiro = r => { const d = Object.assign({}, r.dados || {}); d.rows = (d.rows || []).filter(x => !linhaVaziaAoVivo(x)); return JSON.stringify({ n: r.nome || '', t: r.titulo || '', d }); };
 function novoIdLinha(){ return 'l' + Math.random().toString(36).slice(2, 9); }
 // linhas antigas (sem _id) ganham um id fixo pela posição, igual em todas as telas que abriram a mesma versão
-function garantirIdsLinhas(){ if(emEdicao && emEdicao.dados && Array.isArray(emEdicao.dados.rows)) emEdicao.dados.rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; }); }
+function garantirIdsLinhas(){ if(emEdicao && emEdicao.dados && Array.isArray(emEdicao.dados.rows)){ const vistos = new Set(); emEdicao.dados.rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; if(vistos.has(r._id)) r._id = novoIdLinha(); vistos.add(r._id); }); } }
 function fotoRoteiro(){
   return JSON.parse(JSON.stringify({ nome: emEdicao.nome || '', titulo: emEdicao.titulo || '', rows: emEdicao.dados.rows || [] }));
 }
 const estruturaDe = rows => rows.map(r => r._id + '|' + (r.color || '') + '|' + JSON.stringify(r.cores || {})).join(',');
 
+
+/* junta 3 versões (base = o que todos tinham; local = minha tela; remoto = do outro/banco), célula por célula.
+   - linha criada pelo outro: entra; linha criada por mim: fica
+   - linha apagada por alguém: sai (se eu não estiver mexendo nela)
+   - célula: se eu mudei, vale a minha; senão vale a do outro */
+function juntar3(base, local, remoto){
+  const porId = l => { const m = new Map(); (l || []).forEach(r => r && r._id && m.set(r._id, r)); return m; };
+  const B = porId(base), L = porId(local), R = porId(remoto);
+  const igual = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  const mudouLinha = (x, b) => !b || Object.keys(Object.assign({}, x, b)).some(k => !igual(x[k], b[k]));
+  const out = [];
+  (local || []).forEach(l => {
+    const r = R.get(l._id), b = B.get(l._id);
+    if(!r){
+      if(b && !mudouLinha(l, b)) return;          // o outro apagou e eu não mexi: sai
+      out.push(l); return;                         // linha nova minha (ou mexi nela): fica
+    }
+    const m = {};
+    Object.keys(Object.assign({}, l, r)).forEach(k => { m[k] = (b && igual(l[k], b[k])) ? r[k] : l[k]; });
+    m._id = l._id; out.push(m);
+  });
+  // linhas novas do outro, na posição em que ele colocou
+  (remoto || []).forEach((r, i) => {
+    if(L.has(r._id)) return;
+    if(B.has(r._id)) return;                       // eu apaguei: continua apagada
+    let pos = 0;
+    for(let j = i - 1; j >= 0; j--){ const ant = remoto[j]._id; const k = out.findIndex(x => x._id === ant); if(k >= 0){ pos = k + 1; break; } }
+    out.splice(pos, 0, JSON.parse(JSON.stringify(r)));
+  });
+  return out;
+}
+let aoVivoDb = null;   // última versão conhecida do banco (para juntar na hora de salvar)
 function iniciarAoVivo(){
   pararAoVivo();
   if(!emEdicao || !emEdicao.id) return;
   garantirIdsLinhas();
   aoVivoEnviado = fotoRoteiro();
+  aoVivoDb = fotoRoteiro();
   aoVivoBase = { nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados };
   aoVivoUltimoBanco = conteudoRoteiro(aoVivoBase);
   aoVivoTimer = setInterval(() => verificarRoteiroRemoto(false), 5000);   // reserva, caso a conexão instantânea caia
@@ -9116,7 +9167,7 @@ function enviarMudancaAoVivo(){
   if(!aoVivoCanal || !emEdicao || !emEdicao.id || aoVivoEnvio) return;
   aoVivoEnvio = setTimeout(() => {
     aoVivoEnvio = null;
-    garantirIdsLinhas();
+    (emEdicao.dados.rows || []).forEach(r => { if(!r._id) r._id = novoIdLinha(); });
     const atual = fotoRoteiro(), antes = aoVivoEnviado || atual;
     const quem = meuEmailAoVivo();
     if(estruturaDe(atual.rows) !== estruturaDe(antes.rows)){
@@ -9178,7 +9229,8 @@ function receberEstrutura(p){
   const a = document.activeElement;
   const ridF = a && a.dataset ? a.dataset.rid : null, kF = a && a.dataset ? a.dataset.k : null;
   const idsAntes = new Set((emEdicao.dados.rows || []).map(r => r._id));
-  const novas = JSON.parse(JSON.stringify(p.r.rows || []));
+  const remotas = JSON.parse(JSON.stringify(p.r.rows || []));
+  const novas = juntar3((aoVivoEnviado && aoVivoEnviado.rows) || [], emEdicao.dados.rows || [], remotas);
   if(ridF && kF){                                       // mantém o que você está digitando
     const minha = (emEdicao.dados.rows || []).find(r => r._id === ridF), dela = novas.find(r => r._id === ridF);
     if(minha && dela) dela[kF] = minha[kF];
@@ -9186,8 +9238,9 @@ function receberEstrutura(p){
   emEdicao.dados.rows = novas;
   if(p.r.nome !== undefined && document.activeElement !== document.getElementById('edNome')){ emEdicao.nome = p.r.nome; document.getElementById('edNome').value = p.r.nome || ''; }
   if(p.r.titulo !== undefined && document.activeElement !== document.getElementById('edTitulo')){ emEdicao.titulo = p.r.titulo; document.getElementById('edTitulo').value = p.r.titulo || ''; }
-  aoVivoEnviado = fotoRoteiro();
+  aoVivoEnviado = { nome: p.r.nome || '', titulo: p.r.titulo || '', rows: remotas };
   redesenharMantendoFoco();
+  if(estruturaDe(novas) !== estruturaDe(remotas)) enviarMudancaAoVivo();   // tinha coisa minha que o outro não tinha: manda
   novas.forEach(r => { if(!idsAntes.has(r._id)){ const tr = document.querySelector(`#paginaEditor [data-rid="${r._id}"]`); const linhaTr = tr && tr.closest('tr'); if(linhaTr && linhaTr.animate) linhaTr.animate([{ opacity:0, transform:'translateY(-6px)' }, { opacity:1, transform:'none' }], { duration:350, easing:'ease-out' }); } });
 }
 function redesenharMantendoFoco(){
@@ -9238,6 +9291,7 @@ async function verificarRoteiroRemoto(antesDeSalvar){
     if(sujo || c === conteudoRoteiro({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados })) return;
     const rows = (remoto.dados && remoto.dados.rows) || [];
     rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; });
+    aoVivoDb = JSON.parse(JSON.stringify({ nome: remoto.nome || '', titulo: remoto.titulo || '', rows }));
     emEdicao.dados = Object.assign({}, emEdicao.dados, remoto.dados, { rows });
     receberEstrutura({ quem:'', r:{ nome: remoto.nome, titulo: remoto.titulo, rows } });
   }catch(e){}
