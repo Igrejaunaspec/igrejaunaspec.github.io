@@ -1125,12 +1125,13 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 .tour-pontos i.on{width:20px;border-radius:4px;background:#E2A33B}
 .tour-acoes{display:flex;justify-content:space-between;gap:8px}
 @media (prefers-reduced-motion:reduce){.tour-buraco,.tour-balao{transition:none}.tour-balao.entra{animation:none}}
-#avisoAoVivo{position:fixed;right:20px;bottom:84px;z-index:8000;background:#1D3A5C;color:#fff;font-weight:700;font-size:14px;padding:10px 16px;border-radius:12px;
-  box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none}
-#avisoAoVivo.on{opacity:1;transform:none}
-#editandoJunto{position:fixed;right:20px;top:16px;z-index:8000;background:#fff;color:#1D3A5C;border:1px solid #DCE2EA;font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
-#editandoJunto .ponto-vivo{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1E8E4E;margin-right:6px;animation:pulsoVivo 1.4s infinite}
-@keyframes pulsoVivo{50%{opacity:.3}}
+#editandoJunto{display:inline-flex;margin-left:8px;vertical-align:middle;align-items:center;gap:6px;background:#fff;border:1px solid #DCE2EA;padding:5px 6px 5px 12px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.12);animation:ejEntra .3s ease-out}
+#editandoJunto .ej-texto{font-size:12.5px;font-weight:700;color:#5B6879;margin-right:2px}
+#editandoJunto .ej-avatar{width:26px;height:26px;border-radius:50%;color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;border:2px solid #fff;margin-left:-8px;box-shadow:0 0 0 1px #DCE2EA}
+#editandoJunto .ej-avatar:first-of-type{margin-left:0}
+@keyframes ejEntra{from{opacity:0;transform:translateY(-6px)}}
+#paginaEditor td.cel-remota{position:relative;box-shadow:inset 0 0 0 2px var(--cor-remota);border-radius:6px}
+#paginaEditor .tag-remota{position:absolute;top:-9px;right:6px;background:var(--cor-remota);color:#fff;font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:6px 6px 6px 0;pointer-events:none;z-index:2;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -5770,6 +5771,7 @@ function agendarAutoSalvar(){
 }
 
 function desenharTabela(){
+  setTimeout(() => { try{ marcarCelulasRemotas(); }catch(e){} }, 0);
   inputsHorario = [];
   inputsTempo = [];
   const cols = COLUNAS[emEdicao.culto];
@@ -5852,6 +5854,9 @@ function desenharTabela(){
         };
       }
       campo.value = linha[c.k] || '';
+      if(!linha._id) garantirIdsLinhas();
+      if(!linha._id) linha._id = novoIdLinha();
+      campo.dataset.rid = linha._id; campo.dataset.k = c.k;
       if(c.k === 'horario') { campo.placeholder = '19:30'; inputsHorario[i] = campo; }
       if(c.k === 'tempo')   { campo.placeholder = '5 min';  inputsTempo[i]   = campo; }
       td.appendChild(campo);
@@ -6290,7 +6295,6 @@ async function salvarRoteiro(auto){
     document.getElementById('statusSalvo').textContent = 'salvando automaticamente…';
   }
 
-  if(emEdicao.id){ try{ await verificarRoteiroRemoto(true); }catch(e){} }
   const linhasFinal = emEdicao.dados.rows.filter(r =>
     (r.momento || '').trim() || (r.obs || '').trim() ||
     (r.participante || '').trim() || (r.gc || '').trim() || (r.audio || '').trim());
@@ -9026,25 +9030,45 @@ function fecharTour(silencioso){
 }
 
 /* =====================================================================
-   ROTEIRO AO VIVO: quando outra pessoa muda o roteiro aberto, a mudança
-   aparece aqui em poucos segundos, sem recarregar. Se as duas pessoas
-   mexerem ao mesmo tempo, junta linha por linha (a sua linha não é perdida).
+   ROTEIRO AO VIVO (estilo planilha): cada célula que alguém muda aparece
+   na hora para os outros, sem redesenhar a tela. A célula em que você está
+   digitando nunca é trocada. Mostra onde cada pessoa está editando.
 ===================================================================== */
-let aoVivoTimer = null, aoVivoBase = null, aoVivoChecando = false, aoVivoUltimoBanco = null, aoVivoCanal = null, aoVivoEnvio = null;
-const conteudoRoteiro = r => JSON.stringify({ n: r.nome || '', t: r.titulo || '', d: r.dados || {} });
+let aoVivoTimer = null, aoVivoBase = null, aoVivoUltimoBanco = null, aoVivoCanal = null, aoVivoEnvio = null;
+let aoVivoEnviado = null;          // última versão que mandei (para mandar só o que mudou)
+let aoVivoUltimaMsg = 0;           // quando chegou a última mensagem de outra pessoa
+let aoVivoPessoas = {};            // email -> { nome, cor, rid, k }
+const META_RID = '__meta';
+const CORES_PESSOAS = ['#E8590C','#7048E8','#0CA678','#D6336C','#1C7ED6','#F59F00','#5C940D','#AE3EC9'];
+function corDaPessoa(email){ let h = 0; for(const ch of String(email)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return CORES_PESSOAS[h % CORES_PESSOAS.length]; }
+function nomeCurto(email){ const n = String(email || '').split('@')[0].split(/[._-]/)[0]; return n ? n[0].toUpperCase() + n.slice(1) : 'Alguém'; }
+const linhaVaziaAoVivo = r => !((r.momento || '').trim() || (r.obs || '').trim() || (r.participante || '').trim() || (r.gc || '').trim() || (r.audio || '').trim());
+const conteudoRoteiro = r => { const d = Object.assign({}, r.dados || {}); d.rows = (d.rows || []).filter(x => !linhaVaziaAoVivo(x)); return JSON.stringify({ n: r.nome || '', t: r.titulo || '', d }); };
+function novoIdLinha(){ return 'l' + Math.random().toString(36).slice(2, 9); }
+// linhas antigas (sem _id) ganham um id fixo pela posição, igual em todas as telas que abriram a mesma versão
+function garantirIdsLinhas(){ if(emEdicao && emEdicao.dados && Array.isArray(emEdicao.dados.rows)) emEdicao.dados.rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; }); }
+function fotoRoteiro(){
+  return JSON.parse(JSON.stringify({ nome: emEdicao.nome || '', titulo: emEdicao.titulo || '', rows: emEdicao.dados.rows || [] }));
+}
+const estruturaDe = rows => rows.map(r => r._id + '|' + (r.color || '') + '|' + JSON.stringify(r.cores || {})).join(',');
+
 function iniciarAoVivo(){
   pararAoVivo();
-  aoVivoBase = emEdicao && emEdicao.id ? JSON.parse(JSON.stringify({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados })) : null;
-  aoVivoUltimoBanco = aoVivoBase ? conteudoRoteiro(aoVivoBase) : null;
-  aoVivoTimer = setInterval(() => verificarRoteiroRemoto(false), 4000);   // reserva, caso a conexão instantânea caia
+  if(!emEdicao || !emEdicao.id) return;
+  garantirIdsLinhas();
+  aoVivoEnviado = fotoRoteiro();
+  aoVivoBase = { nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados };
+  aoVivoUltimoBanco = conteudoRoteiro(aoVivoBase);
+  aoVivoTimer = setInterval(() => verificarRoteiroRemoto(false), 5000);   // reserva, caso a conexão instantânea caia
   conectarCanalAoVivo();
 }
 function pararAoVivo(){
   clearInterval(aoVivoTimer); aoVivoTimer = null;
   if(aoVivoCanal){ try{ aoVivoCanal.unsubscribe(); }catch(e){} aoVivoCanal = null; }
-  mostrarEditandoJunto([]);
+  aoVivoPessoas = {}; desenharPessoasAoVivo(); marcarCelulasRemotas();
 }
-/* ---- conexão instantânea (Supabase Realtime: canal só deste roteiro) ---- */
+
+/* ---- conexão instantânea (Supabase Realtime) ---- */
 let clienteRealtime = null, carregandoRealtime = null;
 function carregarRealtime(){
   if(clienteRealtime) return Promise.resolve(clienteRealtime);
@@ -9058,123 +9082,165 @@ function carregarRealtime(){
   });
   return carregandoRealtime;
 }
+const meuEmailAoVivo = () => (sessao && sessao.email) || 'alguem';
 async function conectarCanalAoVivo(){
-  if(!emEdicao || !emEdicao.id) return;
   const id = emEdicao.id;
   try{
     const cli = await carregarRealtime();
     try{ cli.realtime.setAuth(await tokenValido()); }catch(e){}
     if(!emEdicao || emEdicao.id !== id) return;
-    if(aoVivoCanal){ try{ aoVivoCanal.unsubscribe(); }catch(e){} }
-    const eu = (sessao && sessao.email) || 'alguém';
+    const eu = meuEmailAoVivo();
     aoVivoCanal = cli.channel('roteiro-' + id, { config:{ broadcast:{ self:false }, presence:{ key: eu + '#' + Math.random().toString(36).slice(2, 7) } } });
     aoVivoCanal
-      .on('broadcast', { event:'mudou' }, ({ payload }) => receberMudancaAoVivo(payload))
+      .on('broadcast', { event:'celulas' }, ({ payload }) => receberCelulas(payload))
+      .on('broadcast', { event:'estrutura' }, ({ payload }) => receberEstrutura(payload))
       .on('presence', { event:'sync' }, () => {
-        const st = aoVivoCanal.presenceState();
-        const outros = [...new Set(Object.values(st).flat().map(p => p.email).filter(e => e && e !== eu))];
-        mostrarEditandoJunto(outros);
+        const st = aoVivoCanal.presenceState(), pessoas = {};
+        Object.values(st).flat().forEach(p => { if(p.email && p.email !== eu) pessoas[p.email] = { nome: nomeCurto(p.email), cor: corDaPessoa(p.email), rid: p.rid || null, k: p.k || null }; });
+        aoVivoPessoas = pessoas; desenharPessoasAoVivo(); marcarCelulasRemotas();
       })
-      .subscribe(status => { if(status === 'SUBSCRIBED') aoVivoCanal.track({ email: eu }); });
-  }catch(e){ /* sem a conexão instantânea, continua valendo a verificação a cada 4 s */ }
+      .subscribe(status => { if(status === 'SUBSCRIBED') anunciarFoco(); });
+  }catch(e){ /* sem conexão instantânea: vale a verificação a cada 5 s */ }
 }
+function anunciarFoco(){
+  if(!aoVivoCanal) return;
+  const a = document.activeElement;
+  const rid = a && a.dataset ? a.dataset.rid || null : null, k = a && a.dataset ? a.dataset.k || null : null;
+  try{ aoVivoCanal.track({ email: meuEmailAoVivo(), rid, k }); }catch(e){}
+}
+document.addEventListener('focusin', () => { if(aoVivoCanal) anunciarFoco(); });
+document.addEventListener('focusout', () => { if(aoVivoCanal) setTimeout(anunciarFoco, 0); });
+
+/* ---- enviar: só o que mudou desde o último envio ---- */
 function enviarMudancaAoVivo(){
-  if(!aoVivoCanal || !emEdicao || !emEdicao.id) return;
-  if(aoVivoEnvio) return;
+  if(!aoVivoCanal || !emEdicao || !emEdicao.id || aoVivoEnvio) return;
   aoVivoEnvio = setTimeout(() => {
     aoVivoEnvio = null;
-    const snap = JSON.parse(JSON.stringify({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados }));
-    aoVivoBase = snap;
-    try{ aoVivoCanal.send({ type:'broadcast', event:'mudou', payload:{ quem: (sessao && sessao.email) || '', r: snap } }); }catch(e){}
-  }, 200);
-}
-function receberMudancaAoVivo(payload){
-  if(!payload || !payload.r || !emEdicao) return;
-  aplicarRemoto(payload.r, payload.quem, true);
-}
-function mostrarEditandoJunto(lista){
-  let el = document.getElementById('editandoJunto');
-  if(!lista.length){ if(el) el.remove(); return; }
-  if(!el){ el = document.createElement('div'); el.id = 'editandoJunto'; document.body.appendChild(el); }
-  el.innerHTML = '<span class="ponto-vivo"></span> Editando junto: ' + lista.map(e => escapar(e.split('@')[0])).join(', ');
-}
-function mesclarLinhas(base, local, remoto){
-  const n = Math.max(base.length, local.length, remoto.length), out = [];
-  for(let i = 0; i < n; i++){
-    const b = JSON.stringify(base[i]), l = JSON.stringify(local[i]), r = JSON.stringify(remoto[i]);
-    let x;
-    if(l === b) x = remoto[i];          // só o outro mexeu (ou ninguém)
-    else if(r === b) x = local[i];      // só você mexeu
-    else x = local[i];                  // os dois mexeram na mesma linha: fica a sua
-    if(x !== undefined) out.push(x);
-  }
-  return out;
-}
-function guardarFoco(){
-  const campos = Array.from(document.querySelectorAll('#paginaEditor input, #paginaEditor textarea, #paginaEditor select'));
-  const a = document.activeElement, i = campos.indexOf(a);
-  if(i < 0) return null;
-  let ini = null, fim = null; try{ ini = a.selectionStart; fim = a.selectionEnd; }catch(e){}
-  return { i, ini, fim };
-}
-function voltarFoco(f){
-  if(!f) return;
-  const campos = Array.from(document.querySelectorAll('#paginaEditor input, #paginaEditor textarea, #paginaEditor select'));
-  const el = campos[f.i]; if(!el) return;
-  el.focus({ preventScroll: true });
-  try{ if(f.ini != null) el.setSelectionRange(f.ini, f.fim); }catch(e){}
-}
-function aplicarRemoto(remoto, quemEmail, instantaneo){
-    const local = { nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados };
-    if(conteudoRoteiro(remoto) === conteudoRoteiro(local)){ aoVivoBase = JSON.parse(JSON.stringify(remoto)); return; }
-    const foco = guardarFoco();
-    const base = aoVivoBase || remoto;
-    if(!sujo){
-      emEdicao.nome = remoto.nome; emEdicao.titulo = remoto.titulo; emEdicao.dados = JSON.parse(JSON.stringify(remoto.dados || { rows: [] }));
+    garantirIdsLinhas();
+    const atual = fotoRoteiro(), antes = aoVivoEnviado || atual;
+    const quem = meuEmailAoVivo();
+    if(estruturaDe(atual.rows) !== estruturaDe(antes.rows)){
+      try{ aoVivoCanal.send({ type:'broadcast', event:'estrutura', payload:{ quem, r: atual } }); }catch(e){}
     }else{
-      emEdicao.dados = Object.assign({}, remoto.dados, emEdicao.dados, {
-        rows: mesclarLinhas((base.dados && base.dados.rows) || [], emEdicao.dados.rows || [], (remoto.dados && remoto.dados.rows) || [])
+      const cels = [];
+      if(atual.nome !== antes.nome) cels.push({ rid: META_RID, k:'nome', v: atual.nome });
+      if(atual.titulo !== antes.titulo) cels.push({ rid: META_RID, k:'titulo', v: atual.titulo });
+      atual.rows.forEach((r, i) => {
+        const o = antes.rows[i] || {};
+        Object.keys(Object.assign({}, r, o)).forEach(k => { if(k !== '_id' && JSON.stringify(r[k]) !== JSON.stringify(o[k])) cels.push({ rid: r._id, k, v: r[k] }); });
       });
-      if(emEdicao.nome === base.nome) emEdicao.nome = remoto.nome;
-      if((emEdicao.titulo || '') === (base.titulo || '')) emEdicao.titulo = remoto.titulo;
+      if(cels.length){ try{ aoVivoCanal.send({ type:'broadcast', event:'celulas', payload:{ quem, cels } }); }catch(e){} }
     }
-    if(!Array.isArray(emEdicao.dados.rows)) emEdicao.dados.rows = [];
-    aoVivoBase = JSON.parse(JSON.stringify(remoto));
-    const n = document.getElementById('edNome'), t = document.getElementById('edTitulo');
-    if(n && document.activeElement !== n) n.value = emEdicao.nome || '';
-    if(t && document.activeElement !== t) t.value = emEdicao.titulo || '';
-    desenharTabela();
-    voltarFoco(foco);
-    const quem = quemEmail && quemEmail !== (sessao && sessao.email) ? quemEmail.split('@')[0] : 'outra pessoa';
-    if(!instantaneo) avisoAoVivo(`Atualizado agora por ${quem}`);
-    else marcarQuemMexeu(quem);
+    aoVivoEnviado = atual;
+  }, 120);
 }
-function marcarQuemMexeu(quem){
-  let el = document.getElementById('avisoAoVivo');
-  if(el && el.classList.contains('on')){ clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2500); return; }
-  avisoAoVivo(`${quem} está editando`);
+
+/* ---- receber ---- */
+function campoDaCelula(rid, k){
+  if(rid === META_RID) return document.getElementById(k === 'nome' ? 'edNome' : 'edTitulo');
+  return document.querySelector(`#paginaEditor [data-rid="${rid}"][data-k="${k}"]`);
 }
+function piscarCelula(){ /* sem efeito: o texto só muda, como numa planilha */ }
+function receberCelulas(p){
+  if(!p || !Array.isArray(p.cels) || !emEdicao) return;
+  aoVivoUltimaMsg = Date.now();
+  const cor = corDaPessoa(p.quem);
+  let precisaRedesenhar = false, mexeuTempo = false;
+  p.cels.forEach(({ rid, k, v }) => {
+    const el = campoDaCelula(rid, k);
+    const focado = el && document.activeElement === el;
+    if(rid === META_RID){
+      emEdicao[k] = v;
+      if(aoVivoEnviado) aoVivoEnviado[k] = v;
+      if(el && !focado){ el.value = v || ''; piscarCelula(el, cor); }
+      return;
+    }
+    const linha = (emEdicao.dados.rows || []).find(r => r._id === rid);
+    if(!linha) return;
+    if(focado) return;                                  // você está digitando aqui: não mexe
+    linha[k] = v;
+    const env = aoVivoEnviado && aoVivoEnviado.rows.find(r => r._id === rid);
+    if(env) env[k] = JSON.parse(JSON.stringify(v === undefined ? null : v));
+    if(k === 'color' || k === 'cores'){ precisaRedesenhar = true; return; }
+    if(el){
+      el.value = v || '';
+      if(el.tagName === 'TEXTAREA' && typeof autoAltura === 'function') autoAltura(el);
+      piscarCelula(el, cor);
+    }
+    if(k === 'tempo' || k === 'horario') mexeuTempo = true;
+  });
+  if(precisaRedesenhar) redesenharMantendoFoco();
+  else if(mexeuTempo && typeof atualizarTotal === 'function') atualizarTotal();
+}
+function receberEstrutura(p){
+  if(!p || !p.r || !emEdicao) return;
+  aoVivoUltimaMsg = Date.now();
+  const a = document.activeElement;
+  const ridF = a && a.dataset ? a.dataset.rid : null, kF = a && a.dataset ? a.dataset.k : null;
+  const idsAntes = new Set((emEdicao.dados.rows || []).map(r => r._id));
+  const novas = JSON.parse(JSON.stringify(p.r.rows || []));
+  if(ridF && kF){                                       // mantém o que você está digitando
+    const minha = (emEdicao.dados.rows || []).find(r => r._id === ridF), dela = novas.find(r => r._id === ridF);
+    if(minha && dela) dela[kF] = minha[kF];
+  }
+  emEdicao.dados.rows = novas;
+  if(p.r.nome !== undefined && document.activeElement !== document.getElementById('edNome')){ emEdicao.nome = p.r.nome; document.getElementById('edNome').value = p.r.nome || ''; }
+  if(p.r.titulo !== undefined && document.activeElement !== document.getElementById('edTitulo')){ emEdicao.titulo = p.r.titulo; document.getElementById('edTitulo').value = p.r.titulo || ''; }
+  aoVivoEnviado = fotoRoteiro();
+  redesenharMantendoFoco();
+  novas.forEach(r => { if(!idsAntes.has(r._id)){ const tr = document.querySelector(`#paginaEditor [data-rid="${r._id}"]`); const linhaTr = tr && tr.closest('tr'); if(linhaTr && linhaTr.animate) linhaTr.animate([{ opacity:0, transform:'translateY(-6px)' }, { opacity:1, transform:'none' }], { duration:350, easing:'ease-out' }); } });
+}
+function redesenharMantendoFoco(){
+  const a = document.activeElement;
+  const ridF = a && a.dataset ? a.dataset.rid : null, kF = a && a.dataset ? a.dataset.k : null;
+  let ini = null, fim = null; try{ ini = a.selectionStart; fim = a.selectionEnd; }catch(e){}
+  const rolagem = window.scrollY;
+  desenharTabela();
+  if(ridF && kF){
+    const el = campoDaCelula(ridF, kF);
+    if(el){ el.focus({ preventScroll:true }); try{ if(ini != null) el.setSelectionRange(ini, fim); }catch(e){} }
+  }
+  window.scrollTo(0, rolagem);
+  marcarCelulasRemotas();
+}
+
+/* ---- quem está editando e onde ---- */
+function desenharPessoasAoVivo(){
+  let el = document.getElementById('editandoJunto');
+  const lista = Object.entries(aoVivoPessoas);
+  if(!lista.length || document.getElementById('paginaEditor').classList.contains('hidden')){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('div'); el.id = 'editandoJunto'; const st = document.getElementById('statusSalvo'); if(st && st.parentNode) st.parentNode.insertBefore(el, st.nextSibling); else document.body.appendChild(el); }
+  el.innerHTML = '<span class="ej-texto">Editando junto</span>' + lista.map(([email, p]) =>
+    `<span class="ej-avatar" style="background:${p.cor}" title="${escapar(email)}">${escapar(p.nome[0])}</span>`).join('');
+}
+function marcarCelulasRemotas(){
+  document.querySelectorAll('#paginaEditor .cel-remota').forEach(td => { td.classList.remove('cel-remota'); td.style.removeProperty('--cor-remota'); const t = td.querySelector('.tag-remota'); if(t) t.remove(); });
+  Object.values(aoVivoPessoas).forEach(p => {
+    if(!p.rid || !p.k) return;
+    const el = campoDaCelula(p.rid, p.k); if(!el) return;
+    const td = el.closest('td') || el.parentElement; if(!td) return;
+    td.classList.add('cel-remota'); td.style.setProperty('--cor-remota', p.cor);
+    const tag = document.createElement('span'); tag.className = 'tag-remota'; tag.textContent = p.nome; td.appendChild(tag);
+  });
+}
+
+/* ---- reserva: confere o banco a cada 5 s (só quando ninguém está mexendo) ---- */
 async function verificarRoteiroRemoto(antesDeSalvar){
-  if(!emEdicao || !emEdicao.id || !aoVivoBase) return;
+  if(antesDeSalvar || !emEdicao || !emEdicao.id) return;
   if(document.getElementById('paginaEditor').classList.contains('hidden')){ pararAoVivo(); return; }
-  if(!antesDeSalvar && (document.hidden || salvando || aoVivoChecando)) return;
-  aoVivoChecando = true;
+  if(document.hidden || salvando || sujo || Date.now() - aoVivoUltimaMsg < 10000) return;
   try{
-    const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados,atualizado_por`);
+    const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados`);
     const remoto = l && l[0]; if(!remoto) return;
     const c = conteudoRoteiro(remoto);
-    if(c === aoVivoUltimoBanco) return;      // o banco não mudou desde a última olhada
+    if(c === aoVivoUltimoBanco) return;
     aoVivoUltimoBanco = c;
-    aplicarRemoto(remoto, remoto.atualizado_por, false);
-  }catch(e){ /* sem internet: tenta de novo no próximo ciclo */ }
-  finally{ aoVivoChecando = false; }
-}
-function avisoAoVivo(txt){
-  let el = document.getElementById('avisoAoVivo');
-  if(!el){ el = document.createElement('div'); el.id = 'avisoAoVivo'; document.body.appendChild(el); }
-  el.textContent = '🔄 ' + txt;
-  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 3500);
+    if(sujo || c === conteudoRoteiro({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados })) return;
+    const rows = (remoto.dados && remoto.dados.rows) || [];
+    rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; });
+    emEdicao.dados = Object.assign({}, emEdicao.dados, remoto.dados, { rows });
+    receberEstrutura({ quem:'', r:{ nome: remoto.nome, titulo: remoto.titulo, rows } });
+  }catch(e){}
 }
 </script>
 </body>
