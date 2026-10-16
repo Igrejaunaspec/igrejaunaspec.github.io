@@ -2405,7 +2405,7 @@ const COLUNAS = {
     { k:'horario',      t:'Horário',      cls:'col-hora', larg:'78px' },
     { k:'tempo',        t:'Tempo',        cls:'col-dur',  larg:'86px' },
     { k:'momento',      t:'Momento',      area:true                    },
-    { k:'participante', t:'Participante',                larg:'170px' },
+    { k:'participante', t:'Participante', area:true,     larg:'170px' },
     { k:'obs',          t:'Obs.',         area:true                    },
   ]
 };
@@ -5697,8 +5697,9 @@ function primeiroHorario(){
   return (r && /^\d{1,2}:\d{2}$/.test(r.horario)) ? r.horario.padStart(5,'0') : '';
 }
 
+let roteiroMudancas = 0;
 function marcarSujo(){
-  sujo = true;
+  sujo = true; roteiroMudancas++;
   try{ enviarMudancaAoVivo(); }catch(e){}
   document.getElementById('statusSalvo').textContent = 'alterações não salvas';
   agendarAutoSalvar();
@@ -6255,7 +6256,8 @@ function recalcularHorarios(){
   toast('Horários recalculados a partir de ' + inicio + '.', 'ok');
 }
 
-function voltarParaLista(){
+async function voltarParaLista(){
+  if(sujo && emEdicao && emEdicao.id){ try{ while(salvando) await new Promise(r => setTimeout(r, 150)); await salvarRoteiro(true); }catch(e){} }
   pararAoVivo();
   if(sujo && !confirm('Você tem alterações não salvas. Voltar mesmo assim?')) return;
   sujo = false;
@@ -6295,6 +6297,7 @@ async function salvarRoteiro(auto){
     document.getElementById('statusSalvo').textContent = 'salvando automaticamente…';
   }
 
+  const mudancasNoInicio = roteiroMudancas;
   if(emEdicao.id && aoVivoDb){
     try{
       const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados`);
@@ -6340,6 +6343,7 @@ async function salvarRoteiro(auto){
     if(!aoVivoTimer) iniciarAoVivo();
 
     sujo = false;
+    if(roteiroMudancas !== mudancasNoInicio){ sujo = true; agendarAutoSalvar(); }   // mexeram enquanto salvava: salva de novo
     document.getElementById('btnApagar').style.display = '';
     document.getElementById('statusSalvo').textContent =
       (auto ? 'salvo automaticamente ' : 'salvo ') +
@@ -9294,15 +9298,27 @@ async function verificarRoteiroRemoto(antesDeSalvar){
     const remoto = l && l[0]; if(!remoto) return;
     const c = conteudoRoteiro(remoto);
     if(c === aoVivoUltimoBanco) return;
+    if(salvando || sujo) return;
     aoVivoUltimoBanco = c;
-    if(sujo || c === conteudoRoteiro({ nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados })) return;
-    const rows = (remoto.dados && remoto.dados.rows) || [];
-    rows.forEach((r, i) => { if(!r._id) r._id = 'p' + i; });
+    const rows = ((remoto.dados && remoto.dados.rows) || []).map((r, i) => (r._id ? r : Object.assign({}, r, { _id: 'p' + i })));
+    // junta (nunca substitui): o que só existe na minha tela, inclusive o que veio de outra pessoa e ainda não chegou ao banco, fica
+    const base = (aoVivoDb && aoVivoDb.rows) || [];
+    const juntas = juntar3(base, emEdicao.dados.rows || [], rows);
     aoVivoDb = JSON.parse(JSON.stringify({ nome: remoto.nome || '', titulo: remoto.titulo || '', rows }));
-    emEdicao.dados = Object.assign({}, emEdicao.dados, remoto.dados, { rows });
-    receberEstrutura({ quem:'', r:{ nome: remoto.nome, titulo: remoto.titulo, rows } });
+    const extras = Object.assign({}, remoto.dados || {}); delete extras.rows;
+    emEdicao.dados = Object.assign({}, emEdicao.dados, extras);
+    if(JSON.stringify(juntas) !== JSON.stringify(emEdicao.dados.rows)){
+      emEdicao.dados.rows = juntas;
+      redesenharMantendoFoco();
+    }
+    aoVivoEnviado = fotoRoteiro();
+    // tenho algo que o banco não tem: grava, para não depender de quem criou
+    const semVazias = x => JSON.stringify(x.filter(r => !linhaVaziaAoVivo(r)));
+    if(semVazias(juntas) !== semVazias(rows)){ sujo = true; agendarAutoSalvar(); }
   }catch(e){}
 }
+// ao sair da página/app, salva o que estiver pendente
+document.addEventListener('visibilitychange', () => { if(document.hidden && sujo && emEdicao && emEdicao.id && !salvando){ try{ salvarRoteiro(true); }catch(e){} } });
 </script>
 </body>
 </html>
