@@ -9204,7 +9204,14 @@ async function conectarCanalAoVivo(){
         Object.values(st).flat().forEach(p => { if(p.email && p.email !== eu) pessoas[p.email] = { nome: nomeCurto(p.email), cor: corDaPessoa(p.email), rid: p.rid || null, k: p.k || null }; });
         aoVivoPessoas = pessoas; desenharPessoasAoVivo(); marcarCelulasRemotas();
       })
-      .subscribe(status => { if(status === 'SUBSCRIBED') anunciarFoco(); });
+      .subscribe(status => {
+        if(status === 'SUBSCRIBED') anunciarFoco();
+        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
+          // caiu a conexão: tenta de novo em 3 s (se ainda estiver no mesmo roteiro)
+          const canalCaiu = aoVivoCanal;
+          setTimeout(() => { if(aoVivoCanal === canalCaiu && emEdicao && emEdicao.id === id && !document.getElementById('paginaEditor').classList.contains('hidden')){ try{ canalCaiu.unsubscribe(); }catch(e){} aoVivoCanal = null; conectarCanalAoVivo(); } }, 3000);
+        }
+      });
   }catch(e){ /* sem conexão instantânea: vale a verificação a cada 5 s */ }
 }
 function anunciarFoco(){
@@ -9343,7 +9350,12 @@ async function verificarRoteiroRemoto(antesDeSalvar){
     const l = await api(`roteiros?id=eq.${encodeURIComponent(emEdicao.id)}&select=nome,titulo,dados`);
     const remoto = l && l[0]; if(!remoto) return;
     const c = conteudoRoteiro(remoto);
-    if(c === aoVivoUltimoBanco) return;
+    const linhasSemVazias = x => jsonOrdenado((x || []).filter(r => !linhaVaziaAoVivo(r)).map(r => { const o = {}; Object.keys(r).forEach(k => { if(r[k] !== undefined && r[k] !== null && r[k] !== '') o[k] = r[k]; }); return o; }));
+    if(c === aoVivoUltimoBanco){
+      // o banco não mudou, mas a minha tela tem coisa que ele não tem (ex.: linha de quem fechou sem salvar): grava
+      if(!salvando && !sujo && (linhasSemVazias(emEdicao.dados.rows) !== linhasSemVazias(remoto.dados && remoto.dados.rows) || ((remoto.dados && remoto.dados.apagadas) || []).length !== aoVivoApagadas.size)){ sujo = true; agendarAutoSalvar(); }
+      return;
+    }
     if(salvando || sujo) return;
     aoVivoUltimoBanco = c;
     const rows = ((remoto.dados && remoto.dados.rows) || []).map((r, i) => (r._id ? r : Object.assign({}, r, { _id: 'p' + i })));
