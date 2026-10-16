@@ -5700,6 +5700,7 @@ function primeiroHorario(){
 let roteiroMudancas = 0;
 function marcarSujo(){
   sujo = true; roteiroMudancas++;
+  try{ registrarApagadas(); }catch(e){}
   try{ enviarMudancaAoVivo(); }catch(e){}
   document.getElementById('statusSalvo').textContent = 'alterações não salvas';
   agendarAutoSalvar();
@@ -5773,6 +5774,7 @@ function agendarAutoSalvar(){
 }
 
 function desenharTabela(){
+  try{ (emEdicao.dados.rows || []).forEach(r => { if(!r._id) r._id = novoIdLinha(); }); }catch(e){}
   setTimeout(() => { try{ marcarCelulasRemotas(); }catch(e){} }, 0);
   inputsHorario = [];
   inputsTempo = [];
@@ -6304,9 +6306,11 @@ async function salvarRoteiro(auto){
       const db = l && l[0];
       if(db){
         const rowsDb = ((db.dados && db.dados.rows) || []).map((r, i) => (r._id ? r : Object.assign({}, r, { _id: 'p' + i })));
+        registrarApagadas(); juntarApagadas(db.dados && db.dados.apagadas);
         const juntas = juntar3(aoVivoDb.rows || [], emEdicao.dados.rows || [], rowsDb);
         if(jsonOrdenado(juntas) !== jsonOrdenado(emEdicao.dados.rows)){
           emEdicao.dados.rows = juntas;
+          aceitarEstado();
           redesenharMantendoFoco();
           enviarMudancaAoVivo();
         }
@@ -9088,37 +9092,74 @@ const estruturaDe = rows => rows.map(r => r._id + '|' + (r.color || '') + '|' + 
    - linha criada pelo outro: entra; linha criada por mim: fica
    - linha apagada por alguém: sai (se eu não estiver mexendo nela)
    - célula: se eu mudei, vale a minha; senão vale a do outro */
-function juntar3(base, local, remoto){
-  const porId = l => { const m = new Map(); (l || []).forEach(r => r && r._id && m.set(r._id, r)); return m; };
-  const B = porId(base), L = porId(local), R = porId(remoto);
-  const igual = (a, b) => jsonOrdenado(a === undefined ? null : a) === jsonOrdenado(b === undefined ? null : b);
-  const mudouLinha = (x, b) => !b || Object.keys(Object.assign({}, x, b)).some(k => !igual(x[k], b[k]));
+/* junta duas versões célula por célula: vale a edição mais recente de cada célula
+   (cada célula guarda a hora da última edição em _t). Linha só sai se alguém apagou de verdade. */
+let relogioAoVivo = 0;
+function agoraCarimbo(){ relogioAoVivo = Math.max(Date.now(), relogioAoVivo + 1); return relogioAoVivo; }
+function verCarimbo(t){ if(t > relogioAoVivo) relogioAoVivo = t; }
+const camposDaLinha = (...ls) => [...new Set(ls.flatMap(x => Object.keys(x || {})))].filter(k => k !== '_id' && k !== '_t');
+function juntar3(base, local, remoto, apag){
+  apag = apag || aoVivoApagadas;
+  const R = new Map(); (remoto || []).forEach(r => r && r._id && R.set(r._id, r));
+  const L = new Set((local || []).map(r => r && r._id));
   const out = [];
   (local || []).forEach(l => {
-    const r = R.get(l._id), b = B.get(l._id);
-    if(!r){
-      if(b && !mudouLinha(l, b)) return;          // o outro apagou e eu não mexi: sai
-      out.push(l); return;                         // linha nova minha (ou mexi nela): fica
-    }
-    const m = {};
-    Object.keys(Object.assign({}, l, r)).forEach(k => { m[k] = (b && igual(l[k], b[k])) ? r[k] : l[k]; });
-    m._id = l._id; out.push(m);
+    if(apag.has(l._id)) return;
+    const r = R.get(l._id);
+    if(!r){ out.push(l); return; }
+    const m = JSON.parse(JSON.stringify(l)); m._t = Object.assign({}, l._t || {});
+    camposDaLinha(l, r).forEach(k => {
+      const tl = (l._t && l._t[k]) || 0, tr = (r._t && r._t[k]) || 0;
+      verCarimbo(tr);
+      if(tr > tl){ m[k] = r[k] === undefined ? '' : JSON.parse(JSON.stringify(r[k])); m._t[k] = tr; }
+    });
+    out.push(m);
   });
-  // linhas novas do outro, na posição em que ele colocou
   (remoto || []).forEach((r, i) => {
-    if(L.has(r._id)) return;
-    if(B.has(r._id)) return;                       // eu apaguei: continua apagada
+    if(L.has(r._id) || apag.has(r._id)) return;
+    Object.values(r._t || {}).forEach(verCarimbo);
     let pos = 0;
     for(let j = i - 1; j >= 0; j--){ const ant = remoto[j]._id; const k = out.findIndex(x => x._id === ant); if(k >= 0){ pos = k + 1; break; } }
     out.splice(pos, 0, JSON.parse(JSON.stringify(r)));
   });
   return out;
 }
+/* linhas apagadas de verdade (lista guardada junto do roteiro, para todos saberem) */
+let aoVivoApagadas = new Set(), aoVivoIdsVistos = new Set(), aoVivoFoto = new Map();
+// depois de juntar o que veio de fora: guarda a foto sem carimbar (não foi edição minha)
+function aceitarEstado(){
+  const rows = (emEdicao && emEdicao.dados && emEdicao.dados.rows) || [];
+  aoVivoFoto = new Map(rows.map(r => [r._id, JSON.parse(JSON.stringify(r))]));
+  aoVivoIdsVistos = new Set(rows.map(r => r._id));
+  if(emEdicao && emEdicao.dados) emEdicao.dados.apagadas = [...aoVivoApagadas];
+}
+function juntarApagadas(lista){ (lista || []).forEach(id => aoVivoApagadas.add(id)); if(emEdicao && emEdicao.dados) emEdicao.dados.apagadas = [...aoVivoApagadas]; }
+function registrarApagadas(){
+  if(!emEdicao || !emEdicao.dados) return;
+  const rows = emEdicao.dados.rows || [];
+  rows.forEach(r => { if(!r._id || aoVivoApagadas.has(r._id)) r._id = novoIdLinha(); });   // voltou com Ctrl+Z: vira linha nova
+  // carimba a hora em cada célula que eu mudei desde a última foto
+  rows.forEach(r => {
+    const ant = aoVivoFoto.get(r._id);
+    camposDaLinha(r, ant).forEach(k => {
+      const mudou = ant ? JSON.stringify(r[k] === undefined ? '' : r[k]) !== JSON.stringify(ant[k] === undefined ? '' : ant[k]) : (r[k] !== undefined && r[k] !== null && r[k] !== '');
+      if(mudou){ r._t = Object.assign({}, r._t || {}); r._t[k] = agoraCarimbo(); }
+    });
+  });
+  aoVivoFoto = new Map(rows.map(r => [r._id, JSON.parse(JSON.stringify(r))]));
+  const atuais = new Set(rows.map(r => r._id));
+  aoVivoIdsVistos.forEach(id => { if(!atuais.has(id)) aoVivoApagadas.add(id); });
+  aoVivoIdsVistos = atuais;
+  emEdicao.dados.apagadas = [...aoVivoApagadas];
+}
 let aoVivoDb = null;   // última versão conhecida do banco (para juntar na hora de salvar)
 function iniciarAoVivo(){
   pararAoVivo();
   if(!emEdicao || !emEdicao.id) return;
   garantirIdsLinhas();
+  aoVivoApagadas = new Set(emEdicao.dados.apagadas || []);
+  (emEdicao.dados.rows || []).forEach(r => Object.values(r._t || {}).forEach(verCarimbo));
+  aceitarEstado();
   aoVivoEnviado = fotoRoteiro();
   aoVivoDb = fotoRoteiro();
   aoVivoBase = { nome: emEdicao.nome, titulo: emEdicao.titulo, dados: emEdicao.dados };
@@ -9177,21 +9218,22 @@ document.addEventListener('focusout', () => { if(aoVivoCanal) setTimeout(anuncia
 
 /* ---- enviar: só o que mudou desde o último envio ---- */
 function enviarMudancaAoVivo(){
+  try{ registrarApagadas(); }catch(e){}
   if(!aoVivoCanal || !emEdicao || !emEdicao.id || aoVivoEnvio) return;
   aoVivoEnvio = setTimeout(() => {
     aoVivoEnvio = null;
-    (emEdicao.dados.rows || []).forEach(r => { if(!r._id) r._id = novoIdLinha(); });
+    registrarApagadas();
     const atual = fotoRoteiro(), antes = aoVivoEnviado || atual;
     const quem = meuEmailAoVivo();
     if(estruturaDe(atual.rows) !== estruturaDe(antes.rows)){
-      try{ aoVivoCanal.send({ type:'broadcast', event:'estrutura', payload:{ quem, r: atual } }); }catch(e){}
+      try{ aoVivoCanal.send({ type:'broadcast', event:'estrutura', payload:{ quem, r: atual, apagadas: [...aoVivoApagadas] } }); }catch(e){}
     }else{
       const cels = [];
       if(atual.nome !== antes.nome) cels.push({ rid: META_RID, k:'nome', v: atual.nome });
       if(atual.titulo !== antes.titulo) cels.push({ rid: META_RID, k:'titulo', v: atual.titulo });
       atual.rows.forEach((r, i) => {
         const o = antes.rows[i] || {};
-        Object.keys(Object.assign({}, r, o)).forEach(k => { if(k !== '_id' && JSON.stringify(r[k]) !== JSON.stringify(o[k])) cels.push({ rid: r._id, k, v: r[k] }); });
+        Object.keys(Object.assign({}, r, o)).forEach(k => { if(k !== '_id' && k !== '_t' && JSON.stringify(r[k]) !== JSON.stringify(o[k])) cels.push({ rid: r._id, k, v: r[k], t: (r._t && r._t[k]) || 0 }); });
       });
       if(cels.length){ try{ aoVivoCanal.send({ type:'broadcast', event:'celulas', payload:{ quem, cels } }); }catch(e){} }
     }
@@ -9208,9 +9250,10 @@ function piscarCelula(){ /* sem efeito: o texto só muda, como numa planilha */ 
 function receberCelulas(p){
   if(!p || !Array.isArray(p.cels) || !emEdicao) return;
   aoVivoUltimaMsg = Date.now();
+  registrarApagadas();                                  // carimba o que eu digitei antes de comparar
   const cor = corDaPessoa(p.quem);
   let precisaRedesenhar = false, mexeuTempo = false;
-  p.cels.forEach(({ rid, k, v }) => {
+  p.cels.forEach(({ rid, k, v, t }) => {
     const el = campoDaCelula(rid, k);
     const focado = el && document.activeElement === el;
     if(rid === META_RID){
@@ -9221,8 +9264,10 @@ function receberCelulas(p){
     }
     const linha = (emEdicao.dados.rows || []).find(r => r._id === rid);
     if(!linha) return;
+    t = t || 0; verCarimbo(t);
+    if(t <= ((linha._t && linha._t[k]) || 0)) return;   // a minha é mais nova (ou igual): fica
     if(focado) return;                                  // você está digitando aqui: não mexe
-    linha[k] = v;
+    linha[k] = v; linha._t = Object.assign({}, linha._t || {}); linha._t[k] = t;
     const env = aoVivoEnviado && aoVivoEnviado.rows.find(r => r._id === rid);
     if(env) env[k] = JSON.parse(JSON.stringify(v === undefined ? null : v));
     if(k === 'color' || k === 'cores'){ precisaRedesenhar = true; return; }
@@ -9233,6 +9278,7 @@ function receberCelulas(p){
     }
     if(k === 'tempo' || k === 'horario') mexeuTempo = true;
   });
+  aceitarEstado();
   if(precisaRedesenhar) redesenharMantendoFoco();
   else if(mexeuTempo && typeof atualizarTotal === 'function') atualizarTotal();
 }
@@ -9243,12 +9289,10 @@ function receberEstrutura(p){
   const ridF = a && a.dataset ? a.dataset.rid : null, kF = a && a.dataset ? a.dataset.k : null;
   const idsAntes = new Set((emEdicao.dados.rows || []).map(r => r._id));
   const remotas = JSON.parse(JSON.stringify(p.r.rows || []));
+  registrarApagadas(); juntarApagadas(p.apagadas);
   const novas = juntar3((aoVivoEnviado && aoVivoEnviado.rows) || [], emEdicao.dados.rows || [], remotas);
-  if(ridF && kF){                                       // mantém o que você está digitando
-    const minha = (emEdicao.dados.rows || []).find(r => r._id === ridF), dela = novas.find(r => r._id === ridF);
-    if(minha && dela) dela[kF] = minha[kF];
-  }
   emEdicao.dados.rows = novas;
+  aceitarEstado();
   if(p.r.nome !== undefined && document.activeElement !== document.getElementById('edNome')){ emEdicao.nome = p.r.nome; document.getElementById('edNome').value = p.r.nome || ''; }
   if(p.r.titulo !== undefined && document.activeElement !== document.getElementById('edTitulo')){ emEdicao.titulo = p.r.titulo; document.getElementById('edTitulo').value = p.r.titulo || ''; }
   aoVivoEnviado = { nome: p.r.nome || '', titulo: p.r.titulo || '', rows: remotas };
@@ -9305,18 +9349,21 @@ async function verificarRoteiroRemoto(antesDeSalvar){
     const rows = ((remoto.dados && remoto.dados.rows) || []).map((r, i) => (r._id ? r : Object.assign({}, r, { _id: 'p' + i })));
     // junta (nunca substitui): o que só existe na minha tela, inclusive o que veio de outra pessoa e ainda não chegou ao banco, fica
     const base = (aoVivoDb && aoVivoDb.rows) || [];
+    registrarApagadas(); juntarApagadas(remoto.dados && remoto.dados.apagadas);
     const juntas = juntar3(base, emEdicao.dados.rows || [], rows);
     aoVivoDb = JSON.parse(JSON.stringify({ nome: remoto.nome || '', titulo: remoto.titulo || '', rows }));
-    const extras = Object.assign({}, remoto.dados || {}); delete extras.rows;
+    const extras = Object.assign({}, remoto.dados || {}); delete extras.rows; delete extras.apagadas;
     emEdicao.dados = Object.assign({}, emEdicao.dados, extras);
     if(jsonOrdenado(juntas) !== jsonOrdenado(emEdicao.dados.rows)){
       emEdicao.dados.rows = juntas;
+      aceitarEstado();
       redesenharMantendoFoco();
     }
     aoVivoEnviado = fotoRoteiro();
     // tenho algo que o banco não tem: grava, para não depender de quem criou
     const semVazias = x => jsonOrdenado(x.filter(r => !linhaVaziaAoVivo(r)).map(r => { const o = {}; Object.keys(r).forEach(k => { if(r[k] !== undefined && r[k] !== null && r[k] !== '') o[k] = r[k]; }); return o; }));
-    if(semVazias(juntas) !== semVazias(rows)){ sujo = true; agendarAutoSalvar(); }
+    const apagDb = ((remoto.dados && remoto.dados.apagadas) || []).length;
+    if(semVazias(juntas) !== semVazias(rows) || apagDb !== aoVivoApagadas.size){ sujo = true; agendarAutoSalvar(); }
   }catch(e){}
 }
 // ao sair da página/app, salva o que estiver pendente
