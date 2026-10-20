@@ -9259,9 +9259,15 @@ async function conectarCanalAoVivo(){
     aoVivoCanal
       .on('broadcast', { event:'celulas' }, ({ payload }) => receberCelulas(payload))
       .on('broadcast', { event:'estrutura' }, ({ payload }) => receberEstrutura(payload))
+      .on('broadcast', { event:'foco' }, ({ payload }) => receberFoco(payload))
       .on('presence', { event:'sync' }, () => {
         const st = aoVivoCanal.presenceState(), pessoas = {};
-        Object.values(st).flat().forEach(p => { if(p.email && p.email !== eu) pessoas[p.email] = { nome: nomeCurto(p.email), cor: corDaPessoa(p.email), rid: p.rid || null, k: p.k || null }; });
+        Object.values(st).flat().forEach(p => {
+          if(!p.email || p.email === eu) return;
+          const ja = aoVivoPessoas[p.email];
+          // a posição que chegou pela mensagem instantânea é mais nova que a da presença: mantém
+          pessoas[p.email] = (ja && ja.viaMsg) ? ja : { nome: nomeCurto(p.email), cor: corDaPessoa(p.email), rid: p.rid || null, k: p.k || null };
+        });
         aoVivoPessoas = pessoas; desenharPessoasAoVivo(); marcarCelulasRemotas();
       })
       .subscribe(status => {
@@ -9278,7 +9284,14 @@ function anunciarFoco(){
   if(!aoVivoCanal) return;
   const a = document.activeElement;
   const rid = a && a.dataset ? a.dataset.rid || null : null, k = a && a.dataset ? a.dataset.k || null : null;
+  // mensagem instantânea (chega em ~0,1 s); a "presença" do Supabase fica só para saber quem entrou/saiu
+  try{ aoVivoCanal.send({ type:'broadcast', event:'foco', payload:{ email: meuEmailAoVivo(), rid, k } }); }catch(e){}
   try{ aoVivoCanal.track({ email: meuEmailAoVivo(), rid, k }); }catch(e){}
+}
+function receberFoco(p){
+  if(!p || !p.email || p.email === meuEmailAoVivo()) return;
+  aoVivoPessoas[p.email] = { nome: nomeCurto(p.email), cor: corDaPessoa(p.email), rid: p.rid || null, k: p.k || null, viaMsg: Date.now() };
+  desenharPessoasAoVivo(); marcarCelulasRemotas();
 }
 document.addEventListener('focusin', () => { if(aoVivoCanal) anunciarFoco(); });
 document.addEventListener('focusout', () => { if(aoVivoCanal) setTimeout(anunciarFoco, 0); });
