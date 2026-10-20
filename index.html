@@ -1444,7 +1444,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
             </p>
           </div>
           <button class="btn" onclick="desenharCalendario()">↻ Atualizar</button>
-          <button class="btn so-adm-secretaria" onclick="abrirLinkCalendarioPublico(false)">🔗 Link para compartilhar</button>
+          <button class="btn so-adm-secretaria" onclick="abrirLinkCalendarioPublico()">🔗 Link para compartilhar</button>
           <a class="btn" href="?agendar=1" target="_blank" rel="noopener" style="text-decoration:none">📝 Preencher formulário</a>
         </div>
         <div class="calendario-topo">
@@ -3949,17 +3949,12 @@ function linkWhatsAppAgendamento(a, confirmando){
 // roteiro) com o link publico do formulario de agendamento -- ja copia
 // sozinho pra area de transferencia e deixa visivel/selecionavel tambem.
 // link público do calendário (só para ver, sem login) -- só administradores e secretaria
-async function abrirLinkCalendarioPublico(novo){
-  if(novo && !confirm('Gerar um link novo?\n\nO link antigo para de funcionar na hora. Quem tinha o antigo vai precisar receber o novo.')) return;
-  try{
-    const codigo = await api('rpc/' + (novo ? 'calendario_link_novo' : 'calendario_link_obter'), { method:'POST', body:{} });
-    const link = location.origin + location.pathname + '?cal=' + encodeURIComponent(codigo);
-    abrirModalLink(link);
-    const txt = document.getElementById('modalLinkNome');
-    txt.innerHTML = 'Calendário público: qualquer pessoa com este link vê os eventos agendados (nome, data, horário e local), sem login e sem poder mudar nada. ' +
-      '<a href="#" onclick="abrirLinkCalendarioPublico(true);return false;">Gerar novo link</a> (desativa o antigo).';
-    if(novo) toast('Link novo gerado. O antigo não funciona mais.', 'ok');
-  }catch(e){ toast(e.message, 'err'); }
+function abrirLinkCalendarioPublico(){
+  // endereço fixo e público do calendário (página /agenda): só nome, data, horário, local e tipo dos eventos
+  const link = location.origin + '/agenda';
+  abrirModalLink(link);
+  document.getElementById('modalLinkNome').textContent =
+    'Calendário público: qualquer pessoa com este endereço vê os eventos agendados (nome, data, horário e local), sem login e sem poder mudar nada.';
 }
 
 function abrirModalLinkFormulario(){
