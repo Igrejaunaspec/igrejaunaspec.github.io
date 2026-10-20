@@ -5806,7 +5806,6 @@ function agendarAutoSalvar(){
 
 function desenharTabela(){
   try{ (emEdicao.dados.rows || []).forEach(r => { if(!r._id) r._id = novoIdLinha(); }); }catch(e){}
-  setTimeout(() => { try{ marcarCelulasRemotas(); }catch(e){} }, 0);
   inputsHorario = [];
   inputsTempo = [];
   const cols = COLUNAS[emEdicao.culto];
@@ -5816,8 +5815,10 @@ function desenharTabela(){
     cols.map(c => `<th${c.larg ? ` style="width:${c.larg};"` : ''}>${c.t}</th>`).join('') +
     '<th style="width:120px;"></th>';
 
-  const corpo = document.getElementById('corpoTabela');
-  corpo.innerHTML = '';
+  // monta a tabela nova "por trás" e troca de uma vez (sem piscar: as caixas já entram com a altura certa)
+  const corpoNaTela = document.getElementById('corpoTabela');
+  const corpo = document.createElement('tbody');
+  const areasParaAjustar = [];
 
   emEdicao.dados.rows.forEach((linha, i) => {
     const tr = document.createElement('tr');
@@ -5919,7 +5920,7 @@ function desenharTabela(){
       }
 
       tr.appendChild(td);
-      if(c.area) setTimeout(() => autoAltura(campo), 0);
+      if(c.area) areasParaAjustar.push(campo);
     });
 
     const tdAcoes = document.createElement('td');
@@ -5943,6 +5944,10 @@ function desenharTabela(){
     corpo.appendChild(tr);
   });
 
+  corpo.id = 'corpoTabela';
+  corpoNaTela.replaceWith(corpo);
+  areasParaAjustar.forEach(autoAltura);                       // ainda no mesmo quadro, antes da tela atualizar
+  try{ marcarCelulasRemotas(); }catch(e){}
   atualizarTotal();
 }
 
