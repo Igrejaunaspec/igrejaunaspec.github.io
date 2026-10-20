@@ -4715,11 +4715,13 @@ function desenharEditorTiposEvento(){
     <div class="evento-modal-topo"><h3>Tipos de evento</h3>
       <button class="evento-modal-fechar" onclick="fecharEditorTiposEvento()">✕</button></div>
     <p class="hint" style="margin:0 0 12px;">Cada tipo tem um nome e uma cor fixa. Ao escolher o tipo no evento, a cor é aplicada sozinha (e vai junto pro Google Agenda).</p>
+    <div id="tiposEventoLista" style="max-height:calc(100vh - 300px);overflow-y:auto;padding-right:4px;">
     ${tiposEmEdicao.map((t, i) => `<div class="tipos-editor-item">
       <input type="color" value="${escapar(t.cor)}" oninput="tiposEmEdicao[${i}].cor=this.value">
       <input type="text" value="${escapar(t.nome)}" placeholder="Nome do tipo" oninput="tiposEmEdicao[${i}].nome=this.value">
       <button class="btn" title="Apagar" onclick="tiposEmEdicao.splice(${i},1);desenharEditorTiposEvento()">🗑️</button>
     </div>`).join('') || '<p class="hint">Nenhum tipo ainda.</p>'}
+    </div>
     <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap;">
       <button class="btn" onclick="adicionarTipoEvento()">+ Novo tipo</button>
       <button class="btn primary" id="btnSalvarTipos" onclick="salvarTiposEvento()">💾 Salvar tipos</button>
@@ -4729,6 +4731,8 @@ function adicionarTipoEvento(){
   const cores = ['#d50000','#e67c73','#f4511e','#f6bf26','#33b679','#0b8043','#039be5','#3f51b5','#7986cb','#8e24aa','#616161'];
   tiposEmEdicao.push({ id: 't' + Date.now().toString(36), nome: '', cor: cores[tiposEmEdicao.length % cores.length] });
   desenharEditorTiposEvento();
+  const l = document.getElementById('tiposEventoLista');
+  if(l){ l.scrollTop = l.scrollHeight; const ins = l.querySelectorAll('input[type=text]'); if(ins.length) ins[ins.length-1].focus(); }
 }
 async function salvarTiposEvento(){
   const limpos = tiposEmEdicao.map(t => ({ id: t.id, nome: (t.nome || '').trim(), cor: t.cor })).filter(t => t.nome);
