@@ -1026,6 +1026,13 @@
     .proximos{display:none;}
   }
 
+body.cal-publico header, body.cal-publico #abasTopo, body.cal-publico #navCelular, body.cal-publico #fabCelular,
+body.cal-publico #paginaCalendario .card > div:first-child > .btn, body.cal-publico .menu-lateral, body.cal-publico .lateral-rodape{display:none!important}
+body.cal-publico{padding-left:0!important}
+body.cal-publico .wrap{margin-left:auto!important;margin-right:auto!important}
+.cal-publico-topo{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 0 14px}
+.cal-publico-marca{font-weight:800;letter-spacing:.02em;font-size:15px;color:var(--text,#1A2433);display:flex;align-items:center;gap:8px;text-transform:uppercase}
+.cal-publico-sub{color:var(--muted2,#6b7280);font-size:14px}
 body.so-ver-cal .calendario-dia-add, body.so-ver-cal #fabCelular, body.so-ver-cal .btn-novo-evento{display:none!important}
 .aviso-so-ver{margin-bottom:12px;background:#FFF6E5;color:#6B4A00;border-radius:10px;padding:10px 14px;font-weight:700}
 body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
@@ -1437,6 +1444,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
             </p>
           </div>
           <button class="btn" onclick="desenharCalendario()">↻ Atualizar</button>
+          <button class="btn so-adm-secretaria" onclick="abrirLinkCalendarioPublico(false)">🔗 Link para compartilhar</button>
           <a class="btn" href="?agendar=1" target="_blank" rel="noopener" style="text-decoration:none">📝 Preencher formulário</a>
         </div>
         <div class="calendario-topo">
@@ -3940,6 +3948,20 @@ function linkWhatsAppAgendamento(a, confirmando){
 // Abre o modal de link ja existente (o mesmo usado pro link de convidado do
 // roteiro) com o link publico do formulario de agendamento -- ja copia
 // sozinho pra area de transferencia e deixa visivel/selecionavel tambem.
+// link público do calendário (só para ver, sem login) -- só administradores e secretaria
+async function abrirLinkCalendarioPublico(novo){
+  if(novo && !confirm('Gerar um link novo?\n\nO link antigo para de funcionar na hora. Quem tinha o antigo vai precisar receber o novo.')) return;
+  try{
+    const codigo = await api('rpc/' + (novo ? 'calendario_link_novo' : 'calendario_link_obter'), { method:'POST', body:{} });
+    const link = location.origin + location.pathname + '?cal=' + encodeURIComponent(codigo);
+    abrirModalLink(link);
+    const txt = document.getElementById('modalLinkNome');
+    txt.innerHTML = 'Calendário público: qualquer pessoa com este link vê os eventos agendados (nome, data, horário e local), sem login e sem poder mudar nada. ' +
+      '<a href="#" onclick="abrirLinkCalendarioPublico(true);return false;">Gerar novo link</a> (desativa o antigo).';
+    if(novo) toast('Link novo gerado. O antigo não funciona mais.', 'ok');
+  }catch(e){ toast(e.message, 'err'); }
+}
+
 function abrirModalLinkFormulario(){
   const link = location.origin + location.pathname + '?agendar=1';
   abrirModalLink(link, 'Link do formulário de agendamento — qualquer pessoa pode preencher, sem precisar de login.');
@@ -4452,6 +4474,7 @@ function abrirPregacaoNoCalendario(id){
 }
 
 function abrirModalEventoEditar(id){
+  if(calPublico){ abrirEventoPublico(id); return; }
   if(String(id).startsWith('hom-')){ abrirPregacaoNoCalendario(id); return; }
   const a = calendarioAgendamentos.find(x => x.id === id);
   if(!a) return;
@@ -8803,6 +8826,11 @@ document.addEventListener('keydown', ev => {
     await abrirVisualizacaoConvidado(rCurto ? curtoParaUuid(rCurto) : verId, params.get('imprimir') === '1');
     return;
   }
+  if(params.get('cal')){
+    if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
+    await abrirCalendarioPublico(params.get('cal'));
+    return;
+  }
   if(params.get('agendar') === '1'){
     // formulario publico de pedido de uso da igreja -- sem login, qualquer
     // pessoa pode acessar por este link (era assim no Google Formulário tambem)
@@ -8847,7 +8875,60 @@ document.addEventListener('keydown', ev => {
 
 /* ---------- calendário só para ver (perfil.acesso_calendario_ver) ----------
    O banco também garante: esse acesso só tem permissão de LER agendamentos. */
+/* =====================================================================
+   CALENDÁRIO PÚBLICO (?cal=código) — só para ver, sem login.
+   O banco entrega só: nome do evento, datas, horário, local e tipo
+   (nada de responsável, telefone, e-mail ou observações).
+===================================================================== */
+async function abrirCalendarioPublico(codigo){
+  calPublico = true;
+  document.body.classList.add('cal-publico', 'so-ver-cal');
+  document.getElementById('telaLogin').classList.add('hidden');
+  document.getElementById('telaApp').classList.remove('hidden');
+  const topo = document.createElement('div');
+  topo.className = 'cal-publico-topo';
+  topo.innerHTML = '<div class="cal-publico-marca"><span></span>Igreja Adventista UNASP · EC</div><div class="cal-publico-sub">Calendário de eventos</div>';
+  document.querySelector('#telaApp .wrap').prepend(topo);
+  const hint = document.querySelector('#paginaCalendario .hint');
+  if(hint) hint.textContent = 'Eventos confirmados na igreja. Clique num evento para ver horário e local.';
+  cultoAtual = 'calendario';
+  mostrarPagina('calendario');
+  const hoje = new Date();
+  calendarioAno = hoje.getFullYear(); calendarioMes = hoje.getMonth();
+  document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
+  try{
+    const [, r] = await Promise.all([ carregarTiposEvento(), apiPublico('rpc/calendario_publico', { method:'POST', body:{ p_codigo: codigo } }) ]);
+    if(!r || r.ok === false){
+      document.querySelector('#paginaCalendario').innerHTML = '<div class="card"><h2>Link inválido</h2><p class="hint">Este link do calendário não existe mais. Peça um link novo à secretaria da igreja.</p></div>';
+      return;
+    }
+    calendarioAgendamentos = r.eventos || [];
+    desenharCalendario();
+  }catch(e){
+    document.getElementById('calendarioGrid').innerHTML = `<div class="aviso erro">Não consegui carregar o calendário. Tente de novo em instantes.</div>`;
+  }
+}
+function abrirEventoPublico(id){
+  const a = calendarioAgendamentos.find(x => x.id === id);
+  if(!a) return;
+  const dIni = parseDataBR(a.data_inicio), dFim = parseDataBR(a.data_saida);
+  const fmt = d => d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  let quando = dIni ? fmt(dIni) : (a.data_inicio || '');
+  if(dFim && dIni && dFim.toDateString() !== dIni.toDateString()) quando += ' até ' + fmt(dFim);
+  const tipo = tipoDoEvento(a);
+  const linha = (rot, val) => val ? `<div class="field"><label>${rot}</label><div>${escapar(val)}</div></div>` : '';
+  document.getElementById('modalEventoCaixa').innerHTML = `
+    <h3>${escapar(a.nome_evento || 'Evento')}</h3>
+    ${tipo ? `<p class="hint"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${tipo.cor};margin-right:6px;"></span>${escapar(tipo.nome || '')}</p>` : ''}
+    ${linha('Quando', quando)}
+    ${linha('Horário', a.horarios_evento)}
+    ${linha('Local', a.espacos_utilizados)}
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button class="btn primary" onclick="fecharModalEvento()">Fechar</button></div>`;
+  document.getElementById('modalEvento').classList.remove('hidden');
+}
+let calPublico = false;   // aberto pelo link público (?cal=código), sem login
 function soVerCalendario(){
+  if(calPublico) return true;
   return !!(perfil && !perfil.admin && !perfil.acesso_calendario && perfil.acesso_calendario_ver);
 }
 (function(){
