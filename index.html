@@ -492,6 +492,18 @@
   .pas-chips{display:flex;flex-wrap:wrap;gap:8px;}
   .pas-chips button{font-family:inherit;font-size:13px;font-weight:600;border-radius:20px;padding:8px 12px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;}
   .pas-chips button.on{background:var(--c);border-color:var(--c);color:#fff;}
+  .pas-quadro{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 12px;align-items:flex-start;}
+  .pas-col{flex:1 0 240px;max-width:320px;background:#eef0f4;border-radius:12px;padding:10px;min-height:120px;transition:background .15s;}
+  .pas-col.sobre{background:#dfe6f2;outline:2px dashed #8aa2c8;}
+  .pas-col h3{margin:0 0 8px;font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+  .pas-col h3 span{font-size:12px;color:var(--muted2);background:#fff;border-radius:10px;padding:1px 8px;}
+  .pas-cartao{display:block;width:100%;text-align:left;border:0;border-left:4px solid;border-radius:8px;padding:9px 10px;margin-bottom:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12);cursor:pointer;font-family:inherit;color:#1f2937;}
+  .pas-cartao[draggable=true]{cursor:grab;}
+  .pas-cartao.arrastando{opacity:.4;}
+  .pas-cartao b{display:block;font-size:14px;margin-bottom:3px;}
+  .pas-cartao small{display:block;font-size:12px;color:#5b6472;}
+  .pas-cartao .tag{display:inline-block;font-size:11px;border-radius:6px;padding:1px 6px;margin-top:5px;}
+  .pas-col .vazio{font-size:12px;padding:10px 4px;}
   .pas-visoes{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
   .pas-visoes button{border:0;background:var(--panel);font-family:inherit;font-size:13px;font-weight:600;color:var(--muted2);padding:7px 12px;cursor:pointer;}
   .pas-visoes button + button{border-left:1px solid var(--border);}
@@ -1510,6 +1522,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
             <button data-v="dia" onclick="mudarVisaoPastoral('dia')">Dia</button>
             <button data-v="semana" class="so-pc" onclick="mudarVisaoPastoral('semana')">Semana</button>
             <button data-v="mes" onclick="mudarVisaoPastoral('mes')">Mês</button>
+            <button data-v="quadro" onclick="mudarVisaoPastoral('quadro')" title="Quadro estilo Trello: arraste os cartões entre as colunas">▦ Quadro</button>
           </div>
           <span class="pas-legenda" id="pasLegenda"></span>
         </div>
@@ -6938,10 +6951,43 @@ function mudarVisaoPastoral(v){
   try{ localStorage.setItem('pasVisao', v); }catch(e){}
   carregarAgendaPastoral();
 }
+// ---- Quadro estilo Trello: colunas por situação; arrastar muda a situação ----
+function pasDesenharQuadro(el){
+  const m0 = new Date(pasDia.getFullYear(), pasDia.getMonth(), 1), m1 = new Date(pasDia.getFullYear(), pasDia.getMonth() + 1, 1);
+  const doMes = pasItens.filter(x => { const d = new Date(x.inicio); return d >= m0 && d < m1; });
+  const pode = !pasSoVer;
+  el.innerHTML = `<div class="pas-quadro">${Object.entries(PAS_STATUS).map(([st, nome]) => {
+    const its = doMes.filter(x => (x.status || 'confirmado') === st);
+    return `<div class="pas-col" data-st="${st}"><h3>${nome}<span>${its.length}</span></h3>
+      ${its.map(x => { const t = pasTipo(x.tipo), a = new Date(x.inicio);
+        return `<button class="pas-cartao" style="border-left-color:${t.cor};" data-id="${x.id}" ${pode ? 'draggable="true"' : ''} onclick="abrirModalPastoral('${x.id}')">
+          <b>${escapar(pasTextoItem(x))}</b>
+          <small>${a.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).replace(/\./g,'')} · ${pasHora(a)}${x.local ? ' · ' + escapar(x.local) : ''}</small>
+          <span class="tag" style="background:${t.fundo};color:${t.texto};">${escapar(t.nome)}</span></button>`; }).join('') || '<div class="vazio">Nada aqui</div>'}
+    </div>`; }).join('')}</div>`;
+  if(!pode) return;
+  el.querySelectorAll('.pas-cartao').forEach(c => {
+    c.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', c.dataset.id); c.classList.add('arrastando'); });
+    c.addEventListener('dragend', () => c.classList.remove('arrastando'));
+  });
+  el.querySelectorAll('.pas-col').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('sobre'); });
+    col.addEventListener('dragleave', () => col.classList.remove('sobre'));
+    col.addEventListener('drop', async e => {
+      e.preventDefault(); col.classList.remove('sobre');
+      const id = e.dataTransfer.getData('text/plain'), st = col.dataset.st;
+      const x = pasItens.find(i => String(i.id) === id);
+      if(!x || x.status === st) return;
+      const antes = x.status; x.status = st; pasDesenharQuadro(el);
+      try{ await api(`agenda_pastoral?id=eq.${x.id}`, { method:'PATCH', prefer:'return=minimal', body: { status: st } }); }
+      catch(err){ x.status = antes; pasDesenharQuadro(el); alert('Não foi possível mover: ' + err.message); }
+    });
+  });
+}
 function pasDiaDoMes(iso){ pasDia = new Date(iso + 'T00:00:00'); mudarVisaoPastoral('dia'); }
 // periodo carregado conforme a visao
 function pasPeriodo(){
-  if(pasVisao === 'mes'){
+  if(pasVisao === 'mes' || pasVisao === 'quadro'){
     const ini = pasInicioSemana(new Date(pasDia.getFullYear(), pasDia.getMonth(), 1));
     const fim = new Date(ini); fim.setDate(fim.getDate() + 42);
     return { ini, fim };
@@ -7004,7 +7050,7 @@ async function abrirAgendaPastoral(dono){
 }
 function navegarAgendaPastoral(n){
   pasJaRolou = false;
-  if(pasVisao === 'mes') pasDia = new Date(pasDia.getFullYear(), pasDia.getMonth() + n, 1);
+  if(pasVisao === 'mes' || pasVisao === 'quadro') pasDia = new Date(pasDia.getFullYear(), pasDia.getMonth() + n, 1);
   else pasDia.setDate(pasDia.getDate() + ((pasVisao === 'dia' || ehCelular()) ? n : n * 7));
   carregarAgendaPastoral();
 }
@@ -7061,13 +7107,15 @@ function desenharAgendaPastoral(){
   const dias = Array.from({ length:7 }, (_, i) => { const d = new Date(ini); d.setDate(d.getDate() + i); return d; });
   const fimSem = dias[6];
   const tit = document.getElementById('pasTitulo');
-  if(pasVisao === 'mes') tit.textContent = pasDia.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
+  if(pasVisao === 'mes' || pasVisao === 'quadro') tit.textContent = pasDia.toLocaleDateString('pt-BR', { month:'long', year:'numeric' });
   else if(pasVisao === 'dia' || ehCelular()) tit.textContent = pasDia.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long' });
   else tit.textContent = `${ini.getDate()} ${ini.getMonth() !== fimSem.getMonth() ? ini.toLocaleDateString('pt-BR',{month:'short'}).replace('.','') + ' ' : ''}– ${fimSem.toLocaleDateString('pt-BR', { day:'numeric', month:'long', year:'numeric' })}`;
   const sel = document.getElementById('pasVisoes');
-  if(sel) sel.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === pasVisao || (ehCelular() && pasVisao !== 'mes' && b.dataset.v === 'dia')));
+  if(sel) sel.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === pasVisao || (ehCelular() && pasVisao !== 'mes' && pasVisao !== 'quadro' && b.dataset.v === 'dia')));
   const hojeK = pasISOData(new Date());
   const el = document.getElementById('pasConteudo');
+
+  if(pasVisao === 'quadro'){ pasDesenharQuadro(el); return; }
 
   if(pasVisao === 'mes'){
     const ini0 = pasInicioSemana(new Date(pasDia.getFullYear(), pasDia.getMonth(), 1));
