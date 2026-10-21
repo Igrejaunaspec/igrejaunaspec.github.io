@@ -1064,6 +1064,8 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 .subabas button.on .rot, .subabas button:hover .rot, .subabas button:focus-visible .rot{max-width:220px;opacity:1;margin-left:8px}
 @media (prefers-reduced-motion:reduce){.subabas .rot{transition:none}}
 #paginaAgendamentos:has(.subabas button:first-child.on) #cardTopoAgendamentos{border-top-left-radius:0}
+#subabasRoteiros:not(.hidden) + .card{margin-top:0;position:relative;z-index:1}
+#subabasRoteiros:has(button:first-child.on) + .card{border-top-left-radius:0}
 
 /* menu lateral recolhível (computador) */
 @media (min-width:701px){
@@ -5335,9 +5337,9 @@ function itemRoteiroHTML(r, i){
    Cada pasta (de primeiro nível) pertence a uma aba; as subpastas acompanham a pasta-mãe.
    Pasta sem aba definida = Culto de Sábado. Roteiros sem pasta aparecem no Culto de Sábado. */
 const ABAS_ROTEIRO = [
-  { v:'culto',   n:'Culto de Sábado', i:'⛪' },
-  { v:'eventos', n:'Eventos',         i:'🎉' },
-  { v:'ja',      n:'JA',              i:'🔥' },
+  { v:'culto',   n:'Culto de Sábado', i:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v4M10 4h4"/><path d="M5 21V11l7-5 7 5v10"/><path d="M10 21v-5h4v5M3 21h18"/></svg>' },
+  { v:'eventos', n:'Eventos',         i:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m12 13 1 2 2 .3-1.5 1.4.4 2.1-1.9-1-1.9 1 .4-2.1L9 15.3l2-.3z"/></svg>' },
+  { v:'ja',      n:'JA',              i:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4 0 7-3 7-7 0-4-3-6-4-9-1 2-2 3-3 3 0-2-1-5-3-7 0 4-4 6-4 13 0 4 3 7 7 7z"/><path d="M12 22c-1.7 0-3-1.3-3-3 0-2 2-3 3-5 1 2 3 3 3 5 0 1.7-1.3 3-3 3z"/></svg>' },
 ];
 let abaRoteiros = 'culto';
 try{ abaRoteiros = localStorage.getItem('abaRoteiros') || 'culto'; }catch(e){}
