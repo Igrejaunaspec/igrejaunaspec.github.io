@@ -6054,7 +6054,7 @@ function desenharTabela(){
     // com uma cor livre (de antes desta lista existir) fica sem pintar, igual o
     // seletor dela mostra "Sem cor".
     if(emEdicao.culto === 'sabado' && LEGENDA_COR_SABADO.some(o => o.v && o.v === linha.color)){
-      Array.from(tr.children).forEach(td => { td.style.background = hexParaRgba(linha.color, .16); });
+      Array.from(tr.children).forEach(td => { td.style.background = hexParaRgba(linha.color, .34); });
     }
 
     corpo.appendChild(tr);
