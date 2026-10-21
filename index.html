@@ -6318,12 +6318,13 @@ function adicionarLinhaEm(i, depois){
 }
 
 function removerLinha(i){
-  if(!confirm('Remover este item do roteiro?')) return;
+  // sem pergunta: remove na hora e dá para voltar com Cmd+Z / Ctrl+Z (ou o botão ↶)
   guardarParaDesfazer();
   emEdicao.dados.rows.splice(i, 1);
   if(!emEdicao.dados.rows.length) emEdicao.dados.rows.push(linhaVazia());
   marcarSujo();
   desenharTabela();
+  toast('Item removido. Para voltar: ' + (/Mac|iPhone|iPad/.test(navigator.platform) ? 'Cmd+Z' : 'Ctrl+Z') + ' ou o botão ↶.', 'ok');
 }
 // Reaplica o horario de cada linha, na ordem ATUAL do array, a partir do
 // "Comeca as" -- cada linha mantem a propria duracao (tempo/timer), so o
