@@ -494,6 +494,25 @@
   .pas-chips button.on{background:var(--c);border-color:var(--c);color:#fff;}
   .sel-aba-pasta{font-family:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--muted2);max-width:130px;}
   #subabasRoteiros button.alvo-aba{outline:2px dashed #8aa2c8;background:#dfe6f2;}
+  .pessoa2{display:block !important;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:12px;}
+  .pessoa2-topo{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+  .pessoa2-quem{flex:1;min-width:0;}
+  .pessoa2-nome{font-weight:700;font-size:15px;color:var(--text,#1f2937);}
+  .pessoa2-email{font-size:12.5px;color:var(--muted2);margin-top:2px;}
+  .pessoa2-meta{font-size:11.5px;color:var(--muted2);margin-top:4px;}
+  .pessoa2-admin{display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;}
+  .pessoa2-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px 14px;}
+  .pessoa2 .chk, .pessoa2-admin{text-transform:none !important;letter-spacing:0 !important;}
+  .pessoa2 .chk{font-weight:500;color:var(--text,#1f2937);}
+  .pessoa2-grade .chk{margin:0;font-size:13px;}
+  .pessoa2-grade .chk:has(input:disabled){opacity:.45;}
+  .pessoa2-setores{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);}
+  .pessoa2-setores > span{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;}
+  input.interruptor{appearance:none;-webkit-appearance:none;width:44px;height:26px;border-radius:13px;background:#d6dbe3;position:relative;cursor:pointer;transition:background .2s;margin:0;flex-shrink:0;}
+  input.interruptor::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s;}
+  input.interruptor:checked{background:#1D3A5C;}
+  input.interruptor:checked::after{left:21px;}
+  input.interruptor:disabled{opacity:.6;cursor:not-allowed;}
   .pas-quadro{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 12px;align-items:flex-start;}
   .pas-col{flex:1 0 240px;max-width:320px;background:#eef0f4;border-radius:12px;padding:10px;min-height:120px;transition:background .15s;}
   .pas-col.sobre{background:#dfe6f2;outline:2px dashed #8aa2c8;}
@@ -8256,31 +8275,28 @@ function desenharPessoas(pessoas){
   pessoas.forEach(p => {
     const eu = p.email === sessao.email;
     const d = document.createElement('div');
-    d.className = 'pessoa';
+    d.className = 'pessoa pessoa2';
+    const chk = (c, rot, tit) => `<label class="chk"${tit ? ` title="${tit}"` : ''}><input type="checkbox" data-c="${c}" ${(c === 'acesso_agenda_pessoal' ? (p[c] || p.admin) : p[c]) ? 'checked' : ''} ${p.admin ? 'disabled' : ''}> ${rot}</label>`;
     d.innerHTML = `
-      <div class="email">${escapar(p.nome || p.email)}
-        ${eu ? '<span class="badge rascunho">você</span>' : ''}
-        <div class="meta" style="font-weight:400;color:var(--muted2);font-size:12.5px;">${escapar(p.email||'')}</div>
-        <div class="meta" style="font-weight:400;color:var(--muted2);font-size:12.5px;">Último login: <b>${p.ultimo_login ? quandoAtividade(p.ultimo_login) : '—'}</b> · Último uso: <b>${p.ultimo_acesso ? quandoAtividade(p.ultimo_acesso) : '—'}</b>${p.ultima_aba_alterada ? ` · Última alteração: <b>${escapar(p.ultima_aba_alterada)}</b> (${quandoAtividade(p.ultima_alteracao_em)})` : ''}</div>
+      <div class="pessoa2-topo">
+        <div class="pessoa2-quem">
+          <div class="pessoa2-nome">${escapar(p.nome || p.email)} ${eu ? '<span class="badge rascunho">você</span>' : ''}</div>
+          <div class="pessoa2-email">${escapar(p.email||'')}</div>
+          <div class="pessoa2-meta">Último login: <b>${p.ultimo_login ? quandoAtividade(p.ultimo_login) : '—'}</b> · Último uso: <b>${p.ultimo_acesso ? quandoAtividade(p.ultimo_acesso) : '—'}</b>${p.ultima_aba_alterada ? ` · Última alteração: <b>${escapar(p.ultima_aba_alterada)}</b> (${quandoAtividade(p.ultima_alteracao_em)})` : ''}</div>
+        </div>
+        <label class="pessoa2-admin" title="${eu ? 'Você não pode tirar o seu próprio acesso de administrador' : 'Administrador tem acesso a tudo'}">
+          Administrador <input type="checkbox" class="interruptor" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}>
+        </label>
       </div>
-      <label class="chk"><input type="checkbox" data-c="acesso_sexta"  ${p.acesso_sexta?'checked':''}> Sexta</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_sabado" ${p.acesso_sabado?'checked':''}> Sábado</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_agenda" ${p.acesso_agenda?'checked':''}> Agenda</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_agendamentos" ${p.acesso_agendamentos?'checked':''}> Agendamentos</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_calendario" ${p.acesso_calendario?'checked':''}> Calendário</label>
-      <label class="chk" title="Vê o calendário, mas não cria, edita nem apaga eventos"><input type="checkbox" data-c="acesso_calendario_ver" ${p.acesso_calendario_ver?'checked':''}> Calendário (só ver)</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_escala" ${p.acesso_escala?'checked':''}> Escala</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_youtube" ${p.acesso_youtube?'checked':''}> YouTube</label>
-      <label class="chk"><input type="checkbox" data-c="acesso_homiletico" ${p.acesso_homiletico?'checked':''}> Homilético</label>
-      <label class="chk" title="Agenda Pastoral completa, com as anotações privadas"><input type="checkbox" data-c="acesso_pastoral" ${p.acesso_pastoral?'checked':''}> Pastor (agenda)</label>
-      <label class="chk" title="Agenda Pastoral sem as anotações"><input type="checkbox" data-c="acesso_pastoral_secretaria" ${p.acesso_pastoral_secretaria?'checked':''}> Secretária (agenda)</label>
-      <label class="chk" title="Agenda pessoal: só a própria pessoa e os administradores veem (administradores já têm a sua)"><input type="checkbox" data-c="acesso_agenda_pessoal" ${p.acesso_agenda_pessoal||p.admin?'checked':''} ${p.admin?'disabled':''}> Agenda pessoal</label>
-      <label class="chk" title="Painel do Médicos em Missão (inscrições com CPF, endereço e saúde)"><input type="checkbox" data-c="acesso_medicos" ${p.acesso_medicos?'checked':''}> Médicos em Missão</label>
-      <label class="chk" title="Mostra as pregações confirmadas no Calendário"><input type="checkbox" data-c="ver_homiletico_calendario" ${p.ver_homiletico_calendario?'checked':''}> Pregações no Calendário</label>
-      <label class="chk"><input type="checkbox" data-c="admin" ${p.admin?'checked':''} ${eu?'disabled':''}> Administrador</label>
-      <span style="width:1px;align-self:stretch;background:var(--border);"></span>
-      <span style="font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;">Vê na agenda:</span>
-      ${SETORES_AGENDA.map(s => `<label class="chk"><input type="checkbox" data-setor="${escapar(s)}" ${(p.setores||[]).includes(s)?'checked':''}> ${escapar(s)}</label>`).join('')}`;
+      <div class="pessoa2-grade">
+        ${chk('acesso_sexta','Sexta')}${chk('acesso_sabado','Sábado')}${chk('acesso_agenda','Agenda')}${chk('acesso_agendamentos','Agendamentos')}${chk('acesso_calendario','Calendário')}
+        ${chk('acesso_calendario_ver','Calendário (só ver)','Vê o calendário, mas não cria, edita nem apaga eventos')}${chk('acesso_escala','Escala')}${chk('acesso_youtube','YouTube')}${chk('acesso_homiletico','Homilético')}${chk('acesso_pastoral','Pastor (agenda)','Agenda Pastoral completa, com as anotações privadas')}
+        ${chk('acesso_pastoral_secretaria','Secretária (agenda)','Agenda Pastoral sem as anotações')}${chk('acesso_agenda_pessoal','Agenda pessoal','Agenda pessoal: só a própria pessoa e os administradores veem (administradores já têm a sua)')}${chk('acesso_medicos','Médicos em Missão','Painel do Médicos em Missão (inscrições com CPF, endereço e saúde)')}${chk('ver_homiletico_calendario','Pregações no Calendário','Mostra as pregações confirmadas no Calendário')}
+      </div>
+      <div class="pessoa2-setores">
+        <span>Vê na agenda:</span>
+        ${SETORES_AGENDA.map(s => `<label class="chk"><input type="checkbox" data-setor="${escapar(s)}" ${(p.setores||[]).includes(s)?'checked':''}> ${escapar(s)}</label>`).join('')}
+      </div>`;
     d.querySelectorAll('input[data-c]').forEach(cx => {
       cx.onchange = async () => {
         const campo = cx.dataset.c;
@@ -8288,8 +8304,12 @@ function desenharPessoas(pessoas){
         try{
           await api(`perfis?id=eq.${p.id}`, { method:'PATCH', body:{ [campo]: cx.checked } });
           toast('Acesso atualizado.', 'ok');
+          if(campo === 'admin'){
+            p.admin = cx.checked;
+            d.querySelectorAll('.pessoa2-grade input[data-c]').forEach(o => { o.disabled = p.admin; if(o.dataset.c === 'acesso_agenda_pessoal') o.checked = p.admin || !!p.acesso_agenda_pessoal; });
+          }
         }catch(e){ cx.checked = !cx.checked; toast(e.message, 'err'); }
-        finally{ if(!(campo==='admin' && eu)) cx.disabled = false; }
+        finally{ if(campo === 'admin') cx.disabled = eu; else cx.disabled = !!p.admin; }
       };
     });
     // Setores: guarda a lista inteira marcada (nao um booleano por coluna,
