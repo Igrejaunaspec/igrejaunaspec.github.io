@@ -5970,10 +5970,36 @@ function desenharTabela(){
   });
 
   corpo.id = 'corpoTabela';
+  corpo.addEventListener('keydown', navegarSetasTabela);
   corpoNaTela.replaceWith(corpo);
   areasParaAjustar.forEach(autoAltura);                       // ainda no mesmo quadro, antes da tela atualizar
   try{ marcarCelulasRemotas(); }catch(e){}
   atualizarTotal();
+}
+
+// Setas ↑ ↓ na tabela do roteiro: vai para a mesma coluna na linha de cima/baixo.
+// Em caixa com várias linhas (ex.: Participante), só pula quando o cursor já está
+// na primeira linha (↑) ou na última (↓) do texto.
+function navegarSetasTabela(ev){
+  if(ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return;
+  if(ev.shiftKey || ev.altKey || ev.metaKey || ev.ctrlKey) return;
+  const el = ev.target;
+  if(!el || !el.dataset || !el.dataset.k) return;
+  const subir = ev.key === 'ArrowUp';
+  if(el.tagName === 'TEXTAREA'){
+    const v = el.value, p = el.selectionStart;
+    if(el.selectionStart !== el.selectionEnd) return;
+    if(subir && v.slice(0, p).includes('\n')) return;
+    if(!subir && v.slice(p).includes('\n')) return;
+  }
+  let tr = el.closest('tr');
+  do{ tr = subir ? tr.previousElementSibling : tr.nextElementSibling; }
+  while(tr && !tr.querySelector(`[data-k="${el.dataset.k}"]`));
+  if(!tr) return;
+  const alvo = tr.querySelector(`[data-k="${el.dataset.k}"]`);
+  ev.preventDefault();
+  alvo.focus();
+  try{ const n = subir ? alvo.value.length : 0; alvo.setSelectionRange(subir ? n : 0, subir ? n : 0); }catch(e){}
 }
 
 function hexParaRgba(hex, alpha){
