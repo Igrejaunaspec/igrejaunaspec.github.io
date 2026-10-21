@@ -1065,7 +1065,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 @media (prefers-reduced-motion:reduce){.subabas .rot{transition:none}}
 #paginaAgendamentos:has(.subabas button:first-child.on) #cardTopoAgendamentos{border-top-left-radius:0}
 #subabasRoteiros:not(.hidden) + .card{margin-top:0;position:relative;z-index:1}
-#subabasRoteiros:has(button:first-child.on) + .card{border-top-left-radius:0}
+#subabasRoteiros{padding-left:12px}
 
 /* menu lateral recolhível (computador) */
 @media (min-width:701px){
@@ -2782,7 +2782,7 @@ async function api(caminho, opcoes){
 }
 
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
-const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Culto de Sábado', homiletico:'Homilético', escala:'Escala',
+const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
   calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Agenda', medicos:'Médicos em Missão',
   youtube:'YouTube', pessoas:'Pessoas', visualizadores:'Visualizadores', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
@@ -4994,7 +4994,7 @@ function montarAbas(){
 
   permitidos.forEach(c => {
     const b = document.createElement('button');
-    b.textContent = 'Culto de ' + NOME_CULTO[c];
+    b.textContent = c === 'sabado' ? 'Roteiros' : 'Culto de ' + NOME_CULTO[c];
     b.onclick = () => abrirCulto(c);
     b.dataset.culto = c;
     abas.appendChild(b);
@@ -5292,7 +5292,7 @@ async function abrirCulto(culto){
   marcarAba(culto);
   mostrarPagina('lista');
 
-  document.getElementById('tituloLista').textContent = 'Roteiros — culto de ' + NOME_CULTO[culto];
+  document.getElementById('tituloLista').textContent = culto === 'sabado' ? 'Roteiros' : 'Roteiros — culto de ' + NOME_CULTO[culto];
   document.getElementById('subtituloLista').textContent =
     'Estes roteiros ficam disponíveis para o programa do culto baixar.';
   document.getElementById('listaRoteiros').innerHTML =
