@@ -42,7 +42,32 @@
   .hidden{display:none!important}
   .status{color:var(--suave);font-size:12px}
   .imprimir{display:none}
-  @media (max-width:760px){.c-p{width:auto}table,thead,tbody,tr,td{display:block}thead{display:none}tr{border:1px solid var(--borda);border-radius:10px;margin-bottom:10px;padding:6px}td{border:0}.c-h,.c-t,.c-a{width:auto}}
+  .rot{display:none}
+  @media (max-width:760px){
+    body{font-size:15px}
+    .topo{padding:12px 16px}.topo span:not(#quem){display:none}#quem{display:none}
+    .wrap{padding:12px 12px 90px}
+    .card{padding:14px;border-radius:12px}
+    /* barra de ações vira barra fixa embaixo */
+    .barra{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;border-radius:16px 16px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.08);padding:10px 12px calc(10px + env(safe-area-inset-bottom));flex-wrap:nowrap;gap:8px}
+    .barra .status{display:none}
+    .barra .btn{padding:9px 10px;font-size:13px}
+    .barra .t{display:none}
+    .campos{flex-direction:column;align-items:stretch!important}
+    .campos>div{width:auto!important;min-width:0!important}
+    .duas{display:flex;gap:10px}.duas>div{flex:1}
+    /* cada item vira um cartão */
+    .tabela{background:transparent!important;border:0!important;padding:0!important;overflow:visible!important}
+    table,tbody,tr,td{display:block}thead{display:none}
+    tr{background:#fff;border:1px solid var(--borda);border-radius:12px;margin-bottom:12px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;position:relative}
+    td{border:0;padding:0;width:auto!important}
+    td.c-m,td.c-p,td.c-o{grid-column:1 / -1}
+    td.c-a{grid-column:1 / -1;display:flex;justify-content:flex-end;gap:6px;padding-top:4px}
+    .rot{display:block;font-size:10.5px;font-weight:700;color:var(--suave);text-transform:uppercase;margin:0 0 3px}
+    tbody{counter-reset:item}tr{counter-increment:item}
+    tr::before{content:counter(item);position:absolute;top:-9px;left:12px;background:var(--azul);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 8px}
+    input,textarea{font-size:16px}
+  }
   @media print{
     body{background:#fff}.topo,.wrap>*:not(#paginaEditor),#paginaEditor>*:not(.imprimir){display:none!important}
     .imprimir{display:block}.imprimir h1{font-size:20px;margin:0 0 4px}.imprimir table td,.imprimir table th{border:1px solid #999;padding:5px 7px;font-size:12px}
@@ -76,22 +101,22 @@
 
   <!-- editor -->
   <div id="paginaEditor" class="hidden">
-    <div class="card linha">
+    <div class="card linha barra">
       <button class="btn" onclick="voltar()">‹ Voltar</button>
       <span class="status" id="status"></span><div class="esp"></div>
-      <button class="btn" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn" onclick="window.print()">🖨 <span class="t">Imprimir / </span>PDF</button>
       <button class="btn r" onclick="apagar()">Apagar</button>
       <button class="btn p" onclick="salvar()">Salvar</button>
     </div>
     <div class="card">
-      <div class="linha" style="align-items:flex-end">
+      <div class="linha campos" style="align-items:flex-end">
         <div style="flex:2;min-width:200px"><label>Nome do roteiro</label><input id="edNome" oninput="sujo()"></div>
         <div style="flex:2;min-width:200px"><label>Título (opcional)</label><input id="edTitulo" oninput="sujo()"></div>
         <div style="width:110px"><label>Começa às</label><input id="edInicio" type="time" value="19:30"></div>
         <button class="btn" onclick="recalcular()">↻ Recalcular horários</button>
       </div>
     </div>
-    <div class="card" style="padding:0;overflow:hidden">
+    <div class="card tabela" style="padding:0;overflow:hidden">
       <table><thead><tr><th class="c-h">Horário</th><th class="c-t">Tempo</th><th>Momento</th><th class="c-p">Participante</th><th>Obs.</th><th class="c-a"></th></tr></thead>
       <tbody id="corpo"></tbody></table>
     </div>
@@ -206,10 +231,10 @@ const valida = h => /^\d{1,2}:\d{2}$/.test(h || '');
 const minutos = t => { const m = String(t || '').match(/\d+/); return m ? +m[0] : 0; };
 const fmt = t => { t = ((t % 1440) + 1440) % 1440; return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0'); };
 const emMin = h => { const [a,b] = h.split(':').map(Number); return a*60+b; };
-const COLS = [['horario','c-h hora',false],['tempo','c-t',false],['momento','',true],['participante','c-p',true],['obs','',true]];
+const COLS = [['horario','c-h hora',false,'Horário'],['tempo','c-t',false,'Tempo'],['momento','c-m',true,'Momento'],['participante','c-p',true,'Participante'],['obs','c-o',true,'Obs.']];
 function desenhar(){
   const rows = ed.dados.rows;
-  $('corpo').innerHTML = rows.map((r, i) => `<tr>${COLS.map(([k, cls, area]) => `<td class="${cls.split(' ')[0]}">${area
+  $('corpo').innerHTML = rows.map((r, i) => `<tr>${COLS.map(([k, cls, area, rot]) => `<td class="${cls.split(' ')[0]}"><span class="rot">${rot}</span>${area
       ? `<textarea rows="1" data-i="${i}" data-k="${k}">${esc(r[k])}</textarea>`
       : `<input class="${cls.includes('hora')?'hora':''}" data-i="${i}" data-k="${k}" value="${esc(r[k])}" placeholder="${k==='horario'?'19:30':'5 min'}">`}</td>`).join('')}
     <td class="c-a"><button class="btn s" onclick="mover(${i},-1)" ${i?'':'disabled'}>↑</button> <button class="btn s" onclick="mover(${i},1)" ${i<rows.length-1?'':'disabled'}>↓</button> <button class="btn s r" onclick="remover(${i})">×</button></td></tr>`).join('');
