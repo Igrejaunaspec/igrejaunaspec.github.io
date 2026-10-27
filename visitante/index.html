@@ -84,7 +84,7 @@
   <!-- login -->
   <div id="paginaLogin" class="card login">
     <h2>Monte seu roteiro</h2>
-    <p class="dica">Seus roteiros ficam guardados na sua conta e <b>só você</b> consegue ver.</p>
+    <p class="dica">Seus roteiros ficam guardados na sua conta e só <b>você e a equipe da igreja</b> conseguem ver.</p>
     <div class="abas"><button id="abaEntrar" class="on" onclick="modo('entrar')">Entrar</button><button id="abaCriar" onclick="modo('criar')">Criar conta</button></div>
     <div id="campoNome" class="hidden"><label>Seu nome</label><input id="lNome" autocomplete="name"></div>
     <label>E-mail</label><input id="lEmail" type="email" autocomplete="username">
@@ -117,7 +117,7 @@
 
   <!-- lista -->
   <div id="paginaLista" class="hidden">
-    <div class="card linha"><div class="esp"><h2>Meus roteiros</h2><p class="dica">Só você vê estes roteiros.</p></div>
+    <div class="card linha"><div class="esp"><h2>Meus roteiros</h2><p class="dica" id="dicaLista">Só você e a equipe da igreja veem estes roteiros.</p></div>
       <button class="btn p" onclick="novo()">+ Novo roteiro</button></div>
     <div id="lista"></div>
   </div>
@@ -129,7 +129,7 @@
       <span class="status" id="status"></span><div class="esp"></div>
       <button class="btn" onclick="compartilhar()">🔗 <span class="t">Compartilhar</span></button>
       <button class="btn" onclick="window.print()">🖨 <span class="t">Imprimir / </span>PDF</button>
-      <button class="btn r" onclick="apagar()">Apagar</button>
+      <button class="btn r" id="btnApagar" onclick="apagar()">Apagar</button>
       <button class="btn p" onclick="salvar()">Salvar</button>
     </div>
     <div class="card">
@@ -153,7 +153,7 @@
 const SUPABASE_URL = 'https://sxzvdnwytbdhycwzbxji.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6rOzgGXVgobnNb-sy4rx9A_SGjR3v0r';
 const CHAVE = 'visitante.sessao';
-let sessao = null, modoLogin = 'entrar', roteiros = [], ed = null, timer = null;
+let sessao = null, modoLogin = 'entrar', roteiros = [], ed = null, timer = null, souAdmin = false, pessoas = {};
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -208,7 +208,7 @@ async function token(){
   }
   return sessao.access_token;
 }
-function sair(){ sessao = null; try{ localStorage.removeItem(CHAVE); }catch(e){} $('btnSair').classList.add('hidden'); $('quem').textContent = ''; mostrar('paginaLogin'); }
+function sair(){ sessao = null; souAdmin = false; pessoas = {}; try{ localStorage.removeItem(CHAVE); }catch(e){} $('btnSair').classList.add('hidden'); $('quem').textContent = ''; mostrar('paginaLogin'); }
 
 /* ---------- banco: SÓ a tabela roteiros_visitante (a regra do banco deixa cada pessoa ver só os seus) ---------- */
 async function api(caminho, o){
@@ -223,14 +223,39 @@ async function api(caminho, o){
 async function iniciar(){
   $('btnSair').classList.remove('hidden'); $('quem').textContent = sessao.email;
   mostrar('paginaLista'); $('lista').innerHTML = '<div class="card dica">Carregando…</div>';
-  try{ roteiros = await api('roteiros_visitante?select=*&order=atualizado_em.desc') || []; desenharLista(); }
+  try{
+    roteiros = await api('roteiros_visitante?select=*&order=atualizado_em.desc') || [];
+    souAdmin = false; pessoas = {};
+    try{ souAdmin = (await api('rpc/sou_admin', { method:'POST', body:{} })) === true; }catch(e){}
+    if(souAdmin){
+      const donos = [...new Set(roteiros.map(r => r.dono))];
+      if(donos.length){ try{ (await api(`perfis?select=id,nome,email&id=in.(${donos.join(',')})`) || []).forEach(p => pessoas[p.id] = p); }catch(e){} }
+      $('quem').textContent = sessao.email + ' · administrador';
+      $('dicaLista').textContent = 'Você é administrador: vê e edita também os roteiros de todos os visitantes.';
+    }
+    desenharLista();
+  }
   catch(e){ $('lista').innerHTML = `<div class="aviso">${esc(e.message)}</div>`; }
 }
+const meuId = () => { try{ return JSON.parse(atob(sessao.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub; }catch(e){ return ''; } };
+const ehMeu = r => !souAdmin || r.dono === meuId();
+function itemLista(r, i){
+  return `<div class="item" onclick="abrir(${i})">
+    <div class="esp"><div class="nome">${esc(r.nome)}${r.link_publico ? ' <span class="meta">· compartilhado</span>' : ''}</div><div class="meta">${(r.dados.rows||[]).length} ${(r.dados.rows||[]).length === 1 ? 'item' : 'itens'} · atualizado ${new Date(r.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
+    ${ehMeu(r) ? `<button class="btn s" onclick="event.stopPropagation();duplicar(${i})">Duplicar</button>` : ''}<button class="btn s p" onclick="event.stopPropagation();abrir(${i})">Abrir</button></div>`;
+}
 function desenharLista(){
+  if(souAdmin){
+    const meus = [], outros = {};
+    roteiros.forEach((r, i) => ehMeu(r) ? meus.push(i) : (outros[r.dono] = outros[r.dono] || []).push(i));
+    let h = meus.length ? meus.map(i => itemLista(roteiros[i], i)).join('') : '<div class="card dica">Você ainda não tem roteiros seus. Clique em <b>+ Novo roteiro</b>.</div>';
+    const grupos = Object.entries(outros);
+    h += `<div class="card" style="margin-top:18px"><h2 style="margin:0">Roteiros dos visitantes</h2><p class="dica" style="margin:4px 0 0">${grupos.length ? grupos.length + (grupos.length === 1 ? ' visitante' : ' visitantes') : 'Nenhum visitante criou roteiro ainda.'}</p></div>`;
+    h += grupos.map(([d, is]) => { const p = pessoas[d] || {}; return `<div style="margin:14px 0 6px;font-weight:700">${esc(p.nome || p.email || 'Visitante')} <span class="meta" style="font-weight:400">${esc(p.email && p.nome ? p.email : '')}</span></div>` + is.map(i => itemLista(roteiros[i], i)).join(''); }).join('');
+    $('lista').innerHTML = h; return;
+  }
   if(!roteiros.length){ $('lista').innerHTML = '<div class="card dica">Você ainda não tem roteiros. Clique em <b>+ Novo roteiro</b>.</div>'; return; }
-  $('lista').innerHTML = roteiros.map((r, i) => `<div class="item" onclick="abrir(${i})">
-    <div class="esp"><div class="nome">${esc(r.nome)}</div><div class="meta">${(r.dados.rows||[]).length} itens · atualizado ${new Date(r.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
-    <button class="btn s" onclick="event.stopPropagation();duplicar(${i})">Duplicar</button><button class="btn s p" onclick="event.stopPropagation();abrir(${i})">Abrir</button></div>`).join('');
+  $('lista').innerHTML = roteiros.map((r, i) => itemLista(r, i)).join('');
 }
 const vazia = () => ({ horario:'', tempo:'5 min', momento:'', participante:'', obs:'', cor:'' });
 const CORES = [['','Sem cor'],['#C00000','Vermelho'],['#0B5394','Azul'],['#FFC000','Amarelo'],['#2E8B57','Verde'],['#7B3FA0','Roxo'],['#E8700A','Laranja']];
@@ -255,7 +280,10 @@ function abrir(i){
   if(!Array.isArray(ed.dados.rows) || !ed.dados.rows.length) ed.dados.rows = [vazia()];
   $('edNome').value = ed.nome || ''; $('edTitulo').value = ed.titulo || '';
   const h = ed.dados.rows.map(r => r.horario).find(valida); if(h) $('edInicio').value = h;
-  $('status').textContent = ''; mostrar('paginaEditor'); desenhar();
+  const meu = ehMeu(ed), p = pessoas[ed.dono] || {};
+  $('btnApagar').classList.toggle('hidden', !meu);
+  $('status').textContent = meu ? '' : 'roteiro de ' + (p.nome || p.email || 'visitante') + ' (você está editando como administrador)';
+  mostrar('paginaEditor'); desenhar();
 }
 const valida = h => /^\d{1,2}:\d{2}$/.test(h || '');
 const minutos = t => { const m = String(t || '').match(/\d+/); return m ? +m[0] : 0; };
