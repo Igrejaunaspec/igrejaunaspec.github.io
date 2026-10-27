@@ -1404,6 +1404,15 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     </div>
 
     <!-- ---------- visualizadores (admin: quem pode ver qual roteiro) ---------- -->
+    <div id="paginaVisitantes" class="hidden">
+      <div class="card">
+        <h2>Visitantes</h2>
+        <p class="hint">Roteiros montados na área de visitante (<a href="/visitante" target="_blank" rel="noopener">igrejaunaspec.com/visitante</a>). Aqui é só para ver: os visitantes não têm acesso a nada do app.</p>
+      </div>
+      <div id="listaVisitantes"></div>
+      <div id="vistaVisitante" class="card hidden"></div>
+    </div>
+
     <div id="paginaVisualizadores" class="hidden">
       <div class="card">
         <h2>Visualizadores</h2>
@@ -2803,7 +2812,7 @@ async function api(caminho, opcoes){
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
 const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
   calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Agenda', medicos:'Médicos em Missão',
-  youtube:'YouTube', pessoas:'Pessoas', visualizadores:'Visualizadores', compartilhar:'Compartilhar' };
+  youtube:'YouTube', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
 function nomeAbaAtividade(caminho){
   if(/^formulario_schema/.test(caminho || '')){
@@ -4301,7 +4310,7 @@ const GRUPOS_MENU = [
   ['Culto', ['sexta', 'sabado', 'homiletico', 'escala']],
   ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'minhaagenda', 'agenda']],
   ['Comunidade', ['medicos', 'youtube']],
-  ['Acessos', ['pessoas', 'visualizadores', 'compartilhar']],
+  ['Acessos', ['pessoas', 'visualizadores', 'visitantes', 'compartilhar']],
 ];
 
 /* ícones de linha do menu lateral (no lugar de emojis) */
@@ -4319,6 +4328,7 @@ const ICONES_MENU_SVG = {
   youtube:'<rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>',
   pessoas:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
   visualizadores:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  visitantes:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="M17 3l3 3-3 3"/>',
   compartilhar:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   inicio:'<circle cx="12" cy="12" r="9.5"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/>',
   ponto:'<circle cx="12" cy="12" r="3"/>'
@@ -5103,6 +5113,12 @@ function montarAbas(){
     bv.onclick = () => abrirVisualizadores();
     bv.dataset.culto = 'visualizadores';
     abas.appendChild(bv);
+
+    const bvis = document.createElement('button');
+    bvis.textContent = 'Visitantes';
+    bvis.onclick = () => abrirVisitantes();
+    bvis.dataset.culto = 'visitantes';
+    abas.appendChild(bvis);
   }
 
   // Agendamentos e Calendario: liberados pra admin OU pra quem tiver o
@@ -5187,7 +5203,7 @@ if(document.readyState !== 'loading') aplicarModoCelular();
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js').catch(() => {}); }
 
 const ICONES_ABA = { calendario:'📅', agendamentos:'📝', agenda:'🖼️', youtube:'▶️', homiletico:'🎤', pastoral:'🗓️', minhaagenda:'👤', pessoas:'👥',
-  visualizadores:'👁️', compartilhar:'🔗', sexta:'📖', sabado:'📖' };
+  visualizadores:'👁️', visitantes:'🧳', compartilhar:'🔗', sexta:'📖', sabado:'📖' };
 function botoesAbas(){ return Array.from(document.querySelectorAll('#abasTopo button')); }
 function abaPorChave(k){ return botoesAbas().find(b => b.dataset.culto === k); }
 function ehAbaRoteiro(b){ return /^Culto de /.test(b.textContent); }
@@ -5722,6 +5738,7 @@ function mostrarPagina(qual){
   document.getElementById('paginaPessoas').classList.toggle('hidden',        qual !== 'pessoas');
   document.getElementById('paginaCompartilhar').classList.toggle('hidden',   qual !== 'compartilhar');
   document.getElementById('paginaVisualizadores').classList.toggle('hidden', qual !== 'visualizadores');
+  document.getElementById('paginaVisitantes').classList.toggle('hidden', qual !== 'visitantes');
   document.getElementById('paginaMeusRoteiros').classList.toggle('hidden',   qual !== 'meusRoteiros');
   document.getElementById('paginaAgendaLista').classList.toggle('hidden',    qual !== 'agendaLista');
   document.getElementById('paginaAgendaEditor').classList.toggle('hidden',   qual !== 'agendaEditor');
@@ -8564,6 +8581,58 @@ function desenharMeusRoteiros(lista){
 /* =====================================================================
    VISUALIZADORES (admin: quem pode ver qual roteiro, sem poder editar)
 ===================================================================== */
+/* ---------- Visitantes: admin vê (só leitura) os roteiros feitos na área de visitante ---------- */
+let visitantesRoteiros = [], visitantesPessoas = {};
+async function abrirVisitantes(){
+  if(sujo && !confirm('Você tem alterações não salvas. Sair do editor mesmo assim?')) return;
+  sujo = false; clearTimeout(autoSalvarTimer);
+  cultoAtual = 'visitantes'; marcarAba('visitantes'); mostrarPagina('visitantes');
+  document.getElementById('vistaVisitante').classList.add('hidden');
+  const el = document.getElementById('listaVisitantes');
+  el.innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
+  try{
+    visitantesRoteiros = await api('roteiros_visitante?select=id,dono,nome,titulo,dados,atualizado_em,link_publico&order=atualizado_em.desc') || [];
+    const donos = [...new Set(visitantesRoteiros.map(r => r.dono))];
+    visitantesPessoas = {};
+    if(donos.length){
+      const ps = await api(`perfis?select=id,nome,email&id=in.(${donos.join(',')})`) || [];
+      ps.forEach(p => visitantesPessoas[p.id] = p);
+    }
+    desenharVisitantes();
+  }catch(e){ el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; }
+}
+function desenharVisitantes(){
+  const el = document.getElementById('listaVisitantes');
+  if(!visitantesRoteiros.length){ el.innerHTML = '<div class="card"><div class="vazio">Nenhum visitante criou roteiro ainda.</div></div>'; return; }
+  const porDono = {};
+  visitantesRoteiros.forEach(r => (porDono[r.dono] = porDono[r.dono] || []).push(r));
+  el.innerHTML = Object.entries(porDono).map(([dono, lista]) => {
+    const p = visitantesPessoas[dono] || {};
+    return `<div class="card"><div class="nome" style="font-weight:700;font-size:15px;">${escapar(p.nome || p.email || 'Visitante')}</div>
+      <div class="meta" style="color:var(--muted2);font-size:12.5px;margin-bottom:10px;">${escapar(p.email || '')} · ${lista.length} ${lista.length === 1 ? 'roteiro' : 'roteiros'}</div>
+      ${lista.map(r => `<div class="lista-item" style="cursor:pointer;" onclick="verRoteiroVisitante('${r.id}')">
+        <div style="flex:1;min-width:0;"><div class="nome">${escapar(r.nome)}${r.link_publico ? ' <span class="badge">compartilhado</span>' : ''}</div>
+        <div class="meta">${((r.dados && r.dados.rows) || []).length} ${((r.dados && r.dados.rows) || []).length === 1 ? 'item' : 'itens'} · atualizado ${escapar(new Date(r.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}))}</div></div>
+        <button class="btn small primary" onclick="event.stopPropagation();verRoteiroVisitante('${r.id}')">Ver</button></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+function verRoteiroVisitante(id){
+  const r = visitantesRoteiros.find(x => x.id === id); if(!r) return;
+  const rows = (r.dados && r.dados.rows) || [];
+  const p = visitantesPessoas[r.dono] || {};
+  const v = document.getElementById('vistaVisitante');
+  v.innerHTML = `<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+      <button class="btn" onclick="document.getElementById('vistaVisitante').classList.add('hidden');document.getElementById('listaVisitantes').classList.remove('hidden')">‹ Voltar</button>
+      <div style="flex:1;"><h2 style="margin:0;">${escapar(r.titulo || r.nome)}</h2><p class="hint" style="margin:2px 0 0;">de ${escapar(p.nome || p.email || 'visitante')} · só leitura</p></div></div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <tr>${['Horário','Tempo','Momento','Participante','Obs.'].map(t => `<th style="text-align:left;padding:8px;border-bottom:1px solid var(--border);color:var(--muted2);font-size:11.5px;">${t}</th>`).join('')}</tr>
+      ${rows.map(x => `<tr style="${x.cor ? 'background:' + hexParaRgba(x.cor, .25) : ''}">${['horario','tempo','momento','participante','obs'].map(k => `<td style="padding:8px;border-bottom:1px solid var(--border);${k==='horario'?'font-weight:700;':''}">${escapar(x[k] || '')}</td>`).join('')}</tr>`).join('')}
+    </table></div>`;
+  document.getElementById('listaVisitantes').classList.add('hidden');
+  v.classList.remove('hidden');
+}
+
 async function abrirVisualizadores(){
   if(sujo && !confirm('Você tem alterações não salvas. Sair do editor mesmo assim?')) return;
   sujo = false;
