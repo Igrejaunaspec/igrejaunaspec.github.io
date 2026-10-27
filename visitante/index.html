@@ -40,6 +40,8 @@
   .abas button{flex:1;border:0;background:transparent;padding:8px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer;color:var(--suave)}
   .abas button.on{background:#fff;color:var(--azul);box-shadow:0 1px 2px rgba(0,0,0,.08)}
   .hidden{display:none!important}
+  .c-c{width:112px}
+  .cor-sel{font:inherit;font-size:12.5px;font-weight:700;border:1px solid var(--borda);border-radius:8px;padding:7px 6px;width:100%;cursor:pointer}
   .status{color:var(--suave);font-size:12px}
   .imprimir{display:none}
   .rot{display:none}
@@ -61,7 +63,7 @@
     table,tbody,tr,td{display:block}thead{display:none}
     tr{background:#fff;border:1px solid var(--borda);border-radius:12px;margin-bottom:12px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;position:relative}
     td{border:0;padding:0;width:auto!important}
-    td.c-m,td.c-p,td.c-o{grid-column:1 / -1}
+    td.c-m,td.c-p,td.c-o,td.c-c{grid-column:1 / -1}
     td.c-a{grid-column:1 / -1;display:flex;justify-content:flex-end;gap:6px;padding-top:4px}
     .rot{display:block;font-size:10.5px;font-weight:700;color:var(--suave);text-transform:uppercase;margin:0 0 3px}
     tbody{counter-reset:item}tr{counter-increment:item}
@@ -92,6 +94,27 @@
     <div id="msgLogin"></div>
   </div>
 
+  <!-- visualização pública (link compartilhado) -->
+  <div id="paginaPublica" class="hidden">
+    <div class="card"><h2 id="pubTitulo">Roteiro</h2><p class="dica" id="pubMeta">Carregando…</p></div>
+    <div id="pubLista"></div>
+  </div>
+
+  <!-- janela de compartilhar -->
+  <div id="janelaComp" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="card" style="max-width:460px;width:100%;margin:0">
+      <h2>Compartilhar roteiro</h2>
+      <p class="dica">Quem tiver este link vê o roteiro <b>em tempo real</b> (só para ver, não edita). Ninguém mais consegue achar o roteiro.</p>
+      <input id="compLink" readonly style="margin-top:12px" onclick="this.select()">
+      <div class="linha" style="margin-top:12px">
+        <button class="btn p" onclick="copiarLink()" id="btnCopiar">Copiar link</button>
+        <button class="btn" onclick="enviarWhats()">WhatsApp</button>
+        <div class="esp"></div>
+        <button class="btn r" onclick="pararComp()">Parar de compartilhar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- lista -->
   <div id="paginaLista" class="hidden">
     <div class="card linha"><div class="esp"><h2>Meus roteiros</h2><p class="dica">Só você vê estes roteiros.</p></div>
@@ -104,6 +127,7 @@
     <div class="card linha barra">
       <button class="btn" onclick="voltar()">‹ Voltar</button>
       <span class="status" id="status"></span><div class="esp"></div>
+      <button class="btn" onclick="compartilhar()">🔗 <span class="t">Compartilhar</span></button>
       <button class="btn" onclick="window.print()">🖨 <span class="t">Imprimir / </span>PDF</button>
       <button class="btn r" onclick="apagar()">Apagar</button>
       <button class="btn p" onclick="salvar()">Salvar</button>
@@ -117,7 +141,7 @@
       </div>
     </div>
     <div class="card tabela" style="padding:0;overflow:hidden">
-      <table><thead><tr><th class="c-h">Horário</th><th class="c-t">Tempo</th><th>Momento</th><th class="c-p">Participante</th><th>Obs.</th><th class="c-a"></th></tr></thead>
+      <table><thead><tr><th class="c-c">Cor</th><th class="c-h">Horário</th><th class="c-t">Tempo</th><th>Momento</th><th class="c-p">Participante</th><th>Obs.</th><th class="c-a"></th></tr></thead>
       <tbody id="corpo"></tbody></table>
     </div>
     <div class="linha"><button class="btn" onclick="addLinha()">+ Adicionar linha</button><div class="esp"></div><span class="status" id="total"></span></div>
@@ -134,7 +158,7 @@ let sessao = null, modoLogin = 'entrar', roteiros = [], ed = null, timer = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function aviso(el, txt, ok){ $(el).innerHTML = txt ? `<div class="aviso ${ok?'ok':''}">${esc(txt)}</div>` : ''; }
-function mostrar(p){ ['paginaLogin','paginaLista','paginaEditor'].forEach(x => $(x).classList.toggle('hidden', x !== p)); }
+function mostrar(p){ ['paginaLogin','paginaLista','paginaEditor','paginaPublica'].forEach(x => $(x).classList.toggle('hidden', x !== p)); }
 
 /* ---------- login (mesmas contas do Supabase; sem nenhum acesso ao app da igreja) ---------- */
 function modo(m){
@@ -208,7 +232,13 @@ function desenharLista(){
     <div class="esp"><div class="nome">${esc(r.nome)}</div><div class="meta">${(r.dados.rows||[]).length} itens · atualizado ${new Date(r.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
     <button class="btn s" onclick="event.stopPropagation();duplicar(${i})">Duplicar</button><button class="btn s p" onclick="event.stopPropagation();abrir(${i})">Abrir</button></div>`).join('');
 }
-const vazia = () => ({ horario:'', tempo:'5 min', momento:'', participante:'', obs:'' });
+const vazia = () => ({ horario:'', tempo:'5 min', momento:'', participante:'', obs:'', cor:'' });
+const CORES = [['','Sem cor'],['#C00000','Vermelho'],['#0B5394','Azul'],['#FFC000','Amarelo'],['#2E8B57','Verde'],['#7B3FA0','Roxo'],['#E8700A','Laranja']];
+const tom = (c, a) => { if(!c) return ''; const n = parseInt(c.slice(1), 16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; };
+function seletorCor(i, c){
+  return `<select class="cor-sel" onchange="mudarCor(${i}, this.value)" style="background:${c || '#fff'};color:${c && c !== '#FFC000' ? '#fff' : 'var(--texto)'}">${CORES.map(([v, n]) => `<option value="${v}" ${v === (c||'') ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+}
+function mudarCor(i, c){ ed.dados.rows[i].cor = c; desenhar(); sujo(); }
 async function novo(){
   try{ const r = await api('roteiros_visitante', { method:'POST', body:{ nome:'Meu roteiro', dados:{ rows:[vazia()] } } }); roteiros.unshift(r[0]); abrir(0); }
   catch(e){ alert(e.message); }
@@ -234,7 +264,7 @@ const emMin = h => { const [a,b] = h.split(':').map(Number); return a*60+b; };
 const COLS = [['horario','c-h hora',false,'Horário'],['tempo','c-t',false,'Tempo'],['momento','c-m',true,'Momento'],['participante','c-p',true,'Participante'],['obs','c-o',true,'Obs.']];
 function desenhar(){
   const rows = ed.dados.rows;
-  $('corpo').innerHTML = rows.map((r, i) => `<tr>${COLS.map(([k, cls, area, rot]) => `<td class="${cls.split(' ')[0]}"><span class="rot">${rot}</span>${area
+  $('corpo').innerHTML = rows.map((r, i) => `<tr style="background:${tom(r.cor, .30)}"><td class="c-c"><span class="rot">Cor</span>${seletorCor(i, r.cor)}</td>${COLS.map(([k, cls, area, rot]) => `<td class="${cls.split(' ')[0]}"><span class="rot">${rot}</span>${area
       ? `<textarea rows="1" data-i="${i}" data-k="${k}">${esc(r[k])}</textarea>`
       : `<input class="${cls.includes('hora')?'hora':''}" data-i="${i}" data-k="${k}" value="${esc(r[k])}" placeholder="${k==='horario'?'19:30':'5 min'}">`}</td>`).join('')}
     <td class="c-a"><button class="btn s" onclick="mover(${i},-1)" ${i?'':'disabled'}>↑</button> <button class="btn s" onclick="mover(${i},1)" ${i<rows.length-1?'':'disabled'}>↓</button> <button class="btn s r" onclick="remover(${i})">×</button></td></tr>`).join('');
@@ -287,11 +317,62 @@ function montarImpressao(){
   if(!ed) return;
   $('imprimir').innerHTML = `<h1>${esc($('edTitulo').value || $('edNome').value)}</h1><p style="margin:0 0 10px;color:#555">${esc($('total').textContent)}</p>
     <table><tr><th>Horário</th><th>Tempo</th><th>Momento</th><th>Participante</th><th>Obs.</th></tr>
-    ${ed.dados.rows.map(r => `<tr><td>${esc(r.horario)}</td><td>${esc(r.tempo)}</td><td>${esc(r.momento)}</td><td>${esc(r.participante)}</td><td>${esc(r.obs)}</td></tr>`).join('')}</table>`;
+    ${ed.dados.rows.map(r => `<tr style="background:${tom(r.cor,.30)};-webkit-print-color-adjust:exact;print-color-adjust:exact"><td>${esc(r.horario)}</td><td>${esc(r.tempo)}</td><td>${esc(r.momento)}</td><td>${esc(r.participante)}</td><td>${esc(r.obs)}</td></tr>`).join('')}</table>`;
 }
 
-try{ sessao = JSON.parse(localStorage.getItem(CHAVE)); }catch(e){}
-if(sessao && sessao.refresh_token) iniciar(); else mostrar('paginaLogin');
+/* ---------- compartilhar (link só de leitura, atualiza sozinho) ---------- */
+const linkDe = t => location.origin + location.pathname + '?v=' + t;
+async function compartilhar(){
+  await salvar(true);
+  try{
+    if(!ed.link_publico){
+      const tok = crypto.randomUUID();
+      await api(`roteiros_visitante?id=eq.${ed.id}`, { method:'PATCH', prefer:'return=minimal', body:{ link_publico: tok } });
+      ed.link_publico = tok; const k = roteiros.findIndex(r => r.id === ed.id); if(k >= 0) roteiros[k].link_publico = tok;
+    }
+    $('compLink').value = linkDe(ed.link_publico); $('btnCopiar').textContent = 'Copiar link';
+    $('janelaComp').classList.remove('hidden');
+  }catch(e){ alert('Não consegui criar o link: ' + e.message); }
+}
+async function copiarLink(){
+  try{ await navigator.clipboard.writeText($('compLink').value); }catch(e){ $('compLink').select(); document.execCommand('copy'); }
+  $('btnCopiar').textContent = 'Copiado ✓';
+}
+function enviarWhats(){ window.open('https://wa.me/?text=' + encodeURIComponent((ed.titulo || ed.nome) + ': ' + $('compLink').value), '_blank'); }
+async function pararComp(){
+  if(!confirm('Parar de compartilhar? O link atual deixa de funcionar.')) return;
+  try{
+    await api(`roteiros_visitante?id=eq.${ed.id}`, { method:'PATCH', prefer:'return=minimal', body:{ link_publico: null } });
+    ed.link_publico = null; const k = roteiros.findIndex(r => r.id === ed.id); if(k >= 0) roteiros[k].link_publico = null;
+    $('janelaComp').classList.add('hidden');
+  }catch(e){ alert(e.message); }
+}
+async function verPublico(tok){
+  mostrar('paginaPublica');
+  const carregar = async () => {
+    try{
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/roteiro_visitante_publico`, { method:'POST',
+        headers:{ apikey: SUPABASE_KEY, 'Content-Type':'application/json' }, body: JSON.stringify({ p_link: tok }) });
+      const l = r.ok ? await r.json() : [];
+      if(!l.length){ $('pubTitulo').textContent = 'Roteiro indisponível'; $('pubMeta').textContent = 'Este link não existe mais ou deixou de ser compartilhado.'; $('pubLista').innerHTML = ''; return; }
+      const x = l[0], rows = (x.dados && x.dados.rows) || [];
+      $('pubTitulo').textContent = x.titulo || x.nome; document.title = (x.titulo || x.nome) + ' · Roteiro';
+      const t = rows.reduce((s, r) => s + minutos(r.tempo), 0);
+      $('pubMeta').textContent = `${rows.length} itens · ${Math.floor(t/60) ? Math.floor(t/60)+'h' : ''}${t%60}min · atualiza sozinho · última mudança ${new Date(x.atualizado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+      $('pubLista').innerHTML = rows.filter(r => r.momento || r.participante || r.obs).map(r => `<div class="item" style="cursor:default;align-items:flex-start;${r.cor ? `background:${tom(r.cor,.22)};border-left:5px solid ${r.cor}` : ''}">
+        <div style="min-width:64px"><div class="hora" style="font-size:16px">${esc(r.horario)}</div><div class="meta">${esc(r.tempo)}</div></div>
+        <div class="esp"><div class="nome">${esc(r.momento)}</div>${r.participante ? `<div class="meta" style="font-size:13px">${esc(r.participante)}</div>` : ''}${r.obs ? `<div class="meta" style="margin-top:3px;font-style:italic">${esc(r.obs)}</div>` : ''}</div></div>`).join('');
+    }catch(e){}
+  };
+  await carregar(); setInterval(carregar, 5000);
+}
+
+const tokPublico = new URLSearchParams(location.search).get('v');
+if(tokPublico){ document.querySelector('.topo b').textContent = 'Roteiro'; verPublico(tokPublico); }
+else{
+  try{ sessao = JSON.parse(localStorage.getItem(CHAVE)); }catch(e){}
+  if(sessao && sessao.refresh_token) iniciar(); else mostrar('paginaLogin');
+}
 </script>
 </body>
 </html>
