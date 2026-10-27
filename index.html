@@ -1407,7 +1407,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="paginaVisitantes" class="hidden">
       <div class="card">
         <h2>Visitantes</h2>
-        <p class="hint">Roteiros montados na área de visitante (<a href="/visitante" target="_blank" rel="noopener">igrejaunaspec.com/visitante</a>). Aqui é só para ver: os visitantes não têm acesso a nada do app.</p>
+        <p class="hint">Roteiros montados na área de visitante (<a href="/visitante" target="_blank" rel="noopener">igrejaunaspec.com/visitante</a>). Você pode abrir e editar os roteiros; os visitantes não têm acesso a nada do app.</p>
       </div>
       <div id="listaVisitantes"></div>
       <div id="vistaVisitante" class="card hidden"></div>
@@ -8617,20 +8617,55 @@ function desenharVisitantes(){
     </div>`;
   }).join('');
 }
+const CORES_VIS = [['','Sem cor'],['#C00000','Vermelho'],['#0B5394','Azul'],['#FFC000','Amarelo'],['#2E8B57','Verde'],['#7B3FA0','Roxo'],['#E8700A','Laranja']];
+const CAMPOS_VIS = [['horario','Horário'],['tempo','Tempo'],['momento','Momento'],['participante','Participante'],['obs','Obs.']];
+let visEdit = null;
 function verRoteiroVisitante(id){
   const r = visitantesRoteiros.find(x => x.id === id); if(!r) return;
-  const rows = (r.dados && r.dados.rows) || [];
-  const p = visitantesPessoas[r.dono] || {};
-  const v = document.getElementById('vistaVisitante');
-  v.innerHTML = `<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-      <button class="btn" onclick="document.getElementById('vistaVisitante').classList.add('hidden');document.getElementById('listaVisitantes').classList.remove('hidden')">‹ Voltar</button>
-      <div style="flex:1;"><h2 style="margin:0;">${escapar(r.titulo || r.nome)}</h2><p class="hint" style="margin:2px 0 0;">de ${escapar(p.nome || p.email || 'visitante')} · só leitura</p></div></div>
-    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13.5px;">
-      <tr>${['Horário','Tempo','Momento','Participante','Obs.'].map(t => `<th style="text-align:left;padding:8px;border-bottom:1px solid var(--border);color:var(--muted2);font-size:11.5px;">${t}</th>`).join('')}</tr>
-      ${rows.map(x => `<tr style="${x.cor ? 'background:' + hexParaRgba(x.cor, .25) : ''}">${['horario','tempo','momento','participante','obs'].map(k => `<td style="padding:8px;border-bottom:1px solid var(--border);${k==='horario'?'font-weight:700;':''}">${escapar(x[k] || '')}</td>`).join('')}</tr>`).join('')}
-    </table></div>`;
+  visEdit = { id, titulo: r.titulo || r.nome, rows: JSON.parse(JSON.stringify((r.dados && r.dados.rows) || [])), sujo: false };
+  desenharEdicaoVisitante();
   document.getElementById('listaVisitantes').classList.add('hidden');
-  v.classList.remove('hidden');
+  document.getElementById('vistaVisitante').classList.remove('hidden');
+}
+function desenharEdicaoVisitante(){
+  const r = visitantesRoteiros.find(x => x.id === visEdit.id) || {};
+  const p = visitantesPessoas[r.dono] || {};
+  const inp = 'width:100%;box-sizing:border-box;border:1px solid transparent;background:transparent;padding:6px;font:inherit;border-radius:6px;';
+  document.getElementById('vistaVisitante').innerHTML = `<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+      <button class="btn" onclick="fecharEdicaoVisitante()">‹ Voltar</button>
+      <div style="flex:1;min-width:200px;"><input value="${escapar(visEdit.titulo)}" oninput="visEdit.titulo=this.value;marcarVisSujo()" style="${inp}font-size:18px;font-weight:700;border-color:var(--border);">
+      <p class="hint" style="margin:2px 0 0;">de ${escapar(p.nome || p.email || 'visitante')} · as alterações aparecem para o visitante</p></div>
+      <span id="visStatus" class="hint"></span>
+      <button class="btn primary" id="visSalvar" onclick="salvarEdicaoVisitante()" ${visEdit.sujo ? '' : 'disabled'}>Salvar</button></div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <tr>${CAMPOS_VIS.map(([,t]) => `<th style="text-align:left;padding:6px;border-bottom:1px solid var(--border);color:var(--muted2);font-size:11.5px;">${t}</th>`).join('')}<th style="border-bottom:1px solid var(--border);color:var(--muted2);font-size:11.5px;text-align:left;">Cor</th><th style="border-bottom:1px solid var(--border);"></th></tr>
+      ${visEdit.rows.map((x, i) => `<tr style="${x.cor ? 'background:' + hexParaRgba(x.cor, .25) : ''}">
+        ${CAMPOS_VIS.map(([k]) => `<td style="padding:2px;border-bottom:1px solid var(--border);"><input value="${escapar(x[k] || '')}" oninput="visEdit.rows[${i}]['${k}']=this.value;marcarVisSujo()" onfocus="this.style.borderColor='var(--border)'" onblur="this.style.borderColor='transparent'" style="${inp}${k==='horario'?'font-weight:700;':''}"></td>`).join('')}
+        <td style="padding:2px;border-bottom:1px solid var(--border);"><select onchange="visEdit.rows[${i}].cor=this.value;marcarVisSujo();desenharEdicaoVisitante()" style="padding:5px;min-width:100px;border-radius:6px;border:1px solid var(--border);">${CORES_VIS.map(([v,n]) => `<option value="${v}" ${v === (x.cor||'') ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
+        <td style="padding:2px;border-bottom:1px solid var(--border);white-space:nowrap;">
+          <button class="btn small" title="Subir" onclick="moverLinhaVis(${i},-1)">↑</button><button class="btn small" title="Descer" onclick="moverLinhaVis(${i},1)">↓</button><button class="btn small" title="Excluir linha" onclick="visEdit.rows.splice(${i},1);marcarVisSujo();desenharEdicaoVisitante()">✕</button></td></tr>`).join('')}
+    </table></div>
+    <button class="btn" style="margin-top:10px;" onclick="visEdit.rows.push({});marcarVisSujo();desenharEdicaoVisitante()">+ Adicionar linha</button>`;
+}
+function moverLinhaVis(i, d){ const j = i + d; if(j < 0 || j >= visEdit.rows.length) return; [visEdit.rows[i], visEdit.rows[j]] = [visEdit.rows[j], visEdit.rows[i]]; marcarVisSujo(); desenharEdicaoVisitante(); }
+function marcarVisSujo(){ visEdit.sujo = true; const b = document.getElementById('visSalvar'); if(b) b.disabled = false; const s = document.getElementById('visStatus'); if(s) s.textContent = 'Alterações não salvas'; }
+async function salvarEdicaoVisitante(){
+  const s = document.getElementById('visStatus'); s.textContent = 'Salvando...';
+  try{
+    const r = visitantesRoteiros.find(x => x.id === visEdit.id);
+    const dados = Object.assign({}, r.dados || {}, { rows: visEdit.rows });
+    const res = await api(`roteiros_visitante?id=eq.${visEdit.id}`, { method:'PATCH', body:{ titulo: visEdit.titulo, dados, atualizado_em: new Date().toISOString() } });
+    if(!res || !res.length) throw new Error('Sem permissão para salvar. Rode a regra de edição no Supabase.');
+    Object.assign(r, res[0]); visEdit.sujo = false;
+    document.getElementById('visSalvar').disabled = true; s.textContent = 'Salvo ✓';
+  }catch(e){ s.textContent = 'Erro: ' + e.message; }
+}
+function fecharEdicaoVisitante(){
+  if(visEdit && visEdit.sujo && !confirm('Há alterações não salvas. Sair mesmo assim?')) return;
+  visEdit = null;
+  document.getElementById('vistaVisitante').classList.add('hidden');
+  document.getElementById('listaVisitantes').classList.remove('hidden');
+  desenharVisitantes();
 }
 
 async function abrirVisualizadores(){
