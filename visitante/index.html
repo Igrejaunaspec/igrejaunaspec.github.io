@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montar roteiro · Igreja Adventista UNASP EC</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/icon-192.png">
+<style>
+  :root{--azul:#1D3A5C;--dourado:#E2A33B;--fundo:#F2F4F7;--borda:#DDE1E8;--texto:#1f2937;--suave:#5B6879;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fundo);color:var(--texto);font-size:14px}
+  .topo{background:var(--azul);color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
+  .topo b{font-size:16px}.topo span{opacity:.7;font-size:12.5px}.topo .esp{flex:1}
+  .topo button{background:rgba(255,255,255,.12);color:#fff;border:0;border-radius:8px;padding:7px 12px;font-weight:600;cursor:pointer}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:18px;margin-bottom:14px}
+  h2{margin:0 0 4px;font-size:17px}.dica{color:var(--suave);font-size:12.5px;margin:0}
+  label{display:block;font-size:11px;font-weight:700;color:var(--suave);text-transform:uppercase;margin:10px 0 5px}
+  input,textarea{width:100%;font:inherit;border:1px solid var(--borda);border-radius:8px;padding:8px 9px;background:#fff;color:var(--texto)}
+  input:focus,textarea:focus{outline:2px solid #4A7BB5;border-color:transparent}
+  textarea{resize:none;overflow:hidden;min-height:34px}
+  .btn{font:inherit;font-weight:600;font-size:13px;border:1px solid var(--borda);background:#fff;border-radius:9px;padding:8px 13px;cursor:pointer;color:var(--texto)}
+  .btn.p{background:var(--azul);color:#fff;border-color:var(--azul);font-weight:700}
+  .btn.s{padding:4px 9px;font-size:12px;border-radius:7px}
+  .btn.r{color:#c0392b}
+  .linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .esp{flex:1}
+  .item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--borda);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
+  .item:hover{border-color:#4A7BB5}.item .nome{font-weight:700;font-size:14.5px}.item .meta{color:var(--suave);font-size:12px}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11px;color:var(--suave);text-align:left;padding:9px 6px;background:#F7F8FA;border-bottom:1px solid var(--borda)}
+  td{padding:6px;vertical-align:top;border-bottom:1px solid #eef0f4}
+  .c-h{width:84px}.c-t{width:86px}.c-p{width:170px}.c-a{width:98px;white-space:nowrap}
+  .hora{font-weight:700;font-family:ui-monospace,Menlo,monospace}
+  .aviso{background:#fdecea;color:#a12;border-radius:8px;padding:9px 12px;font-size:13px;margin-top:10px}
+  .ok{background:#e8f5ec;color:#1b6b38}
+  .login{max-width:380px;margin:50px auto}
+  .abas{display:flex;background:#EEF0F4;border-radius:10px;padding:4px;margin:14px 0 4px}
+  .abas button{flex:1;border:0;background:transparent;padding:8px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer;color:var(--suave)}
+  .abas button.on{background:#fff;color:var(--azul);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .hidden{display:none!important}
+  .status{color:var(--suave);font-size:12px}
+  .imprimir{display:none}
+  @media (max-width:760px){.c-p{width:auto}table,thead,tbody,tr,td{display:block}thead{display:none}tr{border:1px solid var(--borda);border-radius:10px;margin-bottom:10px;padding:6px}td{border:0}.c-h,.c-t,.c-a{width:auto}}
+  @media print{
+    body{background:#fff}.topo,.wrap>*:not(#paginaEditor),#paginaEditor>*:not(.imprimir){display:none!important}
+    .imprimir{display:block}.imprimir h1{font-size:20px;margin:0 0 4px}.imprimir table td,.imprimir table th{border:1px solid #999;padding:5px 7px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="topo"><b>Montar roteiro</b><span>Igreja Adventista UNASP EC · área de visitante</span><div class="esp"></div>
+  <span id="quem"></span><button id="btnSair" class="hidden" onclick="sair()">Sair</button></div>
+
+<div class="wrap">
+  <!-- login -->
+  <div id="paginaLogin" class="card login">
+    <h2>Monte seu roteiro</h2>
+    <p class="dica">Seus roteiros ficam guardados na sua conta e <b>só você</b> consegue ver.</p>
+    <div class="abas"><button id="abaEntrar" class="on" onclick="modo('entrar')">Entrar</button><button id="abaCriar" onclick="modo('criar')">Criar conta</button></div>
+    <div id="campoNome" class="hidden"><label>Seu nome</label><input id="lNome" autocomplete="name"></div>
+    <label>E-mail</label><input id="lEmail" type="email" autocomplete="username">
+    <div id="campoSenha"><label>Senha</label><input id="lSenha" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()"></div>
+    <div style="margin-top:14px" class="linha"><button class="btn p" id="btnEntrar" onclick="entrar()" style="flex:1">Entrar</button></div>
+    <p style="margin:12px 0 0"><a href="#" onclick="modo('recuperar');return false" id="linkEsqueci">Esqueci minha senha</a></p>
+    <div id="msgLogin"></div>
+  </div>
+
+  <!-- lista -->
+  <div id="paginaLista" class="hidden">
+    <div class="card linha"><div class="esp"><h2>Meus roteiros</h2><p class="dica">Só você vê estes roteiros.</p></div>
+      <button class="btn p" onclick="novo()">+ Novo roteiro</button></div>
+    <div id="lista"></div>
+  </div>
+
+  <!-- editor -->
+  <div id="paginaEditor" class="hidden">
+    <div class="card linha">
+      <button class="btn" onclick="voltar()">‹ Voltar</button>
+      <span class="status" id="status"></span><div class="esp"></div>
+      <button class="btn" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn r" onclick="apagar()">Apagar</button>
+      <button class="btn p" onclick="salvar()">Salvar</button>
+    </div>
+    <div class="card">
+      <div class="linha" style="align-items:flex-end">
+        <div style="flex:2;min-width:200px"><label>Nome do roteiro</label><input id="edNome" oninput="sujo()"></div>
+        <div style="flex:2;min-width:200px"><label>Título (opcional)</label><input id="edTitulo" oninput="sujo()"></div>
+        <div style="width:110px"><label>Começa às</label><input id="edInicio" type="time" value="19:30"></div>
+        <button class="btn" onclick="recalcular()">↻ Recalcular horários</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table><thead><tr><th class="c-h">Horário</th><th class="c-t">Tempo</th><th>Momento</th><th class="c-p">Participante</th><th>Obs.</th><th class="c-a"></th></tr></thead>
+      <tbody id="corpo"></tbody></table>
+    </div>
+    <div class="linha"><button class="btn" onclick="addLinha()">+ Adicionar linha</button><div class="esp"></div><span class="status" id="total"></span></div>
+    <div class="imprimir" id="imprimir"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sxzvdnwytbdhycwzbxji.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6rOzgGXVgobnNb-sy4rx9A_SGjR3v0r';
+const CHAVE = 'visitante.sessao';
+let sessao = null, modoLogin = 'entrar', roteiros = [], ed = null, timer = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function aviso(el, txt, ok){ $(el).innerHTML = txt ? `<div class="aviso ${ok?'ok':''}">${esc(txt)}</div>` : ''; }
+function mostrar(p){ ['paginaLogin','paginaLista','paginaEditor'].forEach(x => $(x).classList.toggle('hidden', x !== p)); }
+
+/* ---------- login (mesmas contas do Supabase; sem nenhum acesso ao app da igreja) ---------- */
+function modo(m){
+  modoLogin = m;
+  $('abaEntrar').classList.toggle('on', m === 'entrar'); $('abaCriar').classList.toggle('on', m === 'criar');
+  $('campoNome').classList.toggle('hidden', m !== 'criar');
+  $('campoSenha').classList.toggle('hidden', m === 'recuperar');
+  $('btnEntrar').textContent = m === 'criar' ? 'Criar conta' : m === 'recuperar' ? 'Enviar link para trocar a senha' : 'Entrar';
+  aviso('msgLogin', '');
+}
+async function auth(caminho, corpo){
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/${caminho}`, { method:'POST', headers:{ 'Content-Type':'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify(corpo) });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.msg || j.error_description || j.message || 'Não deu certo. Tente de novo.');
+  return j;
+}
+function guardar(j){
+  sessao = { access_token: j.access_token, refresh_token: j.refresh_token, expira: Date.now() + (j.expires_in || 3600) * 1000 - 60000, email: (j.user||{}).email || '' };
+  try{ localStorage.setItem(CHAVE, JSON.stringify(sessao)); }catch(e){}
+}
+async function entrar(){
+  const email = $('lEmail').value.trim(), senha = $('lSenha').value;
+  try{
+    if(modoLogin === 'recuperar'){
+      await auth('recover', { email }); aviso('msgLogin', 'Se esse e-mail tiver conta, enviamos um link para trocar a senha.', true); return;
+    }
+    if(!email || !senha) return aviso('msgLogin', 'Preencha e-mail e senha.');
+    if(modoLogin === 'criar'){
+      if(senha.length < 6) return aviso('msgLogin', 'A senha precisa ter pelo menos 6 caracteres.');
+      const j = await auth('signup', { email, password: senha, data: { nome: $('lNome').value.trim() || email, visitante: true } });
+      if(!j.access_token){ aviso('msgLogin', 'Conta criada! Confira seu e-mail para confirmar e depois entre.', true); modo('entrar'); return; }
+      guardar(j);
+    } else {
+      guardar(await auth('token?grant_type=password', { email, password: senha }));
+    }
+    iniciar();
+  }catch(e){
+    const m = e.message.toLowerCase();
+    aviso('msgLogin', m.includes('invalid login') ? 'E-mail ou senha incorretos.' : m.includes('already') ? 'Esse e-mail já tem conta. Use a aba Entrar.' : e.message);
+  }
+}
+async function token(){
+  if(!sessao) throw new Error('Entre de novo.');
+  if(Date.now() > sessao.expira){
+    try{ guardar(await auth('token?grant_type=refresh_token', { refresh_token: sessao.refresh_token })); }
+    catch(e){ sair(); throw new Error('Sua sessão expirou. Entre de novo.'); }
+  }
+  return sessao.access_token;
+}
+function sair(){ sessao = null; try{ localStorage.removeItem(CHAVE); }catch(e){} $('btnSair').classList.add('hidden'); $('quem').textContent = ''; mostrar('paginaLogin'); }
+
+/* ---------- banco: SÓ a tabela roteiros_visitante (a regra do banco deixa cada pessoa ver só os seus) ---------- */
+async function api(caminho, o){
+  o = o || {};
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${caminho}`, { method: o.method || 'GET',
+    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + await token(), 'Content-Type':'application/json', Prefer: o.prefer || 'return=representation' },
+    body: o.body ? JSON.stringify(o.body) : undefined });
+  if(!r.ok){ const j = await r.json().catch(() => ({})); throw new Error(j.message || 'Erro ao salvar.'); }
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+
+async function iniciar(){
+  $('btnSair').classList.remove('hidden'); $('quem').textContent = sessao.email;
+  mostrar('paginaLista'); $('lista').innerHTML = '<div class="card dica">Carregando…</div>';
+  try{ roteiros = await api('roteiros_visitante?select=*&order=atualizado_em.desc') || []; desenharLista(); }
+  catch(e){ $('lista').innerHTML = `<div class="aviso">${esc(e.message)}</div>`; }
+}
+function desenharLista(){
+  if(!roteiros.length){ $('lista').innerHTML = '<div class="card dica">Você ainda não tem roteiros. Clique em <b>+ Novo roteiro</b>.</div>'; return; }
+  $('lista').innerHTML = roteiros.map((r, i) => `<div class="item" onclick="abrir(${i})">
+    <div class="esp"><div class="nome">${esc(r.nome)}</div><div class="meta">${(r.dados.rows||[]).length} itens · atualizado ${new Date(r.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
+    <button class="btn s" onclick="event.stopPropagation();duplicar(${i})">Duplicar</button><button class="btn s p" onclick="event.stopPropagation();abrir(${i})">Abrir</button></div>`).join('');
+}
+const vazia = () => ({ horario:'', tempo:'5 min', momento:'', participante:'', obs:'' });
+async function novo(){
+  try{ const r = await api('roteiros_visitante', { method:'POST', body:{ nome:'Meu roteiro', dados:{ rows:[vazia()] } } }); roteiros.unshift(r[0]); abrir(0); }
+  catch(e){ alert(e.message); }
+}
+async function duplicar(i){
+  const o = roteiros[i];
+  try{ const r = await api('roteiros_visitante', { method:'POST', body:{ nome:o.nome + ' (cópia)', titulo:o.titulo, dados:o.dados } }); roteiros.unshift(r[0]); desenharLista(); }
+  catch(e){ alert(e.message); }
+}
+
+/* ---------- editor ---------- */
+function abrir(i){
+  ed = JSON.parse(JSON.stringify(roteiros[i]));
+  if(!Array.isArray(ed.dados.rows) || !ed.dados.rows.length) ed.dados.rows = [vazia()];
+  $('edNome').value = ed.nome || ''; $('edTitulo').value = ed.titulo || '';
+  const h = ed.dados.rows.map(r => r.horario).find(valida); if(h) $('edInicio').value = h;
+  $('status').textContent = ''; mostrar('paginaEditor'); desenhar();
+}
+const valida = h => /^\d{1,2}:\d{2}$/.test(h || '');
+const minutos = t => { const m = String(t || '').match(/\d+/); return m ? +m[0] : 0; };
+const fmt = t => { t = ((t % 1440) + 1440) % 1440; return String(Math.floor(t/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0'); };
+const emMin = h => { const [a,b] = h.split(':').map(Number); return a*60+b; };
+const COLS = [['horario','c-h hora',false],['tempo','c-t',false],['momento','',true],['participante','c-p',true],['obs','',true]];
+function desenhar(){
+  const rows = ed.dados.rows;
+  $('corpo').innerHTML = rows.map((r, i) => `<tr>${COLS.map(([k, cls, area]) => `<td class="${cls.split(' ')[0]}">${area
+      ? `<textarea rows="1" data-i="${i}" data-k="${k}">${esc(r[k])}</textarea>`
+      : `<input class="${cls.includes('hora')?'hora':''}" data-i="${i}" data-k="${k}" value="${esc(r[k])}" placeholder="${k==='horario'?'19:30':'5 min'}">`}</td>`).join('')}
+    <td class="c-a"><button class="btn s" onclick="mover(${i},-1)" ${i?'':'disabled'}>↑</button> <button class="btn s" onclick="mover(${i},1)" ${i<rows.length-1?'':'disabled'}>↓</button> <button class="btn s r" onclick="remover(${i})">×</button></td></tr>`).join('');
+  $('corpo').querySelectorAll('[data-k]').forEach(el => {
+    if(el.tagName === 'TEXTAREA') altura(el);
+    el.oninput = () => {
+      const i = +el.dataset.i, k = el.dataset.k; rows[i][k] = el.value;
+      if(el.tagName === 'TEXTAREA') altura(el);
+      if(k === 'tempo') cascata(i);
+      if(k === 'horario' && valida(el.value)){ if(i > 0 && valida(rows[i-1].horario)){ let d = emMin(el.value) - emMin(rows[i-1].horario); if(d < 0) d += 1440; rows[i-1].tempo = d + ' min'; } cascata(i); }
+      sujo(); atualizarCampos(el);
+    };
+    el.onkeydown = ev => {
+      if(ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown') return;
+      if(el.tagName === 'TEXTAREA'){ const p = el.selectionStart, v = el.value; if(ev.key==='ArrowUp' ? v.slice(0,p).includes('\n') : v.slice(p).includes('\n')) return; }
+      const alvo = $('corpo').querySelector(`[data-i="${+el.dataset.i + (ev.key==='ArrowUp'?-1:1)}"][data-k="${el.dataset.k}"]`);
+      if(alvo){ ev.preventDefault(); alvo.focus(); }
+    };
+  });
+  total(); montarImpressao();
+}
+function atualizarCampos(atual){ $('corpo').querySelectorAll('input[data-k]').forEach(el => { if(el !== atual) el.value = ed.dados.rows[+el.dataset.i][el.dataset.k] || ''; }); total(); }
+function altura(el){ el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+function cascata(i){ const rows = ed.dados.rows; if(!valida(rows[i].horario)) return; let t = emMin(rows[i].horario); for(let j = i+1; j < rows.length; j++){ t += minutos(rows[j-1].tempo); rows[j].horario = fmt(t); } }
+function recalcular(){ const ini = $('edInicio').value; if(!valida(ini)) return; let t = emMin(ini); ed.dados.rows.forEach(r => { r.horario = fmt(t); t += minutos(r.tempo); }); desenhar(); sujo(); }
+function total(){ const t = ed.dados.rows.reduce((s, r) => s + minutos(r.tempo), 0); $('total').textContent = `${ed.dados.rows.length} itens · duração total ${Math.floor(t/60) ? Math.floor(t/60)+'h' : ''}${t%60}min`; }
+function addLinha(){ ed.dados.rows.push(vazia()); cascata(ed.dados.rows.length - 2 < 0 ? 0 : ed.dados.rows.length - 2); desenhar(); sujo(); }
+function remover(i){ ed.dados.rows.splice(i, 1); if(!ed.dados.rows.length) ed.dados.rows.push(vazia()); desenhar(); sujo(); }
+function mover(i, d){ const r = ed.dados.rows, j = i + d; if(j < 0 || j >= r.length) return; [r[i], r[j]] = [r[j], r[i]]; desenhar(); sujo(); }
+function sujo(){ $('status').textContent = 'alterações não salvas…'; clearTimeout(timer); timer = setTimeout(() => salvar(true), 1500); }
+async function salvar(auto){
+  clearTimeout(timer);
+  ed.nome = $('edNome').value.trim() || 'Meu roteiro'; ed.titulo = $('edTitulo').value.trim() || null;
+  $('status').textContent = 'salvando…';
+  try{
+    await api(`roteiros_visitante?id=eq.${ed.id}`, { method:'PATCH', prefer:'return=minimal', body:{ nome: ed.nome, titulo: ed.titulo, dados: ed.dados, atualizado_em: new Date().toISOString() } });
+    ed.atualizado_em = new Date().toISOString();
+    const k = roteiros.findIndex(r => r.id === ed.id); if(k >= 0) roteiros[k] = JSON.parse(JSON.stringify(ed));
+    $('status').textContent = 'salvo às ' + new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    montarImpressao();
+  }catch(e){ $('status').textContent = 'erro ao salvar: ' + e.message; }
+}
+async function voltar(){ if($('status').textContent.startsWith('alterações')) await salvar(true); desenharLista(); mostrar('paginaLista'); }
+async function apagar(){
+  if(!confirm(`Apagar o roteiro "${ed.nome}" de vez?`)) return;
+  try{ await api(`roteiros_visitante?id=eq.${ed.id}`, { method:'DELETE', prefer:'return=minimal' }); roteiros = roteiros.filter(r => r.id !== ed.id); desenharLista(); mostrar('paginaLista'); }
+  catch(e){ alert(e.message); }
+}
+function montarImpressao(){
+  if(!ed) return;
+  $('imprimir').innerHTML = `<h1>${esc($('edTitulo').value || $('edNome').value)}</h1><p style="margin:0 0 10px;color:#555">${esc($('total').textContent)}</p>
+    <table><tr><th>Horário</th><th>Tempo</th><th>Momento</th><th>Participante</th><th>Obs.</th></tr>
+    ${ed.dados.rows.map(r => `<tr><td>${esc(r.horario)}</td><td>${esc(r.tempo)}</td><td>${esc(r.momento)}</td><td>${esc(r.participante)}</td><td>${esc(r.obs)}</td></tr>`).join('')}</table>`;
+}
+
+try{ sessao = JSON.parse(localStorage.getItem(CHAVE)); }catch(e){}
+if(sessao && sessao.refresh_token) iniciar(); else mostrar('paginaLogin');
+</script>
+</body>
+</html>
