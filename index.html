@@ -5361,6 +5361,8 @@ function itemRoteiroHTML(r, i){
       <div class="meta">${itens} ${itens === 1 ? 'item' : 'itens'} ·
         atualizado ${escapar(quando)}${r.atualizado_por ? ' por ' + escapar(r.atualizado_por) : ''}</div>
     </div>
+    ${usaAbasRoteiro() ? `<select class="sel-aba-pasta" title="Em qual aba este roteiro fica" onclick="event.stopPropagation()" onchange="moverRoteiroParaAba('${r.id}', this.value)">
+      ${ABAS_ROTEIRO.map(a => `<option value="${a.v}" ${abaDoRoteiro(r) === a.v ? 'selected' : ''}>${a.n}</option>`).join('')}</select>` : ''}
     <button class="btn small" type="button" title="Mover este roteiro para o culto de ${NOME_CULTO[destino]}"
       onclick="event.stopPropagation();moverRoteiroCulto(${i})">→ ${NOME_CULTO[destino]}</button>
     <button class="btn small" onclick="event.stopPropagation();duplicarRoteiro(${i})">Duplicar</button>
@@ -5380,6 +5382,27 @@ let abaRoteiros = 'culto';
 try{ abaRoteiros = localStorage.getItem('abaRoteiros') || 'culto'; }catch(e){}
 function usaAbasRoteiro(){ return cultoAtual === 'sabado'; }
 function abaDaPasta(p){ return (p && p.aba) || 'culto'; }
+// Aba de um roteiro: se está numa pasta, é a aba da pasta de primeiro nível; sem pasta, é a guardada no próprio roteiro.
+function abaDoRoteiro(r){
+  let p = r.pasta_id ? pastas.find(x => x.id === r.pasta_id) : null, n = 0;
+  while(p && p.pasta_pai_id && n++ < 20){ const pai = pastas.find(x => x.id === p.pasta_pai_id); if(!pai) break; p = pai; }
+  if(p) return abaDaPasta(p);
+  return (r.dados && r.dados.aba) || 'culto';
+}
+async function moverRoteiroParaAba(id, aba){
+  const r = roteiros.find(x => x.id === id);
+  if(!r || abaDoRoteiro(r) === aba) { desenharLista(); return; }
+  const antesPasta = r.pasta_id || null, antesDados = r.dados;
+  const dados = Object.assign({}, r.dados || {}, { aba });
+  r.dados = dados; r.pasta_id = null; desenharLista();
+  try{
+    await api(`roteiros?id=eq.${encodeURIComponent(id)}`, { method:'PATCH', prefer:'return=minimal', body:{ dados, pasta_id: null } });
+    toast(`Roteiro movido para ${ABAS_ROTEIRO.find(a => a.v === aba).n}.`, 'ok');
+  }catch(e){
+    r.dados = antesDados; r.pasta_id = antesPasta; desenharLista();
+    toast('Não consegui mover o roteiro: ' + e.message, 'err');
+  }
+}
 function trocarAbaRoteiros(v){
   abaRoteiros = v;
   try{ localStorage.setItem('abaRoteiros', v); }catch(e){}
@@ -5390,9 +5413,9 @@ function desenharSubabasRoteiros(){
   if(!el) return;
   if(!usaAbasRoteiro()){ el.classList.add('hidden'); el.innerHTML = ''; return; }
   el.classList.remove('hidden');
-  el.innerHTML = ABAS_ROTEIRO.map(a => `<button role="tab" class="${a.v === abaRoteiros ? 'on' : ''}" title="${a.n} (arraste uma pasta até aqui para mudar de aba)"
+  el.innerHTML = ABAS_ROTEIRO.map(a => `<button role="tab" class="${a.v === abaRoteiros ? 'on' : ''}" title="${a.n} (arraste uma pasta ou um roteiro até aqui para mudar de aba)"
       onclick="trocarAbaRoteiros('${a.v}')"
-      ondragover="if(arrastandoPastaId){event.preventDefault();this.classList.add('alvo-aba');}"
+      ondragover="if(arrastandoPastaId || arrastandoRoteiroId){event.preventDefault();this.classList.add('alvo-aba');}"
       ondragleave="this.classList.remove('alvo-aba')"
       ondrop="this.classList.remove('alvo-aba');soltarPastaNaAba('${a.v}', event)">
       <span class="ico">${a.i}</span><span class="rot">${a.n}</span></button>`).join('');
@@ -5414,7 +5437,9 @@ async function moverPastaParaAba(id, aba){
 function soltarPastaNaAba(aba, ev){
   ev.preventDefault();
   const id = arrastandoPastaId; arrastandoPastaId = null;
-  if(id) moverPastaParaAba(id, aba);
+  if(id) return moverPastaParaAba(id, aba);
+  const rid = arrastandoRoteiroId; terminarArrastoRoteiro();
+  if(rid) moverRoteiroParaAba(rid, aba);
 }
 
 function desenharLista(){
@@ -5449,16 +5474,17 @@ function desenharLista(){
   const comAbas = usaAbasRoteiro();
   if(comAbas){
     raizes = raizes.filter(p => abaDaPasta(p) === abaRoteiros);
-    if(abaRoteiros !== 'culto') semPasta.length = 0;
+    const soDaAba = semPasta.filter(x => abaDoRoteiro(x.r) === abaRoteiros);
+    semPasta.length = 0; semPasta.push(...soDaAba);
   }
   let html = raizes.map(p => pastaSecaoHTML(p, porPai, porPasta, 0)).join('');
   if(comAbas && !raizes.length && !semPasta.length){
     html += `<div class="card"><div class="vazio">Nenhuma pasta nesta aba ainda.<br>
-      Crie com <strong>+ Nova pasta</strong>, ou arraste uma pasta de outra aba até o nome desta aba lá em cima.</div></div>`;
+      Crie com <strong>+ Novo roteiro</strong> ou <strong>+ Nova pasta</strong>, ou arraste uma pasta ou um roteiro de outra aba até o nome desta aba lá em cima.</div></div>`;
   }
 
-  if(comAbas && abaRoteiros !== 'culto'){
-    // nas abas Eventos e JA só aparecem as pastas
+  if(comAbas && !semPasta.length){
+    // nenhum roteiro solto nesta aba
   } else if(pastas.length){
     html += `<div class="pasta-secao">
       <div class="pasta-cabecalho" style="background:transparent;"
@@ -5760,7 +5786,7 @@ function linhaVazia(){
 function novoRoteiro(){
   emEdicao = {
     id: null, culto: cultoAtual, nome: '', titulo: '', publicado: true,
-    dados: { rows: [ linhaVazia() ] }
+    dados: Object.assign({ rows: [ linhaVazia() ] }, usaAbasRoteiro() && abaRoteiros !== 'culto' ? { aba: abaRoteiros } : {})
   };
   sujo = false;
   clearTimeout(autoSalvarTimer);
