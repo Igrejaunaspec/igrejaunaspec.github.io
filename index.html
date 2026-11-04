@@ -9247,6 +9247,10 @@ async function abrirCalendarioPublico(codigo){
   if(hint) hint.textContent = 'Eventos confirmados na igreja. Clique num evento para ver horário e local.';
   cultoAtual = 'calendario';
   mostrarPagina('calendario');
+  // login antes de mostrar a agenda
+  let tk = null;
+  try{ tk = await tokenPublicoDescricao(); }catch(e){}
+  if(!tk){ desenharLoginAgenda(codigo); return; }
   const hoje = new Date();
   calendarioAno = hoje.getFullYear(); calendarioMes = hoje.getMonth();
   document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
@@ -9277,8 +9281,94 @@ function abrirEventoPublico(id){
     ${linha('Quando', quando)}
     ${linha('Horário', a.horarios_evento)}
     ${linha('Local', a.espacos_utilizados)}
+    <div class="field"><label>Descrição</label><div id="pubDescricao" class="hint">Carregando...</div></div>
     <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button class="btn primary" onclick="fecharModalEvento()">Fechar</button></div>`;
   document.getElementById('modalEvento').classList.remove('hidden');
+  carregarDescricaoPublica(id);
+}
+/* Descrição do evento no calendário público: só aparece com login de quem tem acesso
+   ao calendário ou aos agendamentos (o banco confere na função calendario_descricao). */
+async function tokenPublicoDescricao(){
+  if(!sessao) lerSessao();
+  if(!sessao) return null;
+  if(Date.now() >= sessao.expira_em){
+    try{ await renovarToken(); }catch(e){ limparSessao(); return null; }
+  }
+  return sessao.access_token;
+}
+async function carregarDescricaoPublica(id){
+  const el = document.getElementById('pubDescricao'); if(!el) return;
+  let tk = null;
+  try{ tk = await tokenPublicoDescricao(); }catch(e){}
+  if(!tk){ desenharLoginDescricao(id); return; }
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/calendario_descricao`, { method:'POST',
+      headers:{ apikey: SUPABASE_KEY, Authorization:'Bearer ' + tk, 'Content-Type':'application/json' },
+      body: JSON.stringify({ p_id: String(id) }) });
+    const j = await r.json().catch(() => null);
+    if(!document.getElementById('pubDescricao')) return;
+    if(!r.ok || !j || j.ok === false){
+      el.innerHTML = `Seu login (${escapar(sessao && sessao.email || '')}) não tem acesso às descrições dos eventos. <a href="#" onclick="limparSessao();desenharLoginDescricao('${escapar(String(id))}');return false;">Entrar com outra conta</a>`;
+      return;
+    }
+    el.className = ''; el.style.whiteSpace = 'pre-line';
+    el.textContent = (j.descricao || '').trim() || 'Sem descrição.';
+  }catch(e){ el.textContent = 'Não consegui carregar a descrição. Tente de novo.'; }
+}
+function desenharLoginDescricao(id){
+  const el = document.getElementById('pubDescricao'); if(!el) return;
+  el.className = '';
+  el.innerHTML = `<div style="border:1px solid var(--border);border-radius:10px;padding:12px;">
+    <div class="hint" style="margin:0 0 8px;">🔒 Entre com seu login do app da igreja para ver a descrição.</div>
+    <input id="pubLoginEmail" type="email" placeholder="E-mail" autocomplete="username" style="width:100%;margin-bottom:6px;">
+    <input id="pubLoginSenha" type="password" placeholder="Senha" autocomplete="current-password" style="width:100%;margin-bottom:8px;" onkeydown="if(event.key==='Enter')entrarDescricao('${escapar(String(id))}')">
+    <button class="btn primary small" id="pubLoginBtn" onclick="entrarDescricao('${escapar(String(id))}')">Entrar</button>
+    <span id="pubLoginMsg" class="hint" style="margin-left:8px;"></span></div>`;
+}
+function desenharLoginAgenda(codigo){
+  const pg = document.getElementById('paginaCalendario');
+  if(!pg.dataset.original) pg.dataset.original = pg.innerHTML;
+  pg.innerHTML = `<div class="card" style="max-width:420px;margin:40px auto;">
+    <h2 style="margin-top:0;">Entrar</h2>
+    <p class="hint">Use o seu login do app da igreja para ver a agenda.</p>
+    <label for="agLoginEmail">E-mail</label><input id="agLoginEmail" type="email" autocomplete="username" style="width:100%;margin-bottom:10px;">
+    <label for="agLoginSenha">Senha</label><input id="agLoginSenha" type="password" autocomplete="current-password" style="width:100%;margin-bottom:12px;" onkeydown="if(event.key==='Enter')entrarAgenda('${escapar(codigo)}')">
+    <button class="btn primary" id="agLoginBtn" style="width:100%;" onclick="entrarAgenda('${escapar(codigo)}')">Entrar</button>
+    <p id="agLoginMsg" class="hint" style="margin-bottom:0;"></p></div>`;
+}
+async function entrarAgenda(codigo){
+  const email = (document.getElementById('agLoginEmail').value || '').trim(), senha = document.getElementById('agLoginSenha').value;
+  const msg = document.getElementById('agLoginMsg'), btn = document.getElementById('agLoginBtn');
+  if(!email || !senha){ msg.textContent = 'Preencha e-mail e senha.'; return; }
+  btn.disabled = true; msg.textContent = 'Entrando...';
+  try{
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method:'POST',
+      headers:{ 'Content-Type':'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ email, password: senha }) });
+    const d = await r.json();
+    if(!r.ok){ const m = (d.msg || d.error_description || d.message || '').toLowerCase();
+      throw new Error(m.includes('invalid login') ? 'E-mail ou senha incorretos.' : m.includes('not confirmed') ? 'Confirme seu e-mail antes de entrar.' : 'Não consegui entrar.'); }
+    guardarSessao(d);
+    const pg = document.getElementById('paginaCalendario');
+    if(pg.dataset.original){ pg.innerHTML = pg.dataset.original; delete pg.dataset.original; }
+    document.querySelectorAll('.cal-publico-topo').forEach(e => e.remove());
+    abrirCalendarioPublico(codigo);
+  }catch(e){ msg.textContent = e.message; btn.disabled = false; }
+}
+async function entrarDescricao(id){
+  const email = (document.getElementById('pubLoginEmail').value || '').trim(), senha = document.getElementById('pubLoginSenha').value;
+  const msg = document.getElementById('pubLoginMsg'), btn = document.getElementById('pubLoginBtn');
+  if(!email || !senha){ msg.textContent = 'Preencha e-mail e senha.'; return; }
+  btn.disabled = true; msg.textContent = 'Entrando...';
+  try{
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method:'POST',
+      headers:{ 'Content-Type':'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ email, password: senha }) });
+    const d = await r.json();
+    if(!r.ok){ const m = (d.msg || d.error_description || d.message || '').toLowerCase();
+      throw new Error(m.includes('invalid login') ? 'E-mail ou senha incorretos.' : m.includes('not confirmed') ? 'Confirme seu e-mail antes de entrar.' : 'Não consegui entrar.'); }
+    guardarSessao(d);
+    document.getElementById('pubDescricao').innerHTML = 'Carregando...';
+    carregarDescricaoPublica(id);
+  }catch(e){ msg.textContent = e.message; btn.disabled = false; }
 }
 let calPublico = false;   // aberto pelo link público (?cal=código), sem login
 function soVerCalendario(){
