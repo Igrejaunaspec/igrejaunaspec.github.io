@@ -1407,7 +1407,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="paginaVotacao" class="hidden">
       <div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <div style="flex:1;min-width:200px;"><h2 style="margin:0;">Comissão de Nomeações</h2>
-          <p class="hint" style="margin:4px 0 0;">Celulares: <b>igrejaunaspec.com/votacao</b> · só administradores controlam a votação.</p></div>
+          <p class="hint" style="margin:4px 0 0;">Celulares: <b>igrejaunaspec.com/votacao</b> · só quem tem o acesso Comissão controla a votação.</p></div>
         <a class="btn" href="/votacao/?tv" target="_blank" rel="noopener">Abrir tela da TV</a>
       </div>
       <iframe id="quadroVotacao" title="Controle da votação" style="width:100%;height:calc(100vh - 210px);min-height:600px;border:1px solid var(--border);border-radius:14px;background:#fff;"></iframe>
@@ -5081,6 +5081,15 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
+  // Comissão de Nomeações (votação): administradores ou quem tem o acesso marcado na aba Pessoas
+  if(perfil.admin || perfil.acesso_comissao){
+    const bvot = document.createElement('button');
+    bvot.textContent = 'Comissão';
+    bvot.onclick = () => abrirVotacao();
+    bvot.dataset.culto = 'votacao';
+    abas.appendChild(bvot);
+  }
+
   // Medicos em Missao: abre o painel da equipe (mesmo login)
   if(perfil.admin || perfil.acesso_medicos){
     const b = document.createElement('button');
@@ -5130,11 +5139,6 @@ function montarAbas(){
     bvis.dataset.culto = 'visitantes';
     abas.appendChild(bvis);
 
-    const bvot = document.createElement('button');
-    bvot.textContent = 'Comissão';
-    bvot.onclick = () => abrirVotacao();
-    bvot.dataset.culto = 'votacao';
-    abas.appendChild(bvot);
   }
 
   // Agendamentos e Calendario: liberados pra admin OU pra quem tiver o
@@ -8351,7 +8355,7 @@ function desenharPessoas(pessoas){
       <div class="pessoa2-grade">
         ${chk('acesso_sexta','Sexta')}${chk('acesso_sabado','Sábado')}${chk('acesso_agenda','Agenda')}${chk('acesso_agendamentos','Agendamentos')}${chk('acesso_calendario','Calendário')}
         ${chk('acesso_calendario_ver','Calendário (só ver)','Vê o calendário, mas não cria, edita nem apaga eventos')}${chk('acesso_escala','Escala')}${chk('acesso_youtube','YouTube')}${chk('acesso_homiletico','Homilético')}${chk('acesso_pastoral','Pastor (agenda)','Agenda Pastoral completa, com as anotações privadas')}
-        ${chk('acesso_pastoral_secretaria','Secretária (agenda)','Agenda Pastoral sem as anotações')}${chk('acesso_agenda_pessoal','Agenda pessoal','Agenda pessoal: só a própria pessoa e os administradores veem (administradores já têm a sua)')}${chk('acesso_medicos','Médicos em Missão','Painel do Médicos em Missão (inscrições com CPF, endereço e saúde)')}${chk('ver_homiletico_calendario','Pregações no Calendário','Mostra as pregações confirmadas no Calendário')}
+        ${chk('acesso_pastoral_secretaria','Secretária (agenda)','Agenda Pastoral sem as anotações')}${chk('acesso_agenda_pessoal','Agenda pessoal','Agenda pessoal: só a própria pessoa e os administradores veem (administradores já têm a sua)')}${chk('acesso_medicos','Médicos em Missão','Painel do Médicos em Missão (inscrições com CPF, endereço e saúde)')}${chk('acesso_comissao','Comissão','Controla a votação da Comissão de Nomeações e a tela da TV')}${chk('ver_homiletico_calendario','Pregações no Calendário','Mostra as pregações confirmadas no Calendário')}
       </div>
       <div class="pessoa2-setores">
         <span>Vê na agenda:</span>
