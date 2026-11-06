@@ -134,7 +134,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       <div class="lista-cargos" id="admCargos"></div>
       <div class="dica" style="margin-top:12px;">
         Celulares: <b>igrejaunaspec.com/votacao</b><br>
-        TV: <a href="?tv" target="_blank" rel="noopener">abrir tela da TV</a>
+        TV: <a href="/votacao/?tv" target="_blank" rel="noopener">abrir tela da TV</a>
       </div>
     </div>
     <div class="cartao" id="admPainel"></div>
@@ -420,7 +420,16 @@ if(q.has('tv')){
   document.addEventListener('click', () => { if(!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); });
   atualizarTV(); setInterval(atualizarTV, 2000);
 } else if(q.has('admin')){
-  $('modoAdmin').classList.remove('hidden'); iniciarAdmin();
+  $('modoAdmin').classList.remove('hidden');
+  let noApp = false; try{ noApp = window.top !== window && window.top.location.origin === location.origin; }catch(e){}
+  if(!noApp){
+    $('admLogin').classList.add('hidden'); $('admApp').classList.add('hidden');
+    $('modoAdmin').insertAdjacentHTML('beforeend', `<div class="login"><div class="cartao"><h2 style="margin-top:0">Controle pelo app</h2>
+      <p class="dica">O controle da votação fica dentro do app da igreja. Entre em <a href="/">igrejaunaspec.com</a> com seu login de administrador e abra <b>Acessos → Votação</b>.</p></div></div>`);
+  } else {
+    document.querySelector('#modoAdmin .topo').classList.add('hidden');
+    iniciarAdmin();
+  }
 } else {
   $('modoVoto').classList.remove('hidden'); atualizarVoto(); setInterval(atualizarVoto, 2500);
 }
