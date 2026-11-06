@@ -169,7 +169,7 @@ let est = null, escolha = null, chaveTela = '';
 async function atualizarVoto(){
   try{ est = await rpc('vot_publico'); }catch(e){ return; }
   const c = est.cargo;
-  const chave = c ? [c.id, c.rodada, c.fase, JSON.stringify(c.candidatos), c.eleito].join('|') : 'nada';
+  const chave = c ? [c.id, c.rodada, c.fase, JSON.stringify(c.candidatos)].join('|') : 'nada';
   if(chave === chaveTela) return;          // nada mudou: não mexe na tela (não apaga o que a pessoa está digitando)
   chaveTela = chave; escolha = null; desenharVoto();
 }
@@ -179,7 +179,7 @@ function desenharVoto(){
   if(!c){ el.innerHTML = `<div class="feito"><div class="rotulo">Aguarde</div><div class="cargo">A votação vai começar em instantes</div></div>`; return; }
   const topo = `<div class="rotulo">${esc(FASE_NOME[c.fase])}</div><div class="cargo">${esc(c.nome)}</div>`;
   if(c.fase === 'aguardando'){ el.innerHTML = topo + `<p class="dica">Aguarde a abertura. Esta tela atualiza sozinha.</p>`; return; }
-  if(c.fase === 'encerrado'){ el.innerHTML = topo + (c.eleito ? `<p class="dica">Eleito(a):</p><div class="cargo" style="font-size:24px;">${esc(c.eleito)}</div>` : `<p class="dica">Votação encerrada. Acompanhe o resultado na tela.</p>`); return; }
+  if(c.fase === 'encerrado'){ el.innerHTML = topo + `<p class="dica">Votação encerrada. Acompanhe o resultado na tela.</p>`; return; }
   if(jaEnviou(c)){
     el.innerHTML = topo + `<div class="feito"><div class="v">✓</div><p><b>${c.fase === 'indicacao' ? 'Indicação enviada' : 'Voto registrado'}</b></p>
       <p class="dica">Aguarde o próximo cargo. Esta tela atualiza sozinha.</p></div>`; return;
@@ -218,7 +218,8 @@ async function enviar(){
 /* ================= TV ================= */
 let tvChave = '';
 async function atualizarTV(){
-  let e; try{ e = await rpc('vot_publico'); }catch(err){ return; }
+  let e; try{ const tk = await token(); if(!tk){ tvLogin(); return; } e = await rpc('vot_tv', {}, tk); }catch(err){ return; }
+  if(!e || e.ok === false){ tvLogin('Este login não é de administrador.'); return; }
   if(e.titulo) $('tvTitulo').textContent = e.titulo;
   const c = e.cargo, el = $('tvMeio');
   const chave = JSON.stringify([c && c.id, c && c.fase, c && c.rodada, c && c.eleito, e.mostrar_resultado, e.resultado, e.total]);
@@ -245,6 +246,12 @@ async function atualizarTV(){
   if(abre && window.QRCode) new QRCode($('qr'), { text: 'https://' + LINK_VOTO, width: 512, height: 512, colorDark: '#1D3A5C', colorLight: '#ffffff' });
 }
 
+function tvLogin(m){
+  // a TV usa o mesmo login do admin; mostra o formulário por cima
+  $('modoTV').classList.add('hidden'); document.body.classList.remove('tv');
+  $('modoAdmin').classList.remove('hidden'); $('admLogin').classList.remove('hidden'); $('admApp').classList.add('hidden');
+  if(m) $('lgMsg').textContent = m;
+}
 /* ================= ADMIN ================= */
 let sessao = null, cargos = [], estado = null, respostas = [], selId = null;
 function lerSessao(){ try{ sessao = JSON.parse(ls.get(CHAVE_SESSAO) || 'null'); }catch(e){ sessao = null; } }
@@ -287,7 +294,9 @@ async function admEntrar(){
   const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method:'POST', headers:{ 'Content-Type':'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ email, password: senha }) });
   const d = await r.json().catch(() => ({}));
   if(!r.ok){ $('lgMsg').textContent = 'E-mail ou senha incorretos.'; return; }
-  guardarSessao(d); $('lgMsg').textContent = ''; iniciarAdmin();
+  guardarSessao(d); $('lgMsg').textContent = '';
+  if(q.has('tv')){ location.reload(); return; }
+  iniciarAdmin();
 }
 async function carregarAdmin(){
   try{
@@ -406,6 +415,7 @@ async function moverCargo(d){
 /* ================= início ================= */
 const q = new URLSearchParams(location.search);
 if(q.has('tv')){
+  lerSessao();
   document.body.classList.add('tv'); $('modoTV').classList.remove('hidden');
   document.addEventListener('click', () => { if(!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); });
   atualizarTV(); setInterval(atualizarTV, 2000);
