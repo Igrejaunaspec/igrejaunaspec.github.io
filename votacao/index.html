@@ -39,7 +39,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   .vota input[type=text]{width:100%;padding:14px;border:1px solid var(--linha);border-radius:12px;font-size:18px;margin-bottom:12px}
   .opcoes{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
   .opcao{text-align:left;border:2px solid var(--linha);background:#fff;border-radius:12px;padding:15px 16px;font-size:18px;font-weight:600}
-  .opcao.sel{border-color:var(--azul);background:#eaf0f7}
+  .opcao.sel{border-color:var(--azul);background:#eaf0f7;position:relative}
+  .opcao.sel::after{content:"✓";position:absolute;right:16px;top:50%;transform:translateY(-50%);color:var(--azul);font-weight:900}
   .grande{width:100%;padding:15px;font-size:18px}
   .feito{text-align:center;padding:10px 0}
   .feito .v{font-size:56px;color:var(--ok);line-height:1}
@@ -99,6 +100,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   .login input{width:100%;padding:12px;border:1px solid var(--linha);border-radius:10px;margin:4px 0 12px;font-size:16px}
   @media (max-width:900px){.adm{grid-template-columns:minmax(0,1fr)}.linha2{grid-template-columns:minmax(0,1fr)}.lista-cargos{max-height:none}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -131,7 +133,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   </div>
   <div id="admApp" class="adm hidden">
     <div class="cartao">
-      <div class="barra-adm"><h2 style="margin:0">Cargos</h2><button class="btn s" onclick="novoCargo()">+ Cargo</button></div>
+      <div class="barra-adm"><h2 style="margin:0">Cargos</h2><div style="display:flex;gap:6px;"><button class="btn s" onclick="exportar()" title="Baixa uma planilha com indicações, votos e eleitos de todos os cargos">⬇ Exportar planilha</button><button class="btn s" onclick="novoCargo()">+ Cargo</button></div></div>
       <div class="lista-cargos" id="admCargos"></div>
       <div class="dica" style="margin-top:12px;">
         Celulares: <b>igrejaunaspec.com/votacao</b><br>
@@ -170,14 +172,18 @@ let est = null, escolha = null, chaveTela = '';
 async function atualizarVoto(){
   try{ est = await rpc('vot_publico'); }catch(e){ return; }
   const c = est.cargo;
-  const chave = c ? [c.id, c.rodada, c.fase, JSON.stringify(c.candidatos)].join('|') : 'nada';
+  const chave = c ? [c.id, c.rodada, c.fase, c.max, c.outros, JSON.stringify(c.candidatos)].join('|') : 'nada';
   if(chave === chaveTela) return;          // nada mudou: não mexe na tela (não apaga o que a pessoa está digitando)
-  chaveTela = chave; escolha = null; desenharVoto();
+  chaveTela = chave; escolhidos = []; desenharVoto();
 }
+let escolhidos = [];
+const maxDe = c => Math.max(1, +c.max || 1);
 function jaEnviou(c){ return ls.get(`vot.${c.id}.${c.rodada}.${c.fase}`) === '1'; }
+function campoNome(i){ return `<input type="text" class="vtNome" maxlength="80" placeholder="${i ? 'Outro nome (opcional)' : 'Nome e sobrenome'}" autocomplete="off">`; }
 function desenharVoto(){
   const el = $('voto'), c = est && est.cargo;
   if(!c){ el.innerHTML = `<div class="feito"><div class="rotulo">Aguarde</div><div class="cargo">A votação vai começar em instantes</div></div>`; return; }
+  const max = maxDe(c);
   const topo = `<div class="rotulo">${esc(FASE_NOME[c.fase])}</div><div class="cargo">${esc(c.nome)}</div>`;
   if(c.fase === 'aguardando'){ el.innerHTML = topo + `<p class="dica">Aguarde a abertura. Esta tela atualiza sozinha.</p>`; return; }
   if(c.fase === 'encerrado'){ el.innerHTML = topo + `<p class="dica">Votação encerrada. Acompanhe o resultado na tela.</p>`; return; }
@@ -186,31 +192,71 @@ function desenharVoto(){
       <p class="dica">Aguarde o próximo cargo. Esta tela atualiza sozinha.</p></div>`; return;
   }
   if(c.fase === 'indicacao'){
-    el.innerHTML = topo + `<p class="dica" style="margin-top:0">Indique uma pessoa para este cargo.</p>
-      <input type="text" id="vtNome" maxlength="80" placeholder="Nome e sobrenome" autocomplete="off" onkeydown="if(event.key==='Enter')enviar()">
-      <button class="btn p grande" id="vtBtn" onclick="enviar()">Enviar indicação</button><div class="msg" id="vtMsg"></div>`;
+    const inicio = Math.min(max, 3);
+    el.innerHTML = topo + `<p class="dica" style="margin-top:0">${max > 1 ? `Indique até <b>${max}</b> pessoas para este cargo.` : 'Indique uma pessoa para este cargo.'}</p>
+      <div id="vtCampos">${Array.from({ length: inicio }, (_, i) => campoNome(i)).join('')}</div>
+      ${max > inicio ? `<button class="btn" id="vtMais" style="width:100%;margin-bottom:12px;" onclick="maisCampo()">+ Outro nome</button>` : ''}
+      <button class="btn p grande" id="vtBtn" onclick="enviar()">Enviar ${max > 1 ? 'indicações' : 'indicação'}</button><div class="msg" id="vtMsg"></div>`;
     return;
   }
-  const cands = c.candidatos || [];
-  if(!cands.length){ el.innerHTML = topo + `<p class="dica">Aguarde, os nomes estão sendo cadastrados.</p>`; return; }
-  el.innerHTML = topo + `<p class="dica" style="margin-top:0">Toque no nome escolhido e confirme.</p>
-    <div class="opcoes">${cands.map((n, i) => `<button class="opcao" data-i="${i}" onclick="escolher(${i})">${esc(n)}</button>`).join('')}</div>
+  const cands = c.candidatos || [], outros = c.outros !== false;
+  if(!cands.length && !outros){ el.innerHTML = topo + `<p class="dica">Aguarde, os nomes estão sendo cadastrados.</p>`; return; }
+  const nCampos = outros ? (max > 1 ? Math.min(max, 3) : 1) : 0;
+  const instr = max > 1
+    ? `Escolha até <b>${max}</b> nomes: toque nos atuais que quer manter${outros ? ' e escreva outros nomes nos espaços abaixo' : ''}. <span id="vtConta"></span>`
+    : (outros ? 'Toque no nome atual <b>ou</b> escreva outro nome abaixo.' : 'Toque no nome escolhido e confirme.');
+  el.innerHTML = topo + `<p class="dica" style="margin-top:0">${instr}</p>
+    ${cands.length ? `<div class="rotulo" style="margin:4px 0 8px">${c.rodada > 1 ? 'Mais votados' : (cands.length > 1 ? 'Atuais' : 'Atual')}</div>
+    <div class="opcoes">${cands.map((n, i) => `<button class="opcao" data-i="${i}" onclick="escolher(${i})">${esc(n)}</button>`).join('')}</div>` : ''}
+    ${outros ? `<div class="rotulo" style="margin:14px 0 8px">${max > 1 ? 'Outros nomes' : 'Outro nome'}</div>
+      <div id="vtCampos">${Array.from({ length: nCampos }, () => `<input type="text" class="vtNome" maxlength="80" placeholder="Nome e sobrenome" autocomplete="off" oninput="digitou(this)">`).join('')}</div>
+      ${max > nCampos ? `<button class="btn" id="vtMais" style="width:100%;margin-bottom:12px;" onclick="maisCampo()">+ Outro nome</button>` : ''}` : ''}
     <button class="btn p grande" id="vtBtn" onclick="enviar()" disabled>Confirmar voto</button><div class="msg" id="vtMsg"></div>`;
 }
+function nomesDigitados(){ return [...document.querySelectorAll('.vtNome')].map(i => i.value.trim().replace(/\s+/g, ' ')).filter(Boolean); }
+function totalEscolhas(){
+  const l = escolhidos.slice();
+  nomesDigitados().forEach(n => { if(!l.some(x => norm(x) === norm(n))) l.push(n); });
+  return l;
+}
+function atualizarConta(){
+  const c = est.cargo, max = maxDe(c), t = totalEscolhas().length;
+  if($('vtConta')) $('vtConta').textContent = `(${t} de ${max})`;
+  if($('vtBtn')) $('vtBtn').disabled = t === 0;
+}
+function digitou(inp){
+  const c = est.cargo, max = maxDe(c);
+  if(max === 1 && inp.value.trim()){ escolhidos = []; document.querySelectorAll('.opcao').forEach(b => b.classList.remove('sel')); }
+  if(totalEscolhas().length > max){ $('vtMsg').textContent = `Você já tem ${max} nomes. Desmarque algum para escrever outro.`; inp.value = ''; }
+  atualizarConta();
+}
+function maisCampo(){
+  const box = $('vtCampos'), max = maxDe(est.cargo);
+  box.insertAdjacentHTML('beforeend', `<input type="text" class="vtNome" maxlength="80" placeholder="Nome e sobrenome" autocomplete="off" oninput="digitou(this)">`);
+  box.lastElementChild.focus();
+  if(box.querySelectorAll('input').length >= max) $('vtMais').remove();
+}
 function escolher(i){
-  escolha = est.cargo.candidatos[i];
-  document.querySelectorAll('.opcao').forEach(b => b.classList.toggle('sel', +b.dataset.i === i));
-  $('vtBtn').disabled = false;
+  const c = est.cargo, max = maxDe(c), nome = c.candidatos[i], msg = $('vtMsg');
+  msg.textContent = '';
+  if(max === 1){ escolhidos = [nome]; document.querySelectorAll('.vtNome').forEach(x => x.value = ''); }
+  else if(escolhidos.includes(nome)) escolhidos = escolhidos.filter(x => x !== nome);
+  else if(totalEscolhas().length >= max){ msg.textContent = `Você já escolheu ${max} nomes. Toque num nome marcado para desmarcar.`; return; }
+  else escolhidos.push(nome);
+  document.querySelectorAll('.opcao').forEach(b => b.classList.toggle('sel', escolhidos.includes(c.candidatos[+b.dataset.i])));
+  atualizarConta();
 }
 async function enviar(){
   const c = est.cargo, msg = $('vtMsg'), btn = $('vtBtn');
-  const valor = c.fase === 'indicacao' ? ($('vtNome').value || '').trim() : escolha;
-  if(!valor || valor.length < 2){ msg.textContent = c.fase === 'indicacao' ? 'Escreva o nome.' : 'Escolha um nome.'; return; }
+  const valores = c.fase === 'indicacao' ? nomesDigitados() : totalEscolhas();
+  if(valores.length > maxDe(c)){ msg.textContent = `No máximo ${maxDe(c)} nomes.`; return; }
+  if(!valores.length){ msg.textContent = c.fase === 'indicacao' ? 'Escreva pelo menos um nome.' : 'Escolha um nome.'; return; }
+  if(valores.some(v => v.length < 2)){ msg.textContent = 'Algum nome está curto demais.'; return; }
   btn.disabled = true; msg.textContent = '';
   try{
-    const r = await rpc('vot_enviar', { p_cargo: c.id, p_rodada: c.rodada, p_fase: c.fase, p_valor: valor, p_dispositivo: dispositivo });
+    const r = await rpc('vot_enviar_varios', { p_cargo: c.id, p_rodada: c.rodada, p_fase: c.fase, p_valores: valores, p_dispositivo: dispositivo });
     if(r.ok || r.erro === 'ja_enviou'){ ls.set(`vot.${c.id}.${c.rodada}.${c.fase}`, '1'); desenharVoto(); return; }
-    msg.textContent = r.erro === 'fechado' ? 'Esta etapa já foi encerrada.' : r.erro === 'candidato' ? 'Nome inválido, atualize a página.' : 'Nome muito curto ou muito longo.';
+    msg.textContent = r.erro === 'fechado' ? 'Esta etapa já foi encerrada.' : r.erro === 'candidato' ? 'Nome inválido, atualize a página.' : r.erro === 'demais' ? 'Nomes demais para este cargo.' : 'Nome muito curto ou muito longo.';
     chaveTela = ''; setTimeout(atualizarVoto, 800);
   }catch(e){ msg.textContent = 'Sem conexão. Tente de novo.'; }
   btn.disabled = false;
@@ -243,13 +289,13 @@ async function atualizarTV(){
     corpo += `<div class="barras">${e.resultado.slice(0, 7).map((r, i) => `<div class="barra ${r.votos === max ? 'top' : ''}">
       <span class="n">${esc(r.nome)}</span><span class="t"><i style="width:${(r.votos / max * 100).toFixed(1)}%"></i></span><span class="q">${r.votos}</span></div>`).join('')}</div>`;
   } else if(c.eleito){
-    corpo += `<div class="tveleito">Eleito(a): <span>${esc(c.eleito)}</span></div>`;
+    corpo += `<div class="tveleito">${c.eleito.includes('; ') ? 'Eleitos' : 'Eleito(a)'}: <span>${esc(c.eleito.split('; ').join(', '))}</span></div>`;
   } else if(abre){
-    corpo += `<div class="tvconta"><b>${e.total}</b>${c.fase === 'indicacao' ? (e.total === 1 ? 'indicação recebida' : 'indicações recebidas') : (e.total === 1 ? 'voto recebido' : 'votos recebidos')}</div>`;
+    corpo += `<div class="tvconta"><b>${e.total}</b>${c.fase === 'indicacao' ? (e.total === 1 ? 'pessoa já indicou' : 'pessoas já indicaram') : (e.total === 1 ? 'pessoa já votou' : 'pessoas já votaram')}</div>`;
   } else if(c.fase === 'aguardando'){
     corpo += `<div class="tvconta">Próximo cargo</div>`;
   }
-  if(e.mostrar_resultado && c.eleito) corpo += `<div class="tveleito">Eleito(a): <span>${esc(c.eleito)}</span></div>`;
+  if(e.mostrar_resultado && c.eleito) corpo += `<div class="tveleito">${c.eleito.includes('; ') ? 'Eleitos' : 'Eleito(a)'}: <span>${esc(c.eleito.split('; ').join(', '))}</span></div>`;
   corpo += `</div>`;
   el.innerHTML = corpo + qr;
   if(abre && window.QRCode) $('qr').innerHTML = qrSVG('https://' + LINK_VOTO);
@@ -313,7 +359,7 @@ async function carregarAdmin(){
     cargos = cs || []; estado = (es || [])[0] || { cargo_atual: null, mostrar_resultado: false };
     if(!selId) selId = estado.cargo_atual || (cargos[0] && cargos[0].id);
     const c = cargos.find(x => x.id === selId);
-    respostas = c ? (await api(`vot_respostas?select=fase,valor&cargo_id=eq.${c.id}&rodada=eq.${c.rodada}`) || []) : [];
+    respostas = c ? (await api(`vot_respostas?select=fase,valor,dispositivo&cargo_id=eq.${c.id}&rodada=eq.${c.rodada}`) || []) : [];
     desenharAdmin();
   }catch(e){ $('admPainel').innerHTML = `<div class="msg">${esc(e.message)}</div>`; }
 }
@@ -327,7 +373,7 @@ function desenharAdmin(){
   // não redesenha enquanto o admin digita num campo
   const a = document.activeElement; if(a && a.tagName === 'INPUT' && $('modoAdmin').contains(a) && a.value) return;
   $('admCargos').innerHTML = cargos.map(c => `<div class="lc ${c.id === estado.cargo_atual ? 'atual' : ''}" onclick="selId='${c.id}';carregarAdmin()" style="${c.id === selId ? 'background:#f4f7fb' : ''}">
-    <span class="nm">${esc(c.nome)}${c.eleito ? `<span class="el">✓ ${esc(c.eleito)}</span>` : ''}</span>
+    <span class="nm">${esc(c.nome)}${c.eleito ? `<span class="el">✓ ${esc(c.eleito.split('; ').length > 1 ? c.eleito.split('; ').length + ' eleitos' : c.eleito)}</span>` : ''}</span>
     ${c.id === estado.cargo_atual ? '<span class="chip" style="background:var(--azul);color:#fff">NA TELA</span>' : ''}<span class="chip ${c.fase}">${FASE_NOME[c.fase]}</span></div>`).join('') || '<p class="dica">Nenhum cargo.</p>';
   const c = cargos.find(x => x.id === selId);
   const p = $('admPainel');
@@ -347,6 +393,9 @@ function desenharAdmin(){
     <div class="fases">
       ${['aguardando','indicacao','votacao','encerrado'].map(f => `<button class="btn ${c.fase === f ? 'on' : ''}" onclick="mudarFase('${f}')">${f === 'indicacao' ? 'Abrir indicações' : f === 'votacao' ? 'Abrir votação' : f === 'encerrado' ? 'Encerrar' : 'Aguardando'}</button>`).join('')}
     </div>
+    <label class="toggle" style="font-weight:600">Cada pessoa escolhe até
+      <input type="number" min="1" max="50" value="${c.max_escolhas || 1}" style="width:70px;padding:6px 8px;border:1px solid var(--linha);border-radius:8px;" onchange="mudarMax(this.value)">
+      ${(c.max_escolhas || 1) > 1 ? 'nomes' : 'nome'}</label>
     <label class="toggle"><input type="checkbox" ${estado.mostrar_resultado ? 'checked' : ''} onchange="mostrarResultado(this.checked)"> Mostrar resultado na TV</label>
     <p class="dica" style="margin-top:0">Vale para o cargo que está na TV. Mostra ${c.fase === 'indicacao' ? 'as indicações' : 'os votos'} da etapa atual.</p>
     <div class="linha2">
@@ -356,19 +405,52 @@ function desenharAdmin(){
           <td style="width:90px;text-align:right">${cands.some(n => norm(n) === norm(x.nome)) ? '<span class="chip votacao">na lista</span>' : `<button class="btn s" onclick='addCand(${JSON.stringify(x.nome)})'>+ Votação</button>`}</td></tr>`).join('') || '<tr><td class="dica">Nenhuma indicação ainda.</td></tr>'}</table>
       </div>
       <div>
-        <h2>Nomes para votar</h2>
+        <h2>${c.rodada > 1 ? 'Nomes deste escrutínio' : 'Atuais (aparecem na votação)'}</h2>
         <div class="cands">${cands.map((n, i) => `<span class="cand">${esc(n)}<button title="Tirar" onclick="tirarCand(${i})">×</button></span>`).join('') || '<span class="dica">Adicione pelas indicações ou digite abaixo.</span>'}</div>
         <div class="add"><input id="novoCand" placeholder="Digitar nome" onkeydown="if(event.key==='Enter')addCand(this.value)"><button class="btn s p" onclick="addCand($('novoCand').value)">Adicionar</button></div>
+        <label class="toggle" style="font-weight:500;font-size:14px;"><input type="checkbox" ${c.permite_outros !== false ? 'checked' : ''} onchange="patchCargo({ permite_outros: this.checked })"> Deixar escrever outros nomes na votação</label>
+        ${analise(c, vot)}
         <h2 style="margin-top:20px">Votos <span class="chip">${respostas.filter(r => r.fase === 'votacao').length}</span></h2>
         <table class="tab">${vot.map(x => `<tr><td>${esc(x.nome)}</td><td class="q">${x.n}</td>
-          <td style="width:110px;text-align:right">${c.eleito === x.nome ? '<span class="chip votacao">eleito(a)</span>' : `<button class="btn s" onclick='definirEleito(${JSON.stringify(x.nome)})'>Definir eleito</button>`}</td></tr>`).join('') || '<tr><td class="dica">Nenhum voto ainda.</td></tr>'}</table>
+          <td style="width:110px;text-align:right">${eleitosDe(c).includes(x.nome) ? `<button class="btn s" style="background:#dff3e6;color:#17663b;border-color:#bfe5cc" title="Tocar para desmarcar" onclick='definirEleito(${JSON.stringify(x.nome)})'>eleito(a) ✓</button>` : `<button class="btn s" onclick='definirEleito(${JSON.stringify(x.nome)})'>Definir eleito</button>`}</td></tr>`).join('') || '<tr><td class="dica">Nenhum voto ainda.</td></tr>'}</table>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
-          ${c.eleito ? `<button class="btn s" onclick="definirEleito(null)">Tirar eleito</button>` : ''}
+          ${c.eleito ? `<button class="btn s" onclick="patchCargo({ eleito: null })">Tirar ${eleitosDe(c).length > 1 ? 'eleitos' : 'eleito'}</button>` : ''}
           <button class="btn s" onclick="novaRodada()">Novo escrutínio (votar de novo)</button>
           <button class="btn s r" onclick="zerar()">Zerar respostas desta rodada</button>
         </div>
       </div>
     </div>`;
+}
+/* Regra da comissão: 1 vaga -> eleito com 50% + 1 dos votos; se ninguém tiver, os 2 mais votados vão ao próximo escrutínio.
+   Várias vagas (Ancionato) -> entram os N mais votados. */
+function analise(c, vot){
+  const votantes = new Set(respostas.filter(r => r.fase === 'votacao').map(r => r.dispositivo)).size;
+  if(!votantes || !vot.length) return '';
+  const max = c.max_escolhas || 1;
+  const caixa = (cor, html) => `<div style="margin-top:14px;padding:12px 14px;border-radius:12px;background:${cor};font-size:14px;line-height:1.5">${html}</div>`;
+  if(max === 1){
+    const precisa = Math.floor(votantes / 2) + 1, top = vot[0];
+    if(top.n >= precisa) return caixa('#dff3e6', `<b>${esc(top.nome)}</b> tem ${top.n} de ${votantes} votos (${Math.round(top.n / votantes * 100)}%): passou dos 50% + 1 (precisava de ${precisa}).<br>
+      ${eleitosDe(c).includes(top.nome) ? '✓ Já marcado como eleito.' : `<button class="btn s p" style="margin-top:8px" onclick='definirEleito(${JSON.stringify(top.nome)})'>Eleger ${esc(top.nome)}</button>`}`);
+    const dois = vot.slice(0, 2), empate = vot.length > 2 && vot[2].n === vot[1].n;
+    return caixa('#fff1d6', `Ninguém chegou a 50% + 1 (precisa de ${precisa} de ${votantes} votos).<br>
+      Os dois mais votados: <b>${dois.map(x => esc(x.nome) + ' (' + x.n + ')').join('</b> e <b>')}</b>.
+      ${empate ? `<br><b>Atenção:</b> empate no 2º lugar com ${vot.filter(x => x.n === vot[1].n).slice(1).map(x => esc(x.nome)).join(', ')}. Decida quem vai.` : ''}
+      <br><button class="btn s p" style="margin-top:8px" onclick="segundoEscrutinio()">Abrir ${c.rodada + 1}º escrutínio com os 2 mais votados</button>`);
+  }
+  const corte = vot.slice(0, max), ult = corte[corte.length - 1], empate = vot.length > max && vot[max].n === ult.n;
+  return caixa(empate ? '#fff1d6' : '#dff3e6', `Os <b>${Math.min(max, vot.length)}</b> mais votados entram (${votantes} pessoas votaram).
+    ${empate ? `<br><b>Atenção:</b> empate na última vaga (${ult.n} votos) entre ${vot.filter(x => x.n === ult.n).map(x => esc(x.nome)).join(', ')}. Decida antes de eleger.` : ''}
+    <br><button class="btn s p" style="margin-top:8px" onclick="elegerMaisVotados()">Eleger os ${Math.min(max, vot.length)} mais votados</button>`);
+}
+function segundoEscrutinio(){
+  const c = cargoSel(), vot = somar('votacao').slice(0, 2).map(x => x.nome);
+  if(!confirm(`Abrir o ${c.rodada + 1}º escrutínio de "${c.nome}" só com ${vot.join(' e ')}? Todos votam de novo.`)) return;
+  patchCargo({ rodada: c.rodada + 1, fase: 'votacao', candidatos: vot, permite_outros: false, max_escolhas: 1, eleito: null });
+}
+function elegerMaisVotados(){
+  const c = cargoSel(), l = somar('votacao').slice(0, c.max_escolhas || 1).map(x => x.nome);
+  patchCargo({ eleito: l.join('; ') });
 }
 const cargoSel = () => cargos.find(x => x.id === selId);
 async function patchCargo(body){ await api(`vot_cargos?id=eq.${selId}`, { method:'PATCH', body }); await carregarAdmin(); }
@@ -391,7 +473,59 @@ function addCand(nome){
   patchCargo({ candidatos: [...l, nome] });
 }
 function tirarCand(i){ const l = [...(cargoSel().candidatos || [])]; l.splice(i, 1); patchCargo({ candidatos: l }); }
-function definirEleito(n){ patchCargo({ eleito: n }); }
+/* Relatório em planilha (Excel): resumo por cargo, votos, indicações e eleitos */
+async function exportar(){
+  try{
+    const cs = await api('vot_cargos?select=*&order=ordem,nome');
+    let todas = [], de = 0;
+    while(true){
+      const lote = await api(`vot_respostas?select=cargo_id,rodada,fase,valor,dispositivo&order=id&limit=1000&offset=${de}`) || [];
+      todas = todas.concat(lote); if(lote.length < 1000) break; de += 1000;
+    }
+    const resumo = [], votos = [], indic = [];
+    cs.forEach(c => {
+      const r = todas.filter(x => x.cargo_id === c.id);
+      const rodadas = [...new Set(r.map(x => x.rodada))].sort((a, b) => a - b);
+      const contar = (lista) => {
+        const g = {}; lista.forEach(x => { const k = norm(x.valor); g[k] = g[k] || { nome: x.valor, n: 0 }; g[k].n++; });
+        return Object.values(g).sort((a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR'));
+      };
+      const vFinal = r.filter(x => x.fase === 'votacao' && x.rodada === c.rodada);
+      resumo.push({ 'Ordem': c.ordem, 'Cargo': c.nome, 'Eleito(s)': (c.eleito || '').split('; ').join(', '),
+        'Nomes por pessoa': c.max_escolhas || 1, 'Escrutínios': c.rodada,
+        'Pessoas que indicaram': new Set(r.filter(x => x.fase === 'indicacao').map(x => x.dispositivo)).size,
+        'Pessoas que votaram (último escrutínio)': new Set(vFinal.map(x => x.dispositivo)).size, 'Situação': FASE_NOME[c.fase] });
+      rodadas.forEach(rd => {
+        const vs = r.filter(x => x.fase === 'votacao' && x.rodada === rd), pv = new Set(vs.map(x => x.dispositivo)).size;
+        contar(vs).forEach((x, i) => votos.push({ 'Cargo': c.nome, 'Escrutínio': rd, 'Posição': i + 1, 'Nome': x.nome, 'Votos': x.n,
+          '% dos votantes': pv ? Math.round(x.n / pv * 1000) / 10 : 0, 'Eleito': (c.eleito || '').split('; ').includes(x.nome) && rd === c.rodada ? 'Sim' : '' }));
+        contar(r.filter(x => x.fase === 'indicacao' && x.rodada === rd)).forEach(x => indic.push({ 'Cargo': c.nome, 'Escrutínio': rd, 'Nome indicado': x.nome, 'Indicações': x.n }));
+      });
+    });
+    const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+    if(window.XLSX){
+      const wb = XLSX.utils.book_new();
+      const folha = (dados, nome, larg) => { const ws = XLSX.utils.json_to_sheet(dados.length ? dados : [{ 'Sem dados': '' }]); ws['!cols'] = larg.map(w => ({ wch: w })); XLSX.utils.book_append_sheet(wb, ws, nome); };
+      folha(resumo, 'Resumo', [6, 34, 40, 10, 10, 12, 18, 12]);
+      folha(votos, 'Votos', [34, 10, 8, 34, 8, 12, 8]);
+      folha(indic, 'Indicações', [34, 10, 34, 12]);
+      XLSX.writeFile(wb, `Comissao-de-Nomeacoes-${hoje}.xlsx`);
+    } else {
+      // sem a biblioteca de Excel: baixa CSV (abre no Excel também)
+      const csv = '﻿' + ['Cargo;Escrutínio;Nome;Votos;Eleito'].concat(votos.map(v => [v['Cargo'], v['Escrutínio'], v['Nome'], v['Votos'], v['Eleito']].map(x => `"${String(x).replace(/"/g, '""')}"`).join(';'))).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `Comissao-de-Nomeacoes-${hoje}.csv`; a.click();
+    }
+  }catch(e){ alert('Não consegui exportar: ' + e.message); }
+}
+function mudarMax(v){ v = Math.max(1, Math.min(50, parseInt(v, 10) || 1)); patchCargo({ max_escolhas: v }); }
+const eleitosDe = c => (c.eleito || '').split('; ').filter(Boolean);
+function definirEleito(n){
+  const c = cargoSel();
+  if((c.max_escolhas || 1) <= 1) return patchCargo({ eleito: c.eleito === n ? null : n });
+  const l = eleitosDe(c), i = l.indexOf(n);
+  if(i >= 0) l.splice(i, 1); else l.push(n);
+  patchCargo({ eleito: l.length ? l.join('; ') : null });
+}
 function novaRodada(){
   const c = cargoSel();
   if(!confirm(`Começar o ${c.rodada + 1}º escrutínio de "${c.nome}"? Os votos atuais ficam guardados, e todos podem votar de novo. Ajuste a lista de nomes se precisar.`)) return;
@@ -434,7 +568,7 @@ if(q.has('tv')){
   if(!noApp){
     $('admLogin').classList.add('hidden'); $('admApp').classList.add('hidden');
     $('modoAdmin').insertAdjacentHTML('beforeend', `<div class="login"><div class="cartao"><h2 style="margin-top:0">Controle pelo app</h2>
-      <p class="dica">O controle da votação fica dentro do app da igreja. Entre em <a href="/">igrejaunaspec.com</a> com seu login de administrador e abra <b>Acessos → Votação</b>.</p></div></div>`);
+      <p class="dica">O controle da votação fica dentro do app da igreja. Entre em <a href="/">igrejaunaspec.com</a> com seu login e abra <b>Acessos → Comissão</b>.</p></div></div>`);
   } else {
     document.querySelector('#modoAdmin .topo').classList.add('hidden');
     iniciarAdmin();
