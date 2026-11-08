@@ -1,4 +1,4 @@
-<!-- versão 2026-11-08 12:05 -->
+<!-- versão 2026-11-08 12:15 -->
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -406,7 +406,7 @@ async function admEntrar(){
   const d = await r.json().catch(() => ({}));
   if(!r.ok){ $('lgMsg').textContent = 'E-mail ou senha incorretos.'; return; }
   guardarSessao(d); $('lgMsg').textContent = '';
-  if(q.has('tv') || q.has('votos')){ location.reload(); return; }
+  if(q.has('tv') || MODO_APURACAO){ location.reload(); return; }
   iniciarAdmin();
 }
 async function carregarAdmin(){
@@ -438,7 +438,7 @@ function desenharAdmin(){
   const naTela = c.id === estado.cargo_atual;
   const ind = somar('indicacao'), vot = somar('votacao');
   const cands = campoLista(c) === 'atuais' ? (c.atuais || []) : (c.candidatos || []);
-  const tabVotos = `<div class="tabvotos">        <a class="btn s" style="float:right" href="/votacao/?votos" target="_blank" rel="noopener">Abrir em outra janela ↗</a><h2 style="margin-top:0">Votos${c.rodada > 1 ? ' · ' + c.rodada + 'º escrutínio' : ''} <span class="chip">${respostas.filter(r => r.fase === 'votacao').length} votos</span> <span class="chip">${new Set(respostas.filter(r => r.fase === 'votacao').map(r => r.dispositivo)).size} pessoas</span></h2>
+  const tabVotos = `<div class="tabvotos">        <a class="btn s" style="float:right" href="/apuracao/" target="_blank" rel="noopener">Abrir em outra janela ↗</a><h2 style="margin-top:0">Votos${c.rodada > 1 ? ' · ' + c.rodada + 'º escrutínio' : ''} <span class="chip">${respostas.filter(r => r.fase === 'votacao').length} votos</span> <span class="chip">${new Set(respostas.filter(r => r.fase === 'votacao').map(r => r.dispositivo)).size} pessoas</span></h2>
         <table class="tab" style="font-size:14px">${vot.map((x, i) => `<tr><td class="q" style="width:36px;color:#7a8597">${i + 1}º</td><td>${esc(x.nome)}</td><td class="q">${x.n}</td>
           <td style="width:110px;text-align:right;white-space:nowrap">${eleitosDe(c).includes(x.nome) ? `<button class="btn s" style="background:#dff3e6;color:#17663b;border-color:#bfe5cc" title="Tocar para desmarcar" onclick='definirEleito(${JSON.stringify(x.nome)})'>eleito(a) ✓</button>` : `<button class="btn s" onclick='definirEleito(${JSON.stringify(x.nome)})'>Eleger</button>`}</td></tr>`).join('') || '<tr><td class="dica">Nenhum voto ainda.</td></tr>'}</table>
 </div>`;
@@ -732,12 +732,13 @@ async function atualizarVotos(){
 
 /* ================= início ================= */
 const q = new URLSearchParams(location.search);
+const MODO_APURACAO = location.pathname.replace(/\/+$/, '').endsWith('/apuracao');   // página separada: igrejaunaspec.com/apuracao
 if(q.has('tv')){
   lerSessao();
   document.body.classList.add('tv'); $('modoTV').classList.remove('hidden');
   document.addEventListener('click', () => { if(!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); });
   atualizarTV(); setInterval(atualizarTV, 2000);
-} else if(q.has('votos')){
+} else if(MODO_APURACAO){
   lerSessao(); $('modoVotos').classList.remove('hidden');
   atualizarVotos(); setInterval(() => { if(!$('modoVotos').classList.contains('hidden')) atualizarVotos(); }, 3000);
 } else if(q.has('admin')){
