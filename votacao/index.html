@@ -1,4 +1,4 @@
-<!-- versão 2026-11-07 15:40 -->
+<!-- versão 2026-11-08 08:25 -->
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -97,6 +97,8 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
   .lista-cargos{display:flex;flex-direction:column;gap:6px;max-height:75vh;overflow:auto}
   .lc{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--linha);border-radius:10px;background:#fff;cursor:pointer}
   .lc.atual{border-color:var(--azul);box-shadow:0 0 0 2px #c9d6e6 inset}
+  .lc .pega{cursor:grab;color:#9aa5b4;font-size:16px;line-height:1;user-select:none}
+  .lc.arr{opacity:.4}.lc.alvo-cima{box-shadow:0 -3px 0 var(--azul)}.lc.alvo-baixo{box-shadow:0 3px 0 var(--azul)}
   .lc .nm{flex:1;min-width:0;font-weight:600;font-size:14px}
   .lc .el{display:block;font-weight:400;font-size:12px;color:var(--mut)}
   .chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:#eef1f4;color:var(--mut);white-space:nowrap}
@@ -159,6 +161,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
         Celulares: <b>igrejaunaspec.com/votacao</b><br>
         TV: <a href="/votacao/?tv" target="_blank" rel="noopener">abrir tela da TV</a>
       </div>
+      <button class="btn r" style="width:100%;margin-top:16px;background:#c0392b;color:#fff;border-color:#c0392b;font-weight:800" onclick="zerarTudo()" title="Apaga todos os votos, coletas, escrutínios e eleitos. Mantém os cargos e os nomes atuais.">Zerar tudo</button>
     </div>
     <div class="cartao" id="admPainel"></div>
   </div>
@@ -417,8 +420,9 @@ let focoAdm = null, painelAba = 'controle';
 function desenharAdmin(){
   // não redesenha enquanto o admin digita num campo
   const a = document.activeElement; if(a && a.tagName === 'INPUT' && $('modoAdmin').contains(a) && a.value) return;
-  $('admCargos').innerHTML = cargos.map(c => `<div class="lc ${c.id === estado.cargo_atual ? 'atual' : ''}" onclick="selId='${c.id}';carregarAdmin()" style="${c.id === selId ? 'background:#f4f7fb' : ''}">
-    <span class="nm">${esc(c.nome)}${c.eleito ? `<span class="el">✓ ${esc(c.eleito.split('; ').length > 1 ? c.eleito.split('; ').length + ' eleitos' : c.eleito)}</span>` : ''}</span>
+  if(arrastando) return;
+  $('admCargos').innerHTML = cargos.map(c => `<div class="lc ${c.id === estado.cargo_atual ? 'atual' : ''}" draggable="true" data-id="${c.id}" ondragstart="arrInicio(event)" ondragover="arrSobre(event)" ondrop="arrSoltar(event)" ondragend="arrFim()" onclick="selId='${c.id}';carregarAdmin()" style="${c.id === selId ? 'background:#f4f7fb' : ''}">
+    <span class="pega" title="Arraste para mudar a ordem">⠿</span><span class="nm">${esc(c.nome)}${c.eleito ? `<span class="el">✓ ${esc(c.eleito.split('; ').length > 1 ? c.eleito.split('; ').length + ' eleitos' : c.eleito)}</span>` : ''}</span>
     ${c.id === estado.cargo_atual ? '<span class="chip" style="background:var(--azul);color:#fff">NA TELA</span>' : ''}<span class="chip ${c.fase}">${FASE_NOME[c.fase]}</span></div>`).join('') || '<p class="dica">Nenhum cargo.</p>';
   const c = cargos.find(x => x.id === selId);
   const p = $('admPainel');
@@ -658,6 +662,42 @@ async function moverCargo(d){
   await api(`vot_cargos?id=eq.${b.id}`, { method:'PATCH', body:{ ordem: a.ordem } });
   carregarAdmin();
 }
+
+/* ZERAR TUDO: apaga respostas e eleitos de todos os cargos; mantém cargos, ordem, limite de nomes e os atuais (ano passado) */
+async function zerarTudo(){
+  if(!confirm('ZERAR TUDO?\n\nVai apagar TODAS as coletas, votos, escrutínios e eleitos de TODOS os cargos.\nFicam só os cargos e os nomes atuais (do ano passado).\n\nIsso não tem volta.')) return;
+  if((prompt('Para confirmar, digite ZERAR') || '').trim().toUpperCase() !== 'ZERAR') return alert('Nada foi apagado.');
+  try{
+    await api('vot_respostas?id=gt.0', { method:'DELETE', prefer:'return=minimal' });
+    await api('vot_cargos?id=not.is.null', { method:'PATCH', body:{ fase: 'aguardando', rodada: 1, candidatos: [], eleito: null, permite_outros: true }, prefer:'return=minimal' });
+    await api('vot_estado?id=eq.1', { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false, atualizado_em: new Date().toISOString() } });
+    alert('Pronto: tudo zerado. Cargos e nomes atuais mantidos.');
+  }catch(e){ alert('Não consegui zerar tudo: ' + e.message); }
+  carregarAdmin();
+}
+
+/* arrastar para reordenar a lista de cargos */
+let arrastando = null;
+function arrInicio(e){ arrastando = e.currentTarget.dataset.id; e.currentTarget.classList.add('arr'); e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', arrastando); }catch(_){} }
+function arrSobre(e){
+  if(!arrastando) return; e.preventDefault();
+  const el = e.currentTarget, r = el.getBoundingClientRect(), baixo = e.clientY > r.top + r.height / 2;
+  document.querySelectorAll('.lc').forEach(x => x.classList.remove('alvo-cima', 'alvo-baixo'));
+  el.classList.add(baixo ? 'alvo-baixo' : 'alvo-cima');
+}
+async function arrSoltar(e){
+  e.preventDefault(); const alvo = e.currentTarget, de = arrastando; if(!de || alvo.dataset.id === de){ arrFim(); return; }
+  const baixo = alvo.classList.contains('alvo-baixo');
+  const lista = cargos.filter(c => c.id !== de), mov = cargos.find(c => c.id === de);
+  let k = lista.findIndex(c => c.id === alvo.dataset.id); if(baixo) k++;
+  lista.splice(k, 0, mov);
+  arrastando = null;
+  const mudou = lista.map((c, i) => ({ c, o: i + 1 })).filter(x => x.c.ordem !== x.o);
+  cargos = lista; lista.forEach((c, i) => c.ordem = i + 1); desenharAdmin();
+  try{ await Promise.all(mudou.map(x => api(`vot_cargos?id=eq.${x.c.id}`, { method:'PATCH', body:{ ordem: x.o } }))); }catch(err){ alert('Não consegui salvar a ordem: ' + err.message); }
+  carregarAdmin();
+}
+function arrFim(){ arrastando = null; document.querySelectorAll('.lc').forEach(x => x.classList.remove('arr', 'alvo-cima', 'alvo-baixo')); }
 
 /* ================= início ================= */
 const q = new URLSearchParams(location.search);
