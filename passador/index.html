@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script>
+/* Sai sozinho depois de 30 minutos sem uso (vale para o app e o painel do Médicos em Missão).
+   A hora do último uso fica guardada no navegador, então vale também com a aba fechada. */
+(function(){
+  var LIMITE = 30 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
+  function agora(){ return Date.now(); }
+  function ultimo(){ try{ return +localStorage.getItem(ULT) || 0; }catch(e){ return 0; } }
+  function temSessao(){ try{ return !!localStorage.getItem(CHAVE); }catch(e){ return false; } }
+  function marcar(){ try{ localStorage.setItem(ULT, String(agora())); }catch(e){} }
+  function expirou(){ var u = ultimo(); return temSessao() && u && agora() - u > LIMITE; }
+  // ao abrir a página: se ficou parado mais de 30 min, apaga a sessão antes do app carregar
+  if(expirou()){ try{ localStorage.removeItem(CHAVE); }catch(e){} }
+  if(temSessao() && !ultimo()) marcar();
+  var ultimaMarca = 0;
+  function atividade(){ var t = agora(); if(t - ultimaMarca > 20000){ ultimaMarca = t; marcar(); } }
+  ['pointerdown','keydown','scroll','touchstart','wheel'].forEach(function(ev){
+    window.addEventListener(ev, atividade, { passive:true, capture:true });
+  });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) verificar(); });
+  function verificar(){
+    if(!expirou()) return;
+    try{ localStorage.removeItem(CHAVE); }catch(e){}
+    try{ sessionStorage.setItem('saiuPorInatividade', '1'); }catch(e){}
+    location.reload();
+  }
+  setInterval(verificar, 30000);
+  // depois de recarregar, avisa na tela de login
+  try{
+    if(sessionStorage.getItem('saiuPorInatividade') === '1'){
+      sessionStorage.removeItem('saiuPorInatividade');
+      window.addEventListener('load', function(){
+        var d = document.createElement('div');
+        d.textContent = 'Você saiu automaticamente depois de 30 minutos sem uso. Entre de novo.';
+        d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#1D3A5C;color:#fff;padding:12px 18px;border-radius:12px;font:600 15px system-ui,sans-serif;box-shadow:0 6px 20px #0003;max-width:92vw;text-align:center';
+        document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 8000);
+      });
+    }
+  }catch(e){}
+})();
+</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Passador e TV de retorno</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<style>
+:root{--bg:#f2f3f6;--card:#fff;--fg:#1c1f26;--muted:#5b6472;--line:#dde1e8;--brand:#2f557f;--ok:#15803d;--ok-bg:#e8f5ec;--warn:#dc2626;--warn-bg:#fdecec;--soft:#edeff3;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:16px 16px 48px}
+button,input{font:inherit}
+.hidden{display:none!important}
+.caixa{max-width:480px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+h1{font-size:20px;margin:0 0 4px;color:var(--brand)}
+.ex{color:var(--muted);font-size:14px;margin:0 0 14px}
+.campo{display:block;font-weight:700;font-size:14px;margin-bottom:10px}
+.campo input{display:block;width:100%;margin-top:4px;font-weight:400;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.sbtn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;cursor:pointer;color:var(--fg)}
+.sbtn.pri{background:var(--brand);border-color:var(--brand);color:#fff;width:100%;font-weight:700}
+.aviso{padding:12px 14px;border-radius:10px;font-size:15px;margin-bottom:10px}
+.aviso.erro{background:var(--warn-bg);color:var(--warn)}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.status{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:12px}
+.bola{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.it{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer;background:var(--card);width:100%;text-align:left}
+.it.on{border:2px solid var(--ok);background:var(--ok-bg)}
+.it.esperando{opacity:.6}
+.nome{font-weight:700;margin:0}.info{font-size:13px;color:var(--muted);margin:0}
+.tag{font-size:12px;padding:3px 9px;border-radius:8px;background:var(--ok);color:#fff;white-space:nowrap}
+.ic{width:28px;text-align:center;font-size:20px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.cx{background:var(--soft);border-radius:10px;padding:10px}.cx p{margin:0}.cx .l{font-size:12px;color:var(--muted)}.cx .v{font-weight:700;font-size:15px}
+.dica{font-size:13px;color:var(--muted);margin:12px 0 0}
+</style>
+</head>
+<body>
+
+<div id="telaLogin" class="caixa hidden">
+  <h1>Passador e TV de retorno</h1>
+  <p class="ex">Entre com o mesmo e-mail e senha do app da igreja.</p>
+  <label class="campo">E-mail<input id="inEmail" type="email" autocomplete="username"></label>
+  <label class="campo">Senha<input id="inSenha" type="password" autocomplete="current-password"></label>
+  <div id="avisoLogin"></div>
+  <button class="sbtn pri" id="btnEntrar" onclick="entrar()">Entrar</button>
+</div>
+
+<div id="telaSemAcesso" class="caixa hidden">
+  <h1>Passador e TV de retorno</h1>
+  <div class="aviso erro">Seu acesso ainda não foi liberado. Peça a um administrador para marcar a permissão "Passador" na aba Pessoas do app.</div>
+  <button class="sbtn" onclick="sair()">Sair</button>
+</div>
+
+<div id="telaApp" class="caixa hidden">
+  <div class="topo">
+    <a href="/" class="sbtn" style="text-decoration:none">← App</a>
+    <button class="sbtn" onclick="sair()">Sair</button>
+  </div>
+  <h1>Passador e TV de retorno</h1>
+  <div class="status"><span class="bola" id="bola"></span><span id="txtStatus">Carregando…</span></div>
+  <p class="ex">Toque num computador para passar o passador e a TV de retorno para ele</p>
+  <div id="lista"></div>
+  <div class="grid">
+    <div class="cx"><p class="l">Passador</p><p class="v" id="vP">-</p></div>
+    <div class="cx"><p class="l">TV de retorno</p><p class="v" id="vT">-</p></div>
+  </div>
+  <div id="erro"></div>
+  <p class="dica">O computador precisa estar ligado, no Wi-Fi da igreja e com o app "Passador da igreja" aberto para aparecer aqui. A TV pisca 1–3 s na troca.</p>
+</div>
+
+<script>
+/* ======================================================================
+   PASSADOR E TV DE RETORNO · escolhe qual computador controla o passador
+   e manda a tela para a TV de retorno. O Mac Igreja (ponte) conversa com
+   o banco pelas funções passador_sync / passador_ler / passador_escolher.
+   Mesmo login do app. Só admin ou quem tem "acesso_passador".
+====================================================================== */
+const SUPABASE_URL = 'https://sxzvdnwytbdhycwzbxji.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6rOzgGXVgobnNb-sy4rx9A_SGjR3v0r';
+const CHAVE_SESSAO = 'roteiroEditor.sessao';
+let sessao = null, perfil = null, dados = null, pedindo = null, pedidoEm = 0, timer = null;
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function guardarSessao(d){
+  sessao = { access_token: d.access_token, refresh_token: d.refresh_token,
+    expira_em: Date.now() + (d.expires_in || 3600) * 1000 - 60000, email: d.user ? d.user.email : (sessao && sessao.email) };
+  try{ localStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessao)); }catch(e){}
+}
+async function token(){
+  if(!sessao) throw new Error('sem sessão');
+  if(Date.now() >= sessao.expira_em){
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method:'POST',
+      headers:{ 'Content-Type':'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ refresh_token: sessao.refresh_token }) });
+    if(!r.ok){ sair(); throw new Error('Sua sessão expirou. Entre de novo.'); }
+    guardarSessao(await r.json());
+  }
+  return sessao.access_token;
+}
+async function api(caminho, corpo){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${caminho}`, { method: corpo ? 'POST' : 'GET',
+    headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + await token(), 'Content-Type':'application/json' },
+    body: corpo ? JSON.stringify(corpo) : undefined });
+  if(!r.ok){ let m = ''; try{ const j = await r.json(); m = j.message || ''; }catch(e){} throw new Error(m || 'Erro ' + r.status); }
+  if(r.status === 204) return null;
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+function decodificar(t){ try{ return JSON.parse(decodeURIComponent(escape(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))))); }catch(e){ return null; } }
+
+async function entrar(){
+  const email = document.getElementById('inEmail').value.trim(), senha = document.getElementById('inSenha').value;
+  const av = document.getElementById('avisoLogin'), b = document.getElementById('btnEntrar');
+  if(!email || !senha){ av.innerHTML = '<div class="aviso erro">Preencha e-mail e senha.</div>'; return; }
+  b.disabled = true; b.textContent = 'Entrando…'; av.innerHTML = '';
+  try{
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method:'POST',
+      headers:{ 'Content-Type':'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ email, password: senha }) });
+    const d = await r.json();
+    if(!r.ok) throw new Error(/invalid login/i.test(d.msg || d.error_description || '') ? 'E-mail ou senha incorretos.' : (d.msg || d.error_description || 'Não consegui entrar.'));
+    guardarSessao(d);
+    await iniciar();
+  }catch(e){ av.innerHTML = `<div class="aviso erro">${esc(e.message)}</div>`; }
+  b.disabled = false; b.textContent = 'Entrar';
+}
+function sair(){
+  sessao = null; clearInterval(timer); try{ localStorage.removeItem(CHAVE_SESSAO); }catch(e){}
+  mostrar('telaLogin');
+}
+function mostrar(id){ ['telaLogin','telaSemAcesso','telaApp'].forEach(x => document.getElementById(x).classList.toggle('hidden', x !== id)); }
+
+async function iniciar(){
+  try{ sessao = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || 'null'); }catch(e){ sessao = null; }
+  if(!sessao){ mostrar('telaLogin'); return; }
+  try{
+    const id = (decodificar(await token()) || {}).sub;
+    const p = await api(`perfis?select=id,admin,acesso_passador&id=eq.${id}`);
+    perfil = p && p[0];
+  }catch(e){ mostrar('telaLogin'); return; }
+  if(!perfil || !(perfil.admin || perfil.acesso_passador)){ mostrar('telaSemAcesso'); return; }
+  mostrar('telaApp');
+  await carregar();
+  clearInterval(timer); timer = setInterval(carregar, 2000);
+}
+
+async function carregar(){
+  const er = document.getElementById('erro');
+  try{ dados = await api('rpc/passador_ler', {}); er.innerHTML = ''; }
+  catch(e){ er.innerHTML = `<div class="aviso erro" style="margin-top:10px">${esc(e.message)}</div>`; return; }
+  desenhar();
+}
+
+function desenhar(){
+  const bola = document.getElementById('bola'), txt = document.getElementById('txtStatus');
+  if(!dados){ txt.textContent = 'O Mac Igreja ainda não se conectou.'; bola.style.background = 'var(--warn)'; return; }
+  const seg = dados.visto_em ? Math.round((new Date(dados.agora) - new Date(dados.visto_em)) / 1000) : null;
+  const online = seg !== null && seg < 12;
+  bola.style.background = online ? 'var(--ok)' : 'var(--warn)';
+  txt.textContent = online ? `Mac Igreja online` :
+    (seg === null ? 'O Mac Igreja ainda não se conectou.' : `Mac Igreja offline (visto há ${seg < 120 ? seg + ' s' : Math.round(seg / 60) + ' min'})`);
+  txt.style.color = online ? 'var(--ok)' : 'var(--warn)';
+  if(pedindo && (dados.controle === pedindo || Date.now() - pedidoEm > 15000)) pedindo = null;
+  const L = document.getElementById('lista'); L.innerHTML = '';
+  let dono = 'Mac Igreja';
+  (dados.computadores || []).forEach(c => {
+    const on = c.id === dados.controle; if(on) dono = c.nome;
+    const b = document.createElement('button');
+    b.className = 'it' + (on ? ' on' : '') + (pedindo === c.id ? ' esperando' : '');
+    const info = c.local ? 'Reserva' : ((c.so === 'windows' ? 'Windows' : 'Mac') + ' · ' + (on ? 'no controle' : 'pedindo para assumir'));
+    b.innerHTML = `<span class="ic">${c.so === 'windows' ? '⊞' : '▢'}</span><span style="flex:1"><p class="nome">${esc(c.nome)}</p><p class="info">${pedindo === c.id ? 'Trocando…' : info}</p></span>${on ? '<span class="tag">No controle</span>' : ''}`;
+    b.disabled = !online;
+    b.onclick = () => escolher(c.id);
+    L.appendChild(b);
+  });
+  document.getElementById('vP').textContent = dono;
+  document.getElementById('vT').textContent = dono;
+}
+
+async function escolher(id){
+  if(!dados || id === dados.controle) return;
+  pedindo = id; pedidoEm = Date.now(); desenhar();
+  try{ await api('rpc/passador_escolher', { p_id: id }); }
+  catch(e){ pedindo = null; document.getElementById('erro').innerHTML = `<div class="aviso erro" style="margin-top:10px">${esc(e.message)}</div>`; desenhar(); }
+}
+
+document.getElementById('inSenha').addEventListener('keydown', e => { if(e.key === 'Enter') entrar(); });
+iniciar();
+</script>
+</body>
+</html>
