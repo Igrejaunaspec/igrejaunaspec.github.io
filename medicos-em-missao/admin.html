@@ -598,9 +598,11 @@ function abaLis(){
       <td><input value="${fmtCPF(x.cpf)}" inputmode="numeric" placeholder="CPF" oninput="salvarDepois('${x.id}','cpf',this.value.replace(/\\D/g,''))" onchange="salvarIns('${x.id}','cpf',this.value.replace(/\\D/g,''))"></td>
       <td><input value="${fmtTel(x.whatsapp)}" inputmode="numeric" placeholder="Telefone" oninput="salvarDepois('${x.id}','whatsapp',this.value.replace(/\\D/g,''))" onchange="salvarIns('${x.id}','whatsapp',this.value.replace(/\\D/g,''))"></td>
       <td>${selStatus(x)}</td><td>${ORIGEM_ROTULO[o]} <button class="sbtn perigo" title="Liberar linha" aria-label="Liberar linha" onclick="removerIns('${x.id}')">✕</button></td>
-      <td>${digits(x.whatsapp).length >= 10 ? `<a class="wa" target="_blank" rel="noopener" href="${linkWA(x, m)}">WhatsApp</a>` : ''}</td></tr>`;
+      <td>${digits(x.whatsapp).length >= 10 ? `<a class="wa" target="_blank" rel="noopener" href="${linkWA(x, m)}">WhatsApp</a>` :
+        (String(x.nome || '').trim() ? '' : `<select class="trocar" aria-label="Usar inscrito do formulário" onchange="usarNaReserva('${m.id}','${o}',this.value,'${x.id}')"><option value="">ou usar inscrito do formulário…</option>${opcoesPacientes(m)}</select>`)}</td></tr>`;
     const vazias = (n, o) => Array.from({ length: Math.max(0, n) }, () => `<tr class="linha-reserva"><td colspan="5" class="ex">Reservado para ${o === 'prefeitura' ? 'a Prefeitura' : 'a UNASP'}</td>
-      <td>${ORIGEM_ROTULO[o]}</td><td><button class="sbtn" onclick="adicionarManual('${m.id}','${o}')">+ Preencher</button></td></tr>`).join('');
+      <td>${ORIGEM_ROTULO[o]}</td><td style="white-space:nowrap"><button class="sbtn" onclick="adicionarManual('${m.id}','${o}')">+ Preencher</button>
+        <select class="trocar" aria-label="Usar inscrito do formulário" onchange="usarNaReserva('${m.id}','${o}',this.value)"><option value="">ou usar inscrito do formulário…</option>${opcoesPacientes(m)}</select></td></tr>`).join('');
     const pref = manuais('prefeitura'), nasp = manuais('nasp');
     const preenchida = x => String(x.nome || '').trim().length > 0;
     const ocupadas = sel.length + pref.filter(preenchida).length + nasp.filter(preenchida).length;
@@ -686,6 +688,19 @@ async function adicionarManual(medicoId, origem){
   try{ const r = await api('mm_inscricoes', { method:'POST', body:{ evento_id: evento.id, medico_id: medicoId, origem, tipo:'consulta', especialidade: m.especialidade, atualizado_por: perfil.email } });
     inscricoes.push(r[0]); abaLis(); }
   catch(e){ toast('Não consegui adicionar: ' + e.message); }
+}
+// Coloca um inscrito do formulário na vaga reservada (Prefeitura/UNASP): a inscrição dele vira a linha dessa vaga
+async function usarNaReserva(medicoId, origem, id, linhaVaziaId){
+  if(!id) return;
+  const m = medicos.find(x => x.id === medicoId), x = inscricoes.find(y => y.id === id);
+  if(!confirm(`Colocar ${x ? x.nome : 'esta pessoa'} na vaga da ${origem === 'prefeitura' ? 'Prefeitura' : 'UNASP'} de ${m.especialidade}?`)){ abaLis(); return; }
+  try{
+    if(linhaVaziaId){ await api(`mm_inscricoes?id=eq.${linhaVaziaId}`, { method:'DELETE', prefer:'return=minimal' }); inscricoes = inscricoes.filter(y => y.id !== linhaVaziaId); }
+    const obs = ((x && x.obs ? x.obs + ' · ' : '') + 'Inscrito pelo formulário').slice(0, 300);
+    await api(`mm_inscricoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ origem, medico_id: m.id, especialidade: m.especialidade, status:'pendente', obs, atualizado_por: perfil.email } });
+    if(x){ x.origem = origem; x.medico_id = m.id; x.especialidade = m.especialidade; x.status = 'pendente'; x.obs = obs; }
+    toast('Colocado na vaga reservada.'); abaLis();
+  }catch(e){ toast('Não consegui: ' + e.message); abaLis(); }
 }
 async function removerIns(id){
   if(!confirm('Liberar esta linha (apagar o nome digitado)?')) return;
