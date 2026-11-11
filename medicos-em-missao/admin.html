@@ -539,6 +539,13 @@ async function removerMedico(id){
 
 // ---- 2. Inscrições
 let filtroIns = '';
+// a lista é redesenhada a cada letra: devolve o cursor para a caixa de busca nova, no mesmo lugar
+function buscarIns(el){
+  filtroIns = el.value; const pos = el.selectionStart;
+  abaIns();
+  const n = document.getElementById('buscaIns');
+  if(n){ n.focus(); try{ n.setSelectionRange(pos, pos); }catch(e){} }
+}
 function chipClasse(x){
   const c = classe(x);
   if(c === 'manual') return `<span class="chip c-wait">${ORIGEM_ROTULO[x.origem]}</span>`;
@@ -556,7 +563,7 @@ function abaIns(){
     <div class="stats"><div class="stat"><b>${form.length}</b><span>recebidas</span></div><div class="stat"><b>${c.ok}</b><span>válidas</span></div>
       <div class="stat"><b>${c.ret}</b><span>retornos</span></div><div class="stat"><b>${c.plano}</b><span>com plano de saúde</span></div><div class="stat"><b>${c.dup}</b><span>duplicadas</span></div></div>
     <p class="ex">A triagem é automática. O paciente nunca vê estes status. Se alguém pedir para apagar os seus dados (direito previsto na LGPD), use <b>Excluir dados</b>: apaga a inscrição e a foto do pedido, sem volta.</p>
-    <input type="search" placeholder="Buscar por nome, CPF, telefone ou especialidade" value="${esc(filtroIns)}" oninput="filtroIns=this.value;abaIns();this.focus();this.setSelectionRange(this.value.length,this.value.length)" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg)">
+    <input id="buscaIns" type="search" placeholder="Buscar por nome, CPF, telefone ou especialidade" value="${esc(filtroIns)}" oninput="buscarIns(this)" style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg)">
     <div class="tw"><table><thead><tr><th>Envio</th><th>Nome</th><th>Especialidade</th><th>Tipo</th><th>Situação</th><th>Nascimento</th><th>CPF</th><th>WhatsApp</th><th>Pedido</th><th>Autorização</th><th></th></tr></thead><tbody>
     ${lista.map(x => `<tr><td>${hora(x.enviado_em)}</td><td>${esc(x.nome)}</td><td>${esc(x.especialidade)}</td><td>${x.tipo === 'retorno' ? 'Retorno' : 'Consulta'}</td>
       <td>${chipClasse(x)}</td><td>${dataBR(x.nascimento)}</td><td>${fmtCPF(x.cpf)}</td><td>${fmtTel(x.whatsapp)}</td>
