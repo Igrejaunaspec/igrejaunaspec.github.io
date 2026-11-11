@@ -593,16 +593,17 @@ function abaLis(){
         <select class="trocar" aria-label="Trocar por" onchange="trocarPaciente('${x.id}','${m.id}',this.value)"><option value="">Trocar por…</option>${opcoesPacientes(m, x.id)}</select>
         <button class="sbtn perigo" style="padding:6px 10px" title="Retirar da lista" aria-label="Retirar da lista" onclick="retirarPaciente('${x.id}')">✕</button></td></tr>`;
     const linhaManual = (x, o) => `<tr class="linha-reserva">
-      <td><input value="${esc(x.nome)}" placeholder="Nome" onchange="salvarIns('${x.id}','nome',this.value)"></td>
+      <td><input value="${esc(x.nome)}" placeholder="Nome" oninput="salvarDepois('${x.id}','nome',this.value)" onchange="salvarIns('${x.id}','nome',this.value)"></td>
       <td><input type="date" value="${x.nascimento || ''}" onchange="salvarIns('${x.id}','nascimento',this.value||null)"></td>
-      <td><input value="${fmtCPF(x.cpf)}" inputmode="numeric" placeholder="CPF" onchange="salvarIns('${x.id}','cpf',this.value.replace(/\\D/g,''))"></td>
-      <td><input value="${fmtTel(x.whatsapp)}" inputmode="numeric" placeholder="Telefone" onchange="salvarIns('${x.id}','whatsapp',this.value.replace(/\\D/g,''))"></td>
+      <td><input value="${fmtCPF(x.cpf)}" inputmode="numeric" placeholder="CPF" oninput="salvarDepois('${x.id}','cpf',this.value.replace(/\\D/g,''))" onchange="salvarIns('${x.id}','cpf',this.value.replace(/\\D/g,''))"></td>
+      <td><input value="${fmtTel(x.whatsapp)}" inputmode="numeric" placeholder="Telefone" oninput="salvarDepois('${x.id}','whatsapp',this.value.replace(/\\D/g,''))" onchange="salvarIns('${x.id}','whatsapp',this.value.replace(/\\D/g,''))"></td>
       <td>${selStatus(x)}</td><td>${ORIGEM_ROTULO[o]} <button class="sbtn perigo" title="Liberar linha" aria-label="Liberar linha" onclick="removerIns('${x.id}')">✕</button></td>
       <td>${digits(x.whatsapp).length >= 10 ? `<a class="wa" target="_blank" rel="noopener" href="${linkWA(x, m)}">WhatsApp</a>` : ''}</td></tr>`;
     const vazias = (n, o) => Array.from({ length: Math.max(0, n) }, () => `<tr class="linha-reserva"><td colspan="5" class="ex">Reservado para ${o === 'prefeitura' ? 'a Prefeitura' : 'a UNASP'}</td>
       <td>${ORIGEM_ROTULO[o]}</td><td><button class="sbtn" onclick="adicionarManual('${m.id}','${o}')">+ Preencher</button></td></tr>`).join('');
     const pref = manuais('prefeitura'), nasp = manuais('nasp');
-    const ocupadas = sel.length + pref.length + nasp.length;
+    const preenchida = x => String(x.nome || '').trim().length > 0;
+    const ocupadas = sel.length + pref.filter(preenchida).length + nasp.filter(preenchida).length;
     const conf = [...sel, ...pref, ...nasp].filter(x => x.status === 'confirmado').length;
     const fora = inscricoes.filter(x => x.especialidade === m.especialidade && classe(x) === 'ok' && saiu(x));
     return `<div class="panel doc"><header><b>${esc(m.especialidade)}${m.nome ? ' · ' + esc(m.nome) : ''}</b><span>${ocupadas} de ${m.pacientes} vagas · ${conf} confirmados</span></header>
@@ -634,6 +635,14 @@ async function fixarPaciente(id, m){
 }
 async function adicionarPaciente(medicoId, id){
   if(!id) return; const m = medicos.find(x => x.id === medicoId);
+  const d = distribuicao()[medicoId], novo = inscricoes.find(y => y.id === id);
+  if(d && d.sel.length >= d.v.form){
+    const sai = d.sel.filter(x => x.medico_id !== medicoId).slice(-1)[0];
+    if(!confirm(`As ${d.v.form} vagas do formulário deste médico já estão ocupadas.\n\n` +
+      (sai ? `Se adicionar ${novo ? novo.nome : 'esta pessoa'}, ${sai.nome} volta para a lista de espera.` :
+             `Todas já foram escolhidas pela equipe: ${novo ? novo.nome : 'esta pessoa'} ficará acima do número de vagas.`) +
+      `\n\nPara usar uma vaga da Prefeitura/UNASP, use "+ Preencher" na linha reservada.\n\nAdicionar mesmo assim?`)){ abaLis(); return; }
+  }
   try{ await fixarPaciente(id, m); toast('Paciente adicionado.'); abaLis(); }
   catch(e){ toast('Não consegui adicionar: ' + e.message); }
 }
@@ -661,9 +670,15 @@ async function mudarStatus(id, st){
     const x = inscricoes.find(y => y.id === id); if(x) x.status = st; mostrarAba(); }
   catch(e){ toast('Não consegui salvar: ' + e.message); }
 }
-async function salvarIns(id, campo, valor){
+const _salvando = {};
+function salvarDepois(id, campo, valor){
+  const k = id + campo; clearTimeout(_salvando[k]);
+  const x = inscricoes.find(y => y.id === id); if(x) x[campo] = valor;      // guarda já, para não sumir se a tela redesenhar
+  _salvando[k] = setTimeout(() => salvarIns(id, campo, valor, true), 700);
+}
+async function salvarIns(id, campo, valor, silencioso){
   try{ await api(`mm_inscricoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ [campo]: valor, atualizado_por: perfil.email } });
-    const x = inscricoes.find(y => y.id === id); if(x) x[campo] = valor; toast('Salvo.'); }
+    const x = inscricoes.find(y => y.id === id); if(x) x[campo] = valor; if(!silencioso) toast('Salvo.'); }
   catch(e){ toast('Não consegui salvar: ' + e.message); }
 }
 async function adicionarManual(medicoId, origem){
