@@ -708,6 +708,21 @@
   .tipo-evento-linha select{flex:1 1 200px;}
   .tipo-evento-bolinha{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15);}
   .tipos-editor-item{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .pas-pedido{background:#fff8e6;border:1px solid #f1d58a;border-radius:10px;padding:12px 14px;margin:0 0 14px;}
+  .pas-pedido-tit{font-weight:700;font-size:13.5px;margin-bottom:6px;}
+  .pas-pedido-txt{font-size:14px;line-height:1.45;white-space:pre-wrap;margin-top:4px;}
+  .pas-pedido-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .pas-respostas{border:1px solid var(--border-soft);border-radius:10px;background:var(--panel2);padding:4px 12px;}
+  .pas-respostas > div{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid var(--border-soft);font-size:14px;}
+  .pas-respostas > div:first-child{border-top:0;}
+  .pas-respostas span{font-size:12px;color:var(--muted);}
+  .pas-aviso{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:12px 0;border-top:1px solid var(--border-soft);}
+  .pas-aviso.lido{opacity:.55;}
+  .pas-aviso-txt{font-size:14px;line-height:1.45;flex:1;min-width:0;}
+  .pas-aviso-data{font-size:12px;color:var(--muted);margin-top:3px;}
+  .pas-aviso-btns{display:flex;gap:6px;align-items:center;flex:none;flex-wrap:wrap;justify-content:flex-end;}
+  .pas-aviso-tag{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:6px;margin-right:4px;}
+  .pas-aviso-tag.confirmou{background:#dcfce7;color:#166534;} .pas-aviso-tag.remarcou{background:#dbeafe;color:#1e40af;} .pas-aviso-tag.recusou{background:#fee2e2;color:#991b1b;}
   .locais-atalhos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .local-atalho{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px 4px 7px;border-radius:20px;
     border:1px solid var(--border-soft);background:var(--panel2);color:var(--muted);cursor:pointer;font-family:inherit;}
@@ -1560,6 +1575,8 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
           <select id="pasQual" class="hidden" onchange="trocarAgendaVista(this.value)" title="Escolher de quem é a agenda" style="max-width:240px;"></select>
           <button class="btn primary" id="pasBtnNovo" onclick="novoPastoral()">+ Novo compromisso</button>
           <button class="btn" id="pasBtnTipos" onclick="abrirTiposPastoral()">🏷️ Tipos</button>
+          <button class="btn" id="pasBtnLinkForm" onclick="copiarLinkPedidoPastoral()" title="Link do formulário para pedir horário com o pastor">🔗 Link do formulário</button>
+          <button class="btn hidden" id="pasBtnAvisos" onclick="abrirAvisosPastoral()">🔔 Avisos</button>
           <button class="btn" onclick="carregarAgendaPastoral()">↻ Atualizar</button>
         </div>
         <div class="calendario-topo">
@@ -1710,6 +1727,52 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 </div>
 
 <!-- ---------- formulario publico de agendamento (sem login) ---------- -->
+<div id="telaPastorForm" class="hidden convidado-tela">
+  <div class="agendar-wrap">
+    <div class="convidado-cab no-print">
+      <div class="logo"><span></span> IGREJA ADVENTISTA UNASP - EC</div>
+      <div class="sub">Pedido de horário com o Pr. Silvano</div>
+    </div>
+    <div id="pfFormulario">
+      <div class="card">
+        <p class="hint" style="margin:0;">Preencha para pedir um horário com o pastor. <strong>O horário só fica garantido depois da confirmação.</strong>
+          O pastor pode confirmar ou sugerir outro dia, e a secretaria da igreja entra em contato com você pelo WhatsApp.</p>
+      </div>
+      <div class="card" id="pfCampos">
+        <div class="field"><label for="pfNome">Seu nome completo *</label><input type="text" id="pfNome" maxlength="120" autocomplete="name"></div>
+        <div class="field"><label for="pfContato">WhatsApp com DDD *</label><input type="tel" id="pfContato" maxlength="40" placeholder="(19) 99999-9999" autocomplete="tel"></div>
+        <div class="field"><label>Assunto *</label><div class="opcoes-grupo" id="pfTipo">
+          <label><input type="radio" name="pfTipo" value="aconselhamento"> Aconselhamento individual</label>
+          <label><input type="radio" name="pfTipo" value="espiritual"> Atendimento espiritual</label>
+          <label><input type="radio" name="pfTipo" value="reuniao"> Reunião</label>
+          <label><input type="radio" name="pfTipo" value="visita"> Visita</label>
+        </div></div>
+        <div class="campo-2col">
+          <div class="field"><label for="pfData">Dia que você prefere *</label><input type="date" id="pfData"></div>
+          <div class="field"><label for="pfHora">Horário que você prefere *</label><input type="time" id="pfHora" step="900"></div>
+        </div>
+        <div class="field"><label for="pfDur">Quanto tempo você precisa? *</label><select id="pfDur">
+          <option value="30">30 minutos</option><option value="60" selected>1 hora</option><option value="90">1 hora e meia</option><option value="120">2 horas</option></select></div>
+        <div class="field"><label>Onde? *</label><div class="opcoes-grupo" id="pfLocal">
+          <label><input type="radio" name="pfLocal" value="Gabinete" onchange="pfLocalMudou()"> No gabinete pastoral da igreja</label>
+          <label><input type="radio" name="pfLocal" value="Online" onchange="pfLocalMudou()"> Online (chamada de vídeo)</label>
+          <label><input type="radio" name="pfLocal" value="Visita / endereço" onchange="pfLocalMudou()"> Visita (o pastor vai até você)</label>
+        </div>
+        <input type="text" id="pfEndereco" class="hidden" maxlength="200" placeholder="Endereço completo da visita" style="margin-top:8px;"></div>
+        <div class="field"><label for="pfDetalhes">Quer contar um pouco sobre o assunto? (opcional)</label>
+          <textarea id="pfDetalhes" rows="3" maxlength="1000" placeholder="Só o pastor vai ler. Não precisa entrar em detalhes."></textarea></div>
+        <div id="pfErro"></div>
+        <button class="btn primary" id="pfEnviar" style="width:100%;padding:13px;font-size:15.5px;" onclick="enviarPedidoPastoral()">Enviar pedido</button>
+      </div>
+    </div>
+    <div id="pfSucesso" class="agendar-sucesso hidden">
+      <div class="emoji">🙏</div>
+      <h2>Pedido enviado!</h2>
+      <p>O Pr. Silvano vai confirmar ou sugerir outro horário. A secretaria da igreja entra em contato com você pelo WhatsApp.</p>
+    </div>
+  </div>
+</div>
+
 <div id="telaAgendar" class="hidden convidado-tela">
   <div class="agendar-wrap">
     <div class="convidado-cab no-print">
@@ -7392,6 +7455,8 @@ async function pasAjustarCabecalho(){
     : 'Agenda pessoal (só para ver). Só a própria pessoa pode marcar ou mudar.';
   document.getElementById('pasBtnNovo').style.display = pasSoVer ? 'none' : '';
   document.getElementById('pasBtnTipos').style.display = pasDono ? 'none' : '';
+  document.getElementById('pasBtnLinkForm').style.display = pasDono ? 'none' : '';
+  atualizarAvisosPastoral();
   // seletor: administradores escolhem entre a Agenda Pastoral e as agendas pessoais
   const sel = document.getElementById('pasQual');
   if(!perfil.admin){ sel.classList.add('hidden'); return; }
@@ -7601,8 +7666,28 @@ async function abrirModalPastoral(id, iso, hora){
   }
   const opDur = [15,30,45,60,90,120,180,240];
   if(!opDur.includes(dur)) opDur.push(dur);
+  const pedidoForm = !!(x && x.origem === 'formulario');
+  const pf = (x && x.pedido) || {};
   caixa.innerHTML = `
     <h3>${x ? 'Editar compromisso' : 'Novo compromisso'}</h3>
+    ${pedidoForm ? `<div class="pas-pedido">
+      <div class="pas-pedido-tit">📝 Pedido pelo formulário${pf.enviado_em ? ' · ' + new Date(pf.enviado_em).toLocaleDateString('pt-BR') : ''}${x.status === 'pendente' ? ' · aguardando sua resposta' : ''}</div>
+      ${x.status === 'pendente' && !pasSoVer ? `<div class="pas-pedido-acoes">
+        <button class="btn" style="background:#15803d;border-color:#15803d;color:#fff;" onclick="pasPedidoAcao('confirmar')">✅ Confirmar</button>
+        <button class="btn" onclick="pasPedidoAcao('remarcar')">🔁 Remarcar</button>
+        <button class="btn" style="color:#c0392b;" onclick="pasPedidoAcao('recusar')">✕ Recusar</button>
+      </div>
+      <div id="pasRemarcarArea" class="hidden" style="margin-top:10px;"><label>Novo dia e horário</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="date" id="pasNovaData" value="${pasISOData(a)}" style="flex:1 1 150px;">
+          <input type="time" id="pasNovaHora" step="900" value="${pasHora(a)}" style="flex:1 1 110px;">
+        </div>
+        <button class="btn primary" style="margin-top:8px;" onclick="pasPedidoAcao('remarcar-ok')">Salvar novo horário</button></div>
+      <div id="pasRecusaArea" class="hidden" style="margin-top:10px;"><label for="pasMotivo">Motivo (opcional, só a secretaria vê)</label>
+        <textarea id="pasMotivo" rows="2" placeholder="Ex.: agenda cheia nesta semana"></textarea>
+        <button class="btn" style="margin-top:8px;color:#fff;background:#c0392b;border-color:#c0392b;" onclick="pasPedidoAcao('recusar-ok')">Confirmar recusa</button></div>` : ''}
+      ${x.status === 'cancelado' && x.motivo ? `<div class="pas-pedido-txt"><b>Motivo da recusa:</b> ${escapar(x.motivo)}</div>` : ''}
+    </div>` : ''}
     <div class="field"><label>Tipo</label><div class="pas-chips" id="pasTipos">${Object.entries(PAS_TIPOS).concat(x && !PAS_TIPOS[x.tipo] ? [[x.tipo, pasTipo(x.tipo)]] : []).map(([k, t]) =>
       `<button type="button" data-k="${k}" style="--c:${t.cor}" class="${k === pasEdicao.tipo ? 'on' : ''}" onclick="pasEscolher('tipo','${k}')">${escapar(t.nome)}</button>`).join('')}</div></div>
     <div class="field"><label for="pasPessoa" id="pasPessoaRot">Pessoa</label>
@@ -7622,6 +7707,12 @@ async function abrirModalPastoral(id, iso, hora){
       `<option value="${k}" ${(x ? x.status : 'confirmado') === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     ${pasPodeNotas() ? `<div class="field"><label for="pasNotas">🔒 Anotações privadas <span style="text-transform:none;font-weight:500;">(${pasDono ? 'só você e os administradores veem' : 'só o pastor e os administradores veem'})</span></label>
       <textarea id="pasNotas" rows="4" placeholder="Assunto, pedidos de oração, próximos passos...">${escapar(notas)}</textarea></div>` : ''}
+    ${pedidoForm ? `<div class="field"><label>Assuntos (respostas do formulário)</label><div class="pas-respostas">
+      <div><span>Assunto</span><b>${escapar(pasTipo(x.tipo).nome)}</b></div>
+      <div><span>Dia e horário pedidos</span><b>${pf.pedido_inicio ? escapar(new Date(pf.pedido_inicio).toLocaleString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })) : escapar(new Date(x.inicio).toLocaleString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }))}</b></div>
+      <div><span>Onde</span><b>${escapar((x.local || '') + (x.endereco ? ': ' + x.endereco : ''))}</b></div>
+      <div><span>O que a pessoa contou</span><b style="font-weight:500;">${pasPodeNotas() ? 'Está nas Anotações privadas, acima.' : '<i style="color:var(--muted)">Só o pastor vê.</i>'}</b></div>
+    </div></div>` : ''}
     <div class="field"><label for="pasRetorno">Retorno sugerido</label><select id="pasRetorno">
       ${[['','Sem retorno'],['7','Em 1 semana'],['15','Em 15 dias'],['30','Em 1 mês']].map(([v, n]) =>
         `<option value="${v}" ${String((x && x.retorno_dias) || '') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
@@ -7630,7 +7721,7 @@ async function abrirModalPastoral(id, iso, hora){
       <select id="pasVezes" style="width:120px;">${[2,3,4,5,6,8,10,12].map(n => `<option value="${n}">${n} vezes</option>`).join('')}</select></div></div>`}
     <div class="modal-botoes">
       ${x ? `<button class="btn" style="margin-right:auto;color:#c0392b;" onclick="excluirPastoral()">Excluir</button>` : ''}
-      ${x && x.contato ? `<button class="btn" onclick="lembretePastoral('${x.id}')">💬 Lembrar no WhatsApp</button>` : ''}
+      ${x && x.contato && (!pedidoForm || pasEhSecretaria()) ? `<button class="btn" onclick="lembretePastoral('${x.id}')">💬 Lembrar no WhatsApp</button>` : ''}
       <button class="btn" onclick="fecharModalPastoral()">Cancelar</button>
       <button class="btn primary" id="btnSalvarPas" onclick="salvarPastoral()">Salvar</button>
     </div>`;
@@ -7720,6 +7811,141 @@ async function excluirPastoral(){
     await carregarAgendaPastoral();
     toast('Compromisso excluído.', 'ok');
   }catch(e){ toast('Não consegui excluir: ' + e.message, 'err'); }
+}
+
+/* =====================================================================
+   PEDIDOS PELO FORMULARIO (?pastor=1) E AVISOS PARA A SECRETARIA
+   O pedido entra como "pendente"; o pastor confirma, remarca ou recusa.
+   Cada decisao do pastor vira um aviso (tabela pastoral_avisos, criado
+   pelo banco) que so a secretaria ve, com o botao de WhatsApp.
+===================================================================== */
+function pasEhSecretaria(){ return !!(perfil && (perfil.acesso_pastoral_secretaria || perfil.admin)); }
+function copiarLinkPedidoPastoral(){
+  const link = location.origin + location.pathname + '?pastor=1';
+  try{ navigator.clipboard.writeText(link); toast('Link copiado: ' + link, 'ok'); }
+  catch(e){ prompt('Copie o link:', link); }
+}
+function pfLocalMudou(){
+  const v = (document.querySelector('input[name="pfLocal"]:checked') || {}).value;
+  document.getElementById('pfEndereco').classList.toggle('hidden', v !== 'Visita / endereço');
+}
+async function enviarPedidoPastoral(){
+  const erro = document.getElementById('pfErro');
+  const nome = document.getElementById('pfNome').value.trim();
+  const contato = document.getElementById('pfContato').value.trim();
+  const tipoEl = document.querySelector('input[name="pfTipo"]:checked');
+  const data = document.getElementById('pfData').value, hora = document.getElementById('pfHora').value;
+  const detalhes = document.getElementById('pfDetalhes').value.trim();
+  const localEl = document.querySelector('input[name="pfLocal"]:checked');
+  const endereco = document.getElementById('pfEndereco').value.trim();
+  const dur = Number(document.getElementById('pfDur').value) || 60;
+  const falta = !nome ? 'seu nome' : !contato ? 'seu WhatsApp' : !tipoEl ? 'o assunto' : !data ? 'o dia' : !hora ? 'o horário'
+    : !localEl ? 'onde vai ser' : (localEl.value === 'Visita / endereço' && !endereco) ? 'o endereço da visita' : '';
+  if(falta){ erro.innerHTML = `<div class="aviso erro">Preencha ${falta}.</div>`; return; }
+  const inicio = new Date(data + 'T' + hora + ':00');
+  if(isNaN(inicio) || inicio <= new Date()){ erro.innerHTML = '<div class="aviso erro">Escolha um dia a partir de amanhã.</div>'; return; }
+  erro.innerHTML = '';
+  const btn = document.getElementById('pfEnviar');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try{
+    await apiPublico('rpc/pastoral_pedido_publico', { method:'POST', prefer:'return=minimal',
+      body: { p_nome: nome, p_contato: contato, p_tipo: tipoEl.value, p_inicio: inicio.toISOString(), p_dur: dur,
+              p_local: localEl.value, p_endereco: endereco, p_detalhes: detalhes } });
+    document.getElementById('pfFormulario').classList.add('hidden');
+    document.getElementById('pfSucesso').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }catch(e){
+    erro.innerHTML = `<div class="aviso erro">Não foi possível enviar: ${escapar(e.message)}</div>`;
+    btn.disabled = false; btn.textContent = 'Enviar pedido';
+  }
+}
+async function pasPedidoAcao(acao){
+  const x = pasItens.find(i => i.id === pasEdicao.id);
+  if(!x) return;
+  if(acao === 'recusar'){ document.getElementById('pasRemarcarArea').classList.add('hidden'); document.getElementById('pasRecusaArea').classList.remove('hidden'); document.getElementById('pasMotivo').focus(); return; }
+  if(acao === 'remarcar'){ document.getElementById('pasRecusaArea').classList.add('hidden'); document.getElementById('pasRemarcarArea').classList.remove('hidden'); document.getElementById('pasNovaData').focus(); return; }
+  let corpo;
+  if(acao === 'confirmar') corpo = { status:'confirmado' };
+  else if(acao === 'recusar-ok') corpo = { status:'cancelado', motivo: document.getElementById('pasMotivo').value.trim() || null };
+  else if(acao === 'remarcar-ok'){
+    const data = document.getElementById('pasNovaData').value, hora = document.getElementById('pasNovaHora').value;
+    const ini = new Date(data + 'T' + hora + ':00');
+    if(!data || !hora || isNaN(ini)){ toast('Escolha a nova data e o horário.', 'err'); return; }
+    if(ini.getTime() === new Date(x.inicio).getTime()){ toast('Mude a data ou o horário antes de remarcar.', 'err'); return; }
+    const dur = Number(document.getElementById('pasDur').value) || 60;
+    corpo = { status:'confirmado', inicio: ini.toISOString(), fim: new Date(ini.getTime() + dur*60000).toISOString() };
+  }
+  corpo.atualizado_em = new Date().toISOString(); corpo.atualizado_por = (sessao && sessao.email) || null;
+  try{
+    await api(`agenda_pastoral?id=eq.${x.id}`, { method:'PATCH', prefer:'return=minimal', body: corpo });
+    toast(acao === 'confirmar' ? 'Confirmado! A secretaria foi avisada.' : acao === 'remarcar-ok' ? 'Remarcado! A secretaria foi avisada.' : 'Pedido recusado. A secretaria foi avisada.', 'ok');
+    fecharModalPastoral();
+    carregarAgendaPastoral();
+  }catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); }
+}
+let pasAvisos = [];
+async function atualizarAvisosPastoral(){
+  const btn = document.getElementById('pasBtnAvisos');
+  if(!btn) return;
+  if(pasDono || !pasEhSecretaria()){ btn.classList.add('hidden'); return; }
+  btn.classList.remove('hidden');
+  try{ pasAvisos = (await api('pastoral_avisos?select=*&order=criado_em.desc&limit=40')) || []; }
+  catch(e){ pasAvisos = []; }
+  const n = pasAvisos.filter(a => !a.lido).length;
+  btn.textContent = n ? `🔔 Avisos (${n})` : '🔔 Avisos';
+  btn.classList.toggle('primary', n > 0);
+}
+function pasTextoAviso(a){
+  const quando = a.inicio ? new Date(a.inicio).toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit' }) + ' às ' + pasHora(new Date(a.inicio)) : '';
+  const quem = a.feito_por || 'O pastor';
+  if(a.acao === 'confirmou') return `${quem} confirmou o horário de ${a.pessoa} para ${quando}.`;
+  if(a.acao === 'remarcou') return `${quem} remarcou ${a.pessoa} para ${quando}.`;
+  return `${quem} recusou o pedido de ${a.pessoa}.` + (a.motivo ? ` Motivo: ${a.motivo}` : '');
+}
+function pasMensagemAviso(a){
+  const nome = (a.pessoa || '').split(' ')[0];
+  const quando = a.inicio ? new Date(a.inicio).toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'2-digit' }) + ' às ' + pasHora(new Date(a.inicio)) : '';
+  const local = a.local ? ` (${a.local})` : '';
+  if(a.acao === 'confirmou') return `Olá${nome ? ', ' + nome : ''}! Seu horário com o Pr. Silvano está confirmado: ${quando}${local}. Qualquer imprevisto, é só avisar por aqui. 🙏`;
+  if(a.acao === 'remarcou') return `Olá${nome ? ', ' + nome : ''}! O Pr. Silvano não vai conseguir no horário que você pediu, mas pode te atender ${quando}${local}. Esse horário funciona para você?`;
+  return `Olá${nome ? ', ' + nome : ''}! Recebemos seu pedido de horário com o Pr. Silvano. Infelizmente ele não vai conseguir atender neste momento. Se quiser, podemos ver outra forma de ajudar. 🙏`;
+}
+function abrirAvisosPastoral(){
+  let fundo = document.getElementById('modalAvisosPas');
+  if(!fundo){
+    fundo = document.createElement('div');
+    fundo.id = 'modalAvisosPas'; fundo.className = 'modal-fundo';
+    fundo.onclick = e => { if(e.target === fundo) fundo.classList.add('hidden'); };
+    fundo.innerHTML = '<div class="modal-caixa grande" id="modalAvisosPasCaixa"></div>';
+    document.body.appendChild(fundo);
+  }
+  fundo.classList.remove('hidden');
+  desenharAvisosPastoral();
+}
+function desenharAvisosPastoral(){
+  document.getElementById('modalAvisosPasCaixa').innerHTML = `
+    <div class="evento-modal-topo"><h3>🔔 Avisos do pastor</h3>
+      <button class="evento-modal-fechar" onclick="document.getElementById('modalAvisosPas').classList.add('hidden')">✕</button></div>
+    <p class="hint" style="margin:0 0 12px;">Quando o pastor confirma, remarca ou recusa um pedido do formulário, aparece aqui. Avise a pessoa pelo WhatsApp e marque como feito.</p>
+    ${pasAvisos.length ? pasAvisos.map(a => `<div class="pas-aviso${a.lido ? ' lido' : ''}">
+      <div class="pas-aviso-txt"><span class="pas-aviso-tag ${a.acao}">${a.acao === 'confirmou' ? 'Confirmado' : a.acao === 'remarcou' ? 'Remarcado' : 'Recusado'}</span> ${escapar(pasTextoAviso(a))}
+        <div class="pas-aviso-data">${new Date(a.criado_em).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}${a.contato ? ' · ' + escapar(a.contato) : ''}</div></div>
+      <div class="pas-aviso-btns">
+        ${a.contato ? `<button class="btn small" onclick="whatsAvisoPastoral('${a.id}')">💬 WhatsApp</button>` : ''}
+        ${a.lido ? '<span class="hint">✓ Feito</span>' : `<button class="btn small" onclick="marcarAvisoPastoral('${a.id}')">✓ Feito</button>`}
+      </div></div>`).join('') : '<div class="vazio">Nenhum aviso ainda.</div>'}`;
+}
+function whatsAvisoPastoral(id){
+  const a = pasAvisos.find(v => v.id === id); if(!a) return;
+  const numero = telefoneParaWhatsApp(a.contato);
+  window.open((numero ? `https://wa.me/${numero}` : 'https://web.whatsapp.com/') + '?text=' + encodeURIComponent(pasMensagemAviso(a)), '_blank', 'noopener');
+}
+async function marcarAvisoPastoral(id){
+  const a = pasAvisos.find(v => v.id === id); if(!a) return;
+  a.lido = true; desenharAvisosPastoral();
+  try{ await api(`pastoral_avisos?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ lido:true } }); }
+  catch(e){ a.lido = false; desenharAvisosPastoral(); toast('Não foi possível marcar: ' + e.message, 'err'); }
+  atualizarAvisosPastoral();
 }
 
 function lembretePastoral(id){
@@ -9397,6 +9623,15 @@ document.addEventListener('keydown', ev => {
   if(params.get('cal')){
     if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
     await abrirCalendarioPublico(params.get('cal'));
+    return;
+  }
+  if(params.get('pastor') === '1'){
+    if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
+    document.getElementById('telaLogin').classList.add('hidden');
+    document.getElementById('telaApp').classList.add('hidden');
+    document.getElementById('telaPastorForm').classList.remove('hidden');
+    const am = new Date(); am.setDate(am.getDate() + 1);
+    document.getElementById('pfData').min = pasISOData(am);
     return;
   }
   if(params.get('agendar') === '1'){
