@@ -8287,10 +8287,12 @@ async function qtPreparar(){
   if(!qtFonteOk){
     if(!document.getElementById('qtFontes')){
       const l = document.createElement('link'); l.id = 'qtFontes'; l.rel = 'stylesheet';
-      l.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;600&family=Cormorant+Garamond:wght@400&display=swap';
+      l.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;600&family=Marcellus&display=swap';
       document.head.appendChild(l);
     }
-    qtFonteOk = Promise.all(['300 40px Oswald', '500 40px Oswald', '600 40px Oswald', '400 40px "Cormorant Garamond"'].map(f => document.fonts.load(f, 'Áá')))
+    const l = document.getElementById('qtFontes');
+    if(!l.sheet) await new Promise(ok => { l.addEventListener('load', ok, { once:true }); l.addEventListener('error', ok, { once:true }); setTimeout(ok, 5000); });
+    qtFonteOk = Promise.all(['300 40px Oswald', '500 40px Oswald', '600 40px Oswald', '400 40px Marcellus'].map(f => document.fonts.load(f, 'Áá')))
       .catch(() => null);
   }
   await qtFonteOk;
@@ -8364,7 +8366,7 @@ function qtQuebrar(g, texto, larg){
 function qtDesenhar(){
   const c = document.getElementById('qtCanvas'); if(!c || !window.__qtImgs) return;
   const g = c.getContext('2d'), W = 1080, I = window.__qtImgs, v = qtValores();
-  const OSW = '"Oswald", "Arial Narrow", sans-serif', SERIF = '"Cormorant Garamond", Georgia, serif';
+  const OSW = '"Oswald", "Arial Narrow", sans-serif', SERIF = '"Marcellus", Georgia, serif';
   g.fillStyle = '#011627'; g.fillRect(0, 0, W, W);
   g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
   // titulo "50 MINUTOS DE PODER" (mesma posicao do modelo do Canva)
@@ -8372,7 +8374,7 @@ function qtDesenhar(){
   g.drawImage(I.topo, 270 - 8 * esc, 115 - 8 * esc, tw, th);
   // dia e local: mesma largura do modelo (cabe em 520px)
   const linhaLocal = 'Quarta Feira - ' + (v.local || 'Hall da Igreja');
-  let tl = 37; g.font = `500 ${tl}px ${OSW}`;
+  let tl = 35; g.font = `500 ${tl}px ${OSW}`;
   while(g.measureText(linhaLocal).width > 600 && tl > 30){ tl -= 2; g.font = `500 ${tl}px ${OSW}`; }
   g.textAlign = 'center'; g.fillText(linhaLocal, W / 2, 472);
   // tema entre aspas
