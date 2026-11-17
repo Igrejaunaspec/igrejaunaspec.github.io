@@ -743,6 +743,16 @@
   @media (prefers-reduced-motion:reduce){.modal-fundo:not(.hidden) > .modal-caixa{animation:paginaSurgeSoFade .2s ease-out backwards;}}
   .pagina-surge{animation:paginaSurge .32s cubic-bezier(.2,.75,.25,1) both;}
   @media (prefers-reduced-motion:reduce){.pagina-surge{animation:paginaSurgeSoFade .2s ease-out both;}}
+  .pas-pedidos-banner{background:#fff8e6;border:1px solid #f1d58a;border-radius:12px;padding:12px 14px;margin:4px 0 14px;}
+  .pas-pedidos-tit{font-weight:700;font-size:14.5px;margin-bottom:8px;} .pas-pedidos-tit span{font-weight:500;color:#92600a;font-size:13px;}
+  .pas-pedidos-lista{display:flex;flex-wrap:wrap;gap:8px;}
+  .pas-pedidos-lista button{display:flex;align-items:center;gap:8px;border:1px solid #f1d58a;background:#fff;border-radius:10px;padding:8px 12px;
+    font-family:inherit;font-size:13.5px;cursor:pointer;text-align:left;color:var(--text);}
+  .pas-pedidos-lista button span{color:var(--muted);} .pas-pedidos-lista button i{font-style:normal;font-weight:700;color:#92600a;margin-left:4px;}
+  @media (hover:hover) and (pointer:fine){
+    .pas-pedidos-lista button{transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s cubic-bezier(.2,.8,.2,1);}
+    .pas-pedidos-lista button:hover{transform:scale(1.035);box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
+  }
   .pas-pedido{background:#fff8e6;border:1px solid #f1d58a;border-radius:10px;padding:12px 14px;margin:0 0 14px;}
   .pas-pedido-tit{font-weight:700;font-size:13.5px;margin-bottom:6px;}
   .pas-pedido-txt{font-size:14px;line-height:1.45;white-space:pre-wrap;margin-top:4px;}
@@ -1627,6 +1637,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
           </div>
           <span class="pas-legenda" id="pasLegenda"></span>
         </div>
+        <div id="pasPedidosBanner" class="hidden"></div>
         <div id="pasConteudo"></div>
       </div>
     </div>
@@ -7561,6 +7572,7 @@ async function carregarAgendaPastoral(){
     ]);
     pasItens = itens || [];
     pasEventosIgreja = igreja.filter(a => a.ini < fim && (a.fim || a.ini) >= ini);
+    atualizarPedidosPastoral();
     el.style.opacity = '';
     desenharAgendaPastoral();
   }catch(e){
@@ -7938,6 +7950,32 @@ async function pasPedidoAcao(acao){
     fecharModalPastoral();
     carregarAgendaPastoral();
   }catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); }
+}
+// Aviso no topo da Agenda Pastoral: pedidos do formulario esperando resposta.
+// Clicar num pedido leva ao dia dele e abre o compromisso.
+async function atualizarPedidosPastoral(){
+  const box = document.getElementById('pasPedidosBanner');
+  if(!box) return;
+  if(pasDono){ box.classList.add('hidden'); return; }
+  let lista = [];
+  try{ lista = (await api('agenda_pastoral?select=id,pessoa,tipo,inicio&origem=eq.formulario&status=eq.pendente&dono=is.null&order=inicio.asc&limit=20')) || []; }
+  catch(e){ lista = []; }
+  if(!lista.length){ box.classList.add('hidden'); box.innerHTML = ''; return; }
+  const quando = d => new Date(d).toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit' }).replace('.', '') + ' às ' + pasHora(new Date(d));
+  box.innerHTML = `<div class="pas-pedidos-banner">
+    <div class="pas-pedidos-tit">📝 ${lista.length === 1 ? '1 pedido novo pelo formulário' : lista.length + ' pedidos novos pelo formulário'} <span>esperando resposta</span></div>
+    <div class="pas-pedidos-lista">${lista.map(x => `<button type="button" onclick="verPedidoPastoral('${x.id}','${x.inicio}')">
+      <b>${escapar(x.pessoa || 'Sem nome')}</b><span>${escapar(pasTipo(x.tipo).nome)} · ${escapar(quando(x.inicio))}</span><i>Ver →</i></button>`).join('')}</div></div>`;
+  box.classList.remove('hidden');
+}
+async function verPedidoPastoral(id, inicio){
+  pasDia = new Date(inicio); pasDia.setHours(0,0,0,0);
+  pasJaRolou = false;
+  await carregarAgendaPastoral();
+  if(!pasItens.find(i => i.id === id)){
+    try{ const r = await api('agenda_pastoral?select=*&id=eq.' + id); if(r && r[0]) pasItens.push(r[0]); }catch(e){}
+  }
+  abrirModalPastoral(id);
 }
 let pasAvisos = [];
 async function atualizarAvisosPastoral(){
