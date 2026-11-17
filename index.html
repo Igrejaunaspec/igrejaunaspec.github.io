@@ -705,6 +705,10 @@
   .tipo-evento-linha select{flex:1 1 200px;}
   .tipo-evento-bolinha{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15);}
   .tipos-editor-item{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .locais-atalhos{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .local-atalho{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 10px 4px 7px;border-radius:20px;
+    border:1px solid var(--border-soft);background:var(--panel2);color:var(--muted);cursor:pointer;font-family:inherit;}
+  .local-atalho.on{border-color:var(--accent);color:var(--text);font-weight:600;}
   .tipos-editor-item input[type=text]{flex:1;}
   .tipos-editor-item input[type=color]{width:40px;height:36px;border:1px solid var(--border);border-radius:8px;padding:2px;background:none;cursor:pointer;}
   .calendario-mais{font-size:10.5px;color:var(--muted2);font-weight:650;padding:0 6px;background:none;
@@ -3146,6 +3150,7 @@ async function enviarAgendamento(){
   corpo.respostas_extra = extras;
   // pedido publico nao tem campo de cor -- ja preenche com a cor padrao pelo
   // espaco escolhido, pra sincronizar colorido com a Agenda do Google desde já.
+  try{ if(!locaisEventoCarregados) await carregarLocaisEvento(); }catch(e){}
   if(!corpo.cor) corpo.cor = corPadraoPorEspaco(corpo.espacos_utilizados) || null;
 
   try{
@@ -3601,7 +3606,9 @@ function comCorGarantida(tags){
 // tanto aqui no site quanto na Agenda do Google (que reflete a coluna "cor").
 // As cores batem exatamente com a paleta fixa do Google Calendar, pra tudo
 // ficar visualmente igual dos dois lados.
-function corPadraoPorEspaco(espacosUtilizados){
+// Regra antiga (fixa no codigo) -- continua valendo pra locais que nao estao
+// na lista "Cores dos locais" e serve pra reconhecer cor que foi automatica.
+function corAntigaPorEspaco(espacosUtilizados){
   const principal = String(espacosUtilizados || '').split(',')[0].trim();
   if(!principal) return '';
   if(principal.startsWith('Auditório') || principal.startsWith('Auditorio')) return '#039be5'; // Peacock (azul)
@@ -3609,6 +3616,16 @@ function corPadraoPorEspaco(espacosUtilizados){
   if(principal.startsWith('Prédio Infantil') || principal.startsWith('Predio Infantil')) return '#f6c026'; // Banana (amarelo)
   if(principal.startsWith('Enfermaria')) return '#e67c73'; // Flamingo (rosa)
   return '';
+}
+// Cor pelo local: primeiro procura o local principal na lista "Cores dos
+// locais" (editavel no app, salva em formulario_schema id "locais_evento");
+// se nao achar, usa a regra antiga.
+function corPadraoPorEspaco(espacosUtilizados){
+  const principal = String(espacosUtilizados || '').split(',')[0].trim().toLowerCase();
+  if(!principal) return '';
+  const l = (locaisEvento || []).find(x => (x.nome || '').trim().toLowerCase() === principal);
+  if(l && l.cor) return l.cor;
+  return corAntigaPorEspaco(espacosUtilizados);
 }
 
 // Decide se o texto sobre uma cor de fundo deve ser claro ou escuro, pelo
@@ -4041,6 +4058,7 @@ async function abrirCalendario(){
       carregarEtiquetasAgendamento(),
       carregarTiposEvento(),
       api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc'),
+      carregarLocaisEvento(),
       pregacoesParaCalendario(),
     ]);
     calendarioAgendamentos = (dados || []).concat(pregacoes);
@@ -4561,6 +4579,8 @@ function fecharModalEvento(){
   eventoModalDados = null;
 }
 
+// true quando alguem clicou numa cor da paleta (a cor deixa de seguir o local)
+let evCorManual = false;
 function desenharModalEvento(d){
   const editando = !!eventoModalId;
   const emSerie = !!(eventoModalDados && eventoModalDados.recorrencia_grupo);
@@ -4594,7 +4614,16 @@ function desenharModalEvento(d){
 
     <div class="field">
       <label for="evLocal">Local</label>
-      <input type="text" id="evLocal" placeholder="Ex.: Auditório da Igreja" value="${escapar(d.espacos_utilizados)}">
+      <div class="tipo-evento-linha">
+        <span class="tipo-evento-bolinha" id="evLocalBolinha" style="background:${corPadraoPorEspaco(d.espacos_utilizados) || 'transparent'};"></span>
+        <input type="text" id="evLocal" style="flex:1 1 200px;" placeholder="Ex.: Auditório da Igreja" value="${escapar(d.espacos_utilizados)}" oninput="localDoEventoMudou()">
+        <button type="button" class="btn" id="evLocaisBotao" onclick="const a=document.getElementById('evLocaisArea');a.classList.toggle('hidden');this.textContent=a.classList.contains('hidden')?'📍 Escolher ▾':'📍 Fechar ▴';">📍 Escolher ▾</button>
+      </div>
+      <div id="evLocaisArea" class="hidden">
+        <div class="locais-atalhos" id="evLocaisAtalhos">${locaisAtalhosHTML(d.espacos_utilizados)}</div>
+        <p class="dica" style="margin:6px 0 0;font-size:12.5px;color:var(--muted);">A cor do evento vem do <b>primeiro local</b>. Se escolher um <b>Tipo de evento</b>, a cor do tipo vale no lugar.
+          <a href="#" onclick="abrirEditorLocaisEvento();return false;">🎨 Editar cores dos locais</a></p>
+      </div>
     </div>
 
     <div class="field">
@@ -4623,9 +4652,9 @@ function desenharModalEvento(d){
     <div class="field">
       <label>Cor do evento</label>
       <div class="paleta-cores-evento" id="evPaletaCores">
-        <button type="button" class="cor-evento-opcao${!d.cor ? ' on' : ''}" style="background:#22c55e;" title="Padrão (verde)" onclick="selecionarCorEvento('', this)"></button>
-        ${PALETA_CORES_ETIQUETA.map(c => `<button type="button" class="cor-evento-opcao${d.cor === c ? ' on' : ''}" style="background:${c};" onclick="selecionarCorEvento('${c}', this)"></button>`).join('')}
-        <input type="color" class="cor-evento-custom" id="evCorCustom" value="${d.cor || '#2563eb'}" title="Cor personalizada" oninput="selecionarCorEvento(this.value, null)">
+        <button type="button" class="cor-evento-opcao${!d.cor ? ' on' : ''}" style="background:#22c55e;" title="Padrão (verde)" onclick="evCorManual=true;selecionarCorEvento('', this)"></button>
+        ${PALETA_CORES_ETIQUETA.map(c => `<button type="button" class="cor-evento-opcao${d.cor === c ? ' on' : ''}" style="background:${c};" onclick="evCorManual=true;selecionarCorEvento('${c}', this)"></button>`).join('')}
+        <input type="color" class="cor-evento-custom" id="evCorCustom" value="${d.cor || '#2563eb'}" title="Cor personalizada" oninput="evCorManual=true;selecionarCorEvento(this.value, null)">
       </div>
       <input type="hidden" id="evCor" value="${escapar(d.cor)}">
     </div>
@@ -4701,6 +4730,15 @@ function desenharModalEvento(d){
       </div>
     </div>
   `;
+  // A cor salva era automatica (vazia, ou igual a cor do local pela regra
+  // antiga ou pela lista)? Entao ela continua seguindo o local.
+  const temTipo = (d.etiquetas || []).some(x => typeof x === 'string' && x.startsWith(TIPO_PREFIXO));
+  const corSalva = (d.cor || '').toLowerCase();
+  evCorManual = !temTipo && !!corSalva &&
+    corSalva !== (corPadraoPorEspaco(d.espacos_utilizados) || '').toLowerCase() &&
+    corSalva !== (corAntigaPorEspaco(d.espacos_utilizados) || '').toLowerCase();
+  aplicarCorAutomaticaEvento();
+  if(!locaisEventoCarregados) carregarLocaisEvento().then(() => { if(document.getElementById('evLocal')) localDoEventoMudou(); });
 }
 
 function alternarDiaInteiroEvento(){
@@ -4734,6 +4772,8 @@ function tipoDoEvento(a){
 function escolherTipoEvento(id){
   const t = tiposEvento.find(x => x.id === id);
   document.getElementById('evTipoBolinha').style.background = t ? t.cor : 'transparent';
+  evCorManual = false;
+  if(!t){ aplicarCorAutomaticaEvento(); return; }
   if(t){
     selecionarCorEvento(t.cor, null);
     document.getElementById('evCorCustom').value = t.cor;
@@ -4807,6 +4847,130 @@ async function salvarTiposEvento(){
   }catch(e){
     toast('Não consegui salvar: ' + e.message, 'err');
     btn.disabled = false; btn.textContent = '💾 Salvar tipos';
+  }
+}
+
+/* ==========================================================
+   CORES DOS LOCAIS (ex.: "Hall da Igreja" = laranja)
+   Lista salva em formulario_schema (id "locais_evento"). A cor do evento
+   segue o primeiro local; um Tipo de evento escolhido tem prioridade.
+   ========================================================== */
+let locaisEvento = [];
+let locaisEventoCarregados = false;
+let locaisEmEdicao = null;
+function locaisPadraoDoFormulario(){
+  const sch = schemaAgendamentoAtual || SCHEMA_PADRAO_AGENDAMENTO;
+  let ops = [];
+  (sch.secoes || []).forEach(sec => (sec.campos || []).forEach(c => { if(c.coluna === 'espacos_utilizados' && Array.isArray(c.opcoes)) ops = c.opcoes; }));
+  const cores = ['#039be5','#f5511d','#0b8043','#8e24aa','#e67c73','#f6c026','#33b679','#3f51b5'];
+  const fixas = { 'auditório da igreja':'#039be5', 'hall da igreja':'#f5511d', 'enfermaria':'#e67c73',
+    'prédio infantil (espaço comum do prédio e banheiros)':'#f6c026', 'salas do prédio infantil':'#33b679',
+    'auditório do prédio infantil (apenas aos sábados)':'#7986cb', 'sala de reuniões (anexo do hall da igreja)':'#0b8043',
+    'sala pastoral (camarim do auditório da igreja)':'#8e24aa' };
+  return ops.filter(o => (o || '').trim()).map((nome, i) => ({ nome: nome.trim(), cor: fixas[nome.trim().toLowerCase()] || corAntigaPorEspaco(nome) || cores[i % cores.length] }));
+}
+async function carregarLocaisEvento(){
+  try{
+    const linhas = await apiPublico('formulario_schema?id=eq.locais_evento&select=dados');
+    const lista = linhas && linhas[0] && linhas[0].dados && linhas[0].dados.locais;
+    if(Array.isArray(lista) && lista.length){ locaisEvento = lista; locaisEventoCarregados = true; return; }
+  }catch(e){}
+  try{ if(!schemaAgendamentoAtual) await carregarSchemaAgendamento(); }catch(e){}
+  locaisEvento = locaisPadraoDoFormulario();
+  locaisEventoCarregados = true;
+}
+function locaisAtalhosHTML(texto){
+  const atuais = String(texto || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  return (locaisEvento || []).map((l, i) => `<button type="button" class="local-atalho${atuais.includes(l.nome.trim().toLowerCase()) ? ' on' : ''}"
+      onclick="alternarLocalEvento(${i})"><span class="tipo-evento-bolinha" style="background:${escapar(l.cor)};width:12px;height:12px;"></span>${escapar(l.nome)}</button>`).join('');
+}
+function alternarLocalEvento(i){
+  const l = locaisEvento[i]; if(!l) return;
+  const inp = document.getElementById('evLocal');
+  let partes = inp.value.split(',').map(x => x.trim()).filter(Boolean);
+  const k = partes.findIndex(x => x.toLowerCase() === l.nome.trim().toLowerCase());
+  if(k >= 0) partes.splice(k, 1); else partes.push(l.nome.trim());
+  inp.value = partes.join(', ');
+  localDoEventoMudou();
+}
+function localDoEventoMudou(){
+  const local = (document.getElementById('evLocal') || {}).value || '';
+  const b = document.getElementById('evLocalBolinha');
+  if(b) b.style.background = corPadraoPorEspaco(local) || 'transparent';
+  const at = document.getElementById('evLocaisAtalhos');
+  if(at) at.innerHTML = locaisAtalhosHTML(local);
+  aplicarCorAutomaticaEvento();
+}
+// Sem tipo e sem cor escolhida a mao: a cor do evento acompanha o local.
+function aplicarCorAutomaticaEvento(){
+  if(evCorManual) return;
+  if(((document.getElementById('evTipo') || {}).value || '')) return;
+  const cor = corPadraoPorEspaco((document.getElementById('evLocal') || {}).value || '');
+  marcarCorNaPaleta(cor);
+}
+function marcarCorNaPaleta(hex){
+  const campo = document.getElementById('evCor'); if(!campo) return;
+  campo.value = hex || '';
+  if(hex) document.getElementById('evCorCustom').value = hex;
+  document.querySelectorAll('#evPaletaCores .cor-evento-opcao').forEach(b => {
+    const oc = b.getAttribute('onclick') || '';
+    b.classList.toggle('on', hex ? oc.includes("'" + hex + "'") : oc.includes("selecionarCorEvento('',"));
+  });
+}
+function abrirEditorLocaisEvento(){
+  locaisEmEdicao = JSON.parse(JSON.stringify(locaisEvento || []));
+  let fundo = document.getElementById('modalLocaisEvento');
+  if(!fundo){
+    fundo = document.createElement('div');
+    fundo.id = 'modalLocaisEvento';
+    fundo.className = 'modal-fundo';
+    fundo.style.zIndex = '2000';
+    fundo.onclick = e => { if(e.target === fundo) fecharEditorLocaisEvento(); };
+    fundo.innerHTML = '<div class="modal-caixa" id="modalLocaisEventoCaixa"></div>';
+    document.body.appendChild(fundo);
+  }
+  fundo.classList.remove('hidden');
+  desenharEditorLocaisEvento();
+}
+function fecharEditorLocaisEvento(){
+  const f = document.getElementById('modalLocaisEvento');
+  if(f) f.classList.add('hidden');
+}
+function desenharEditorLocaisEvento(){
+  document.getElementById('modalLocaisEventoCaixa').innerHTML = `
+    <div class="evento-modal-topo"><h3>Cores dos locais</h3>
+      <button class="evento-modal-fechar" onclick="fecharEditorLocaisEvento()">✕</button></div>
+    <p class="hint" style="margin:0 0 12px;">A cor do evento vem do primeiro local marcado. Use o <b>mesmo nome</b> das opções do formulário de agendamento pra o pedido já chegar com a cor certa. Um Tipo de evento escolhido tem prioridade sobre o local.</p>
+    <div id="locaisEventoLista" style="max-height:calc(100vh - 300px);overflow-y:auto;padding-right:4px;">
+    ${locaisEmEdicao.map((t, i) => `<div class="tipos-editor-item">
+      <input type="color" value="${escapar(t.cor)}" oninput="locaisEmEdicao[${i}].cor=this.value">
+      <input type="text" value="${escapar(t.nome)}" placeholder="Nome do local" oninput="locaisEmEdicao[${i}].nome=this.value">
+      <button class="btn" title="Apagar" onclick="locaisEmEdicao.splice(${i},1);desenharEditorLocaisEvento()">🗑️</button>
+    </div>`).join('') || '<p class="hint">Nenhum local ainda.</p>'}
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn" onclick="locaisEmEdicao.push({nome:'',cor:'#039be5'});desenharEditorLocaisEvento()">+ Novo local</button>
+      <button class="btn primary" id="btnSalvarLocais" onclick="salvarLocaisEvento()">💾 Salvar locais</button>
+    </div>`;
+}
+async function salvarLocaisEvento(){
+  const limpos = locaisEmEdicao.map(t => ({ nome: (t.nome || '').trim(), cor: t.cor })).filter(t => t.nome);
+  const btn = document.getElementById('btnSalvarLocais');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    await api('formulario_schema', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: { id: 'locais_evento', dados: { locais: limpos }, atualizado_em: new Date().toISOString(), atualizado_por: sessao.email }
+    });
+    locaisEvento = limpos;
+    if(document.getElementById('evLocal')) localDoEventoMudou();
+    if(typeof desenharCalendario === 'function') desenharCalendario();
+    toast('Cores dos locais salvas!', 'ok');
+    fecharEditorLocaisEvento();
+  }catch(e){
+    toast('Não consegui salvar: ' + e.message, 'err');
+    btn.disabled = false; btn.textContent = '💾 Salvar locais';
   }
 }
 
