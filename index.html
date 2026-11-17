@@ -710,6 +710,7 @@
   .tipos-editor-item{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
   @keyframes paginaSurge{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
   @keyframes paginaSurgeSoFade{from{opacity:0;}to{opacity:1;}}
+  .pas-fader{animation:paginaSurgeSoFade .55s ease-out backwards;}
   /* janelas (pop-ups): entram dando um pulinho */
   @keyframes modalPula{0%{opacity:0;transform:scale(.86) translateY(14px);}55%{opacity:1;transform:scale(1.035) translateY(-3px);}78%{transform:scale(.992);}100%{transform:none;}}
   @keyframes modalPulaCel{0%{transform:translateY(100%);}62%{transform:translateY(-14px);}82%{transform:translateY(4px);}100%{transform:none;}}
@@ -7406,10 +7407,16 @@ let pasEdicao = null;
 let pasJaRolou = false;
 let pasVisao = 'semana'; // 'dia' | 'semana' | 'mes'
 try{ pasVisao = localStorage.getItem('pasVisao') || 'semana'; }catch(e){}
-function mudarVisaoPastoral(v){
+async function mudarVisaoPastoral(v){
   pasVisao = v; pasJaRolou = false;
   try{ localStorage.setItem('pasVisao', v); }catch(e){}
-  carregarAgendaPastoral();
+  // a nova visao (Dia, Semana, Mes, Quadro) surge devagar, como um fader
+  const el = document.getElementById('pasConteudo');
+  el.classList.remove('pas-fader');
+  await carregarAgendaPastoral();
+  void el.offsetWidth;
+  el.classList.add('pas-fader');
+  el.addEventListener('animationend', () => el.classList.remove('pas-fader'), { once:true });
 }
 // ---- Quadro estilo Trello: colunas por situação; arrastar muda a situação ----
 function pasDesenharQuadro(el){
