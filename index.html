@@ -774,6 +774,8 @@
   .qt-grade{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,520px);gap:24px;align-items:start;}
   .qt-previa{position:sticky;top:16px;} .qt-previa canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 6px 24px rgba(20,32,52,.18);display:block;}
   .qt-ajustes{display:grid;gap:6px;margin-top:8px;font-size:13px;color:var(--muted);} .qt-ajustes input{width:100%;}
+  .qt-xy{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;} .qt-xy label{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;}
+  .qt-xy input{width:86px;} .qt-setas{display:flex;gap:4px;} .qt-setas .btn{min-width:34px;padding-left:0;padding-right:0;}
   @media (max-width:860px){.qt-grade{grid-template-columns:1fr;} .qt-previa{position:static;}}
   .aj-filtros{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
   .aj-item{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--panel);}
@@ -8330,13 +8332,25 @@ async function abrirArteQuarta(){
           <label>Para os lados <input type="range" id="qtPx" min="-1" max="1" step="0.01" value="0" oninput="qtDesenhar()"></label>
           <label>Para cima/baixo <input type="range" id="qtPy" min="-1" max="1" step="0.01" value="0" oninput="qtDesenhar()"></label>
         </div></div>
+      <div class="field qt-pos"><label for="qtParte">Mudar de lugar</label>
+        <div class="hint" style="margin:0 0 6px;">Arraste qualquer parte direto na arte, ou escolha aqui e ajuste o X (lados) e o Y (cima/baixo).</div>
+        <select id="qtParte" onchange="qtSel=this.value;qtPosUI();qtDesenhar()"><option value="">Escolha uma parte...</option>${Object.entries(QT_PARTES).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select>
+        <div class="qt-xy">
+          <label>X <input type="number" id="qtPosX" step="5" value="0" oninput="qtMudarPos('x', this.value)"></label>
+          <label>Y <input type="number" id="qtPosY" step="5" value="0" oninput="qtMudarPos('y', this.value)"></label>
+          <span class="qt-setas"><button type="button" class="btn small" title="Esquerda" onclick="qtMover(-5,0)">←</button><button type="button" class="btn small" title="Cima" onclick="qtMover(0,-5)">↑</button><button type="button" class="btn small" title="Baixo" onclick="qtMover(0,5)">↓</button><button type="button" class="btn small" title="Direita" onclick="qtMover(5,0)">→</button></span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+          <button type="button" class="btn small" onclick="qtVoltarPos(false)">Voltar esta parte ao lugar</button>
+          <button type="button" class="btn small" onclick="qtVoltarPos(true)">Voltar tudo ao lugar</button>
+        </div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
         <button class="btn primary" onclick="qtBaixar()">Baixar imagem</button>
       </div>
     </div>
     <div class="qt-previa"><canvas id="qtCanvas" width="1080" height="1080"></canvas><div class="hint" id="qtStatus" style="text-align:center;margin-top:6px;">Carregando o modelo...</div></div>
   </div>`;
-  qtAjustesFoto();
+  qtAjustesFoto(); qtPosUI();
   try{ await qtPreparar(); document.getElementById('qtStatus').textContent = 'Prévia (a imagem baixada sai em 1080 × 1080)'; }
   catch(e){ document.getElementById('qtStatus').textContent = e.message; }
   qtDesenhar();
@@ -8363,20 +8377,61 @@ function qtQuebrar(g, texto, larg){
   texto.split(/\s+/).forEach(p => { const t = atual ? atual + ' ' + p : p; if(g.measureText(t).width > larg && atual){ linhas.push(atual); atual = p; } else atual = t; });
   if(atual) linhas.push(atual); return linhas;
 }
+/* posicao de cada parte da arte: arrastar na previa ou ajustar X e Y */
+const QT_PARTES = { topo:'Título (50 Minutos de Poder)', local:'Dia e local', tema:'Tema', foto:'Foto', nome:'Nome de quem prega', data:'Data', rodape:'Horário e logo' };
+let qtOff = (() => { try{ return JSON.parse(localStorage.getItem('arteQuartaPos') || '{}'); }catch(e){ return {}; } })();
+let qtCaixas = {}, qtSel = '', qtExportando = false, qtArraste = null;
+function qtO(k){ return qtOff[k] || (qtOff[k] = { x:0, y:0 }); }
+function qtSalvarPos(){ try{ localStorage.setItem('arteQuartaPos', JSON.stringify(qtOff)); }catch(e){} }
+function qtPosUI(){
+  const sel = document.getElementById('qtParte'); if(!sel) return;
+  sel.value = qtSel;
+  const o = qtSel ? qtO(qtSel) : { x:0, y:0 };
+  document.getElementById('qtPosX').value = Math.round(o.x); document.getElementById('qtPosY').value = Math.round(o.y);
+  document.getElementById('qtPosX').disabled = document.getElementById('qtPosY').disabled = !qtSel;
+}
+function qtMudarPos(eixo, valor){ if(!qtSel) return; qtO(qtSel)[eixo] = Math.max(-1080, Math.min(1080, parseFloat(valor) || 0)); qtSalvarPos(); qtDesenhar(); }
+function qtMover(dx, dy){ if(!qtSel) return; const o = qtO(qtSel); o.x += dx; o.y += dy; qtSalvarPos(); qtPosUI(); qtDesenhar(); }
+function qtVoltarPos(tudo){ if(tudo) qtOff = {}; else if(qtSel) delete qtOff[qtSel]; qtSalvarPos(); qtPosUI(); qtDesenhar(); }
+function qtPonto(e){ const c = document.getElementById('qtCanvas'), r = c.getBoundingClientRect(); return { x:(e.clientX - r.left) * 1080 / r.width, y:(e.clientY - r.top) * 1080 / r.height }; }
+function qtLigarArraste(){
+  const c = document.getElementById('qtCanvas'); if(!c || c.dataset.arraste) return; c.dataset.arraste = '1';
+  c.style.touchAction = 'none'; c.style.cursor = 'grab';
+  c.addEventListener('pointerdown', e => {
+    const p = qtPonto(e);
+    const k = Object.keys(qtCaixas).reverse().find(k => { const b = qtCaixas[k]; return p.x >= b.x - 10 && p.x <= b.x + b.w + 10 && p.y >= b.y - 10 && p.y <= b.y + b.h + 10; });
+    qtSel = k || ''; qtPosUI(); qtDesenhar();
+    if(!k) return;
+    const o = qtO(k); qtArraste = { k, px:p.x, py:p.y, ox:o.x, oy:o.y }; c.setPointerCapture(e.pointerId); c.style.cursor = 'grabbing';
+  });
+  c.addEventListener('pointermove', e => {
+    if(!qtArraste) return; const p = qtPonto(e), o = qtO(qtArraste.k);
+    o.x = Math.round(qtArraste.ox + p.x - qtArraste.px); o.y = Math.round(qtArraste.oy + p.y - qtArraste.py); qtPosUI(); qtDesenhar();
+  });
+  const soltar = () => { if(qtArraste){ qtArraste = null; qtSalvarPos(); c.style.cursor = 'grab'; } };
+  c.addEventListener('pointerup', soltar); c.addEventListener('pointercancel', soltar);
+}
 function qtDesenhar(){
   const c = document.getElementById('qtCanvas'); if(!c || !window.__qtImgs) return;
+  qtLigarArraste();
   const g = c.getContext('2d'), W = 1080, I = window.__qtImgs, v = qtValores();
   const OSW = '"Oswald", "Arial Narrow", sans-serif', SERIF = '"Marcellus", Georgia, serif';
+  qtCaixas = {};
+  const caixa = (k, x, y, w, h) => { const o = qtO(k); qtCaixas[k] = { x:x + o.x, y:y + o.y, w, h }; };
+  const parte = (k, desenho) => { const o = qtO(k); g.save(); g.translate(o.x, o.y); desenho(); g.restore(); };
   g.fillStyle = '#011627'; g.fillRect(0, 0, W, W);
   g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
   // titulo "50 MINUTOS DE PODER" (mesma posicao do modelo do Canva)
   const esc = 516 / 823, tw = I.topo.width * esc, th = I.topo.height * esc;
-  g.drawImage(I.topo, 270 - 8 * esc, 115 - 8 * esc, tw, th);
-  // dia e local: mesma largura do modelo (cabe em 520px)
+  parte('topo', () => g.drawImage(I.topo, 270 - 8 * esc, 115 - 8 * esc, tw, th));
+  caixa('topo', 270, 115, 516, 285);
+  // dia e local
   const linhaLocal = 'Quarta Feira - ' + (v.local || 'Hall da Igreja');
   let tl = 35; g.font = `500 ${tl}px ${OSW}`;
   while(g.measureText(linhaLocal).width > 600 && tl > 30){ tl -= 2; g.font = `500 ${tl}px ${OSW}`; }
-  g.textAlign = 'center'; g.fillText(linhaLocal, W / 2, 472);
+  const lw0 = g.measureText(linhaLocal).width;
+  parte('local', () => { g.font = `500 ${tl}px ${OSW}`; g.textAlign = 'center'; g.fillText(linhaLocal, W / 2, 472); });
+  caixa('local', W / 2 - lw0 / 2, 472 - tl, lw0, tl * 1.3);
   // tema entre aspas
   let desloc = 0;
   if(v.tema){
@@ -8384,13 +8439,17 @@ function qtDesenhar(){
     let tam = 60, linhas;
     do{ g.font = `400 ${tam}px ${SERIF}`; linhas = qtQuebrar(g, tema, 900); if(linhas.length > 2 || (linhas.length === 2 && tam > 54)) tam -= 2; else break; } while(tam > 38);
     linhas = linhas.slice(0, 2);
-    if(linhas.length === 1) g.fillText(linhas[0], W / 2, 592);
-    else { g.fillText(linhas[0], W / 2, 572); g.fillText(linhas[1], W / 2, 572 + tam * 1.1); desloc = Math.round(tam * 1.1 - 20); }
+    const larg = Math.max(...linhas.map(l => g.measureText(l).width));
+    const y1 = linhas.length === 1 ? 592 : 572;
+    parte('tema', () => { g.font = `400 ${tam}px ${SERIF}`; g.textAlign = 'center'; linhas.forEach((l, i) => g.fillText(l, W / 2, y1 + i * tam * 1.1)); });
+    caixa('tema', W / 2 - larg / 2, y1 - tam * 0.85, larg, tam * 1.1 * linhas.length);
+    if(linhas.length === 2) desloc = Math.round(tam * 1.1 - 20);
   } else desloc = -50;
   // foto + "Com ..." e a data embaixo da foto
   const D = 162, cy = 752 + desloc;
   const [ano, mes, dia] = (v.data || '').split('-');
   const dataTxt = dia ? `${dia}.${mes}` : '';
+  let dataX = W / 2, dataY = cy + 20, dataTam = 52;
   if(v.quem || qtFoto){
     const nome = v.quem ? 'Com ' + v.quem : '';
     let tam = 62; g.font = `500 ${tam}px ${OSW}`;
@@ -8398,35 +8457,55 @@ function qtDesenhar(){
     while(nome && g.measureText(nome).width > maxNome && tam > 34){ tam -= 2; g.font = `500 ${tam}px ${OSW}`; }
     const nw = nome ? g.measureText(nome).width : 0;
     const total = qtFoto ? D + (nome ? 30 + nw : 0) : nw, x0 = Math.round((W - total) / 2);
-    let cxData = W / 2;
     if(qtFoto){
-      const cx = x0 + D / 2; cxData = cx;
-      g.save(); g.beginPath(); g.arc(cx, cy, D / 2, 0, Math.PI * 2); g.clip();
-      const z = parseFloat(document.getElementById('qtZoom').value) || 1, px = parseFloat(document.getElementById('qtPx').value) || 0, py = parseFloat(document.getElementById('qtPy').value) || 0;
-      const base = D / Math.min(qtFoto.width, qtFoto.height) * z, fw = qtFoto.width * base, fh = qtFoto.height * base;
-      g.drawImage(qtFoto, cx - fw / 2 - px * (fw - D) / 2, cy - fh / 2 - py * (fh - D) / 2, fw, fh);
-      g.restore();
+      const cx = x0 + D / 2; dataX = cx;
+      parte('foto', () => {
+        g.save(); g.beginPath(); g.arc(cx, cy, D / 2, 0, Math.PI * 2); g.clip();
+        const z = parseFloat(document.getElementById('qtZoom').value) || 1, px = parseFloat(document.getElementById('qtPx').value) || 0, py = parseFloat(document.getElementById('qtPy').value) || 0;
+        const base = D / Math.min(qtFoto.width, qtFoto.height) * z, fw = qtFoto.width * base, fh = qtFoto.height * base;
+        g.drawImage(qtFoto, cx - fw / 2 - px * (fw - D) / 2, cy - fh / 2 - py * (fh - D) / 2, fw, fh);
+        g.restore();
+      });
+      caixa('foto', cx - D / 2, cy - D / 2, D, D);
     }
-    if(nome){ g.textAlign = 'left'; g.fillText(nome, qtFoto ? x0 + D + 30 : x0, cy + tam * 0.36); }
-    if(dataTxt){ g.textAlign = 'center'; g.font = `600 42px ${OSW}`; g.fillText(dataTxt, cxData, qtFoto ? cy + D / 2 + 68 : cy + 92); }
-  } else if(dataTxt){
-    g.textAlign = 'center'; g.font = `600 52px ${OSW}`; g.fillText(dataTxt, W / 2, cy + 20);
+    if(nome){
+      const nx = qtFoto ? x0 + D + 30 : x0;
+      parte('nome', () => { g.font = `500 ${tam}px ${OSW}`; g.textAlign = 'left'; g.fillText(nome, nx, cy + tam * 0.36); });
+      caixa('nome', nx, cy - tam * 0.5, nw, tam * 1.05);
+    }
+    dataY = qtFoto ? cy + D / 2 + 68 : cy + 92; dataTam = 42;
+  }
+  if(dataTxt){
+    g.font = `600 ${dataTam}px ${OSW}`; const dw = g.measureText(dataTxt).width;
+    parte('data', () => { g.font = `600 ${dataTam}px ${OSW}`; g.textAlign = 'center'; g.fillText(dataTxt, dataX, dataY); });
+    caixa('data', dataX - dw / 2, dataY - dataTam * 0.75, dw, dataTam * 0.85);
   }
   // rodape: horario em pilula | logo da Igreja Adventista
   const hora = t => t ? t.replace(':', 'h') : '';
   const txt = `${hora(v.ini)} às ${hora(v.fim)}`;
-  g.textAlign = 'center'; g.font = `300 34px ${OSW}`;
+  g.font = `300 34px ${OSW}`;
   const pw = Math.max(231, g.measureText(txt).width + 56), ph = 62, lw = I.iasd.width, lh = I.iasd.height;
   const total = pw + 19 + 2 + 17 + lw, bx = Math.round((W - total) / 2), by = 972;
-  g.lineWidth = 2.5; g.strokeStyle = '#fff'; g.beginPath(); g.roundRect(bx + 1, by - ph / 2, pw - 2, ph, ph / 2); g.stroke();
-  g.fillText(txt, bx + pw / 2, by + 12);
-  g.fillRect(bx + pw + 19, 927, 2, 75);
-  g.drawImage(I.iasd, bx + pw + 19 + 2 + 17, by - lh / 2 - 2);
+  parte('rodape', () => {
+    g.font = `300 34px ${OSW}`; g.textAlign = 'center';
+    g.lineWidth = 2.5; g.strokeStyle = '#fff'; g.beginPath(); g.roundRect(bx + 1, by - ph / 2, pw - 2, ph, ph / 2); g.stroke();
+    g.fillText(txt, bx + pw / 2, by + 12);
+    g.fillRect(bx + pw + 19, 927, 2, 75);
+    g.drawImage(I.iasd, bx + pw + 19 + 2 + 17, by - lh / 2 - 2);
+  });
+  caixa('rodape', bx, 927, total, 75);
+  // contorno da parte escolhida (so na previa, nao sai na imagem baixada)
+  if(qtSel && qtCaixas[qtSel] && !qtExportando){
+    const b = qtCaixas[qtSel];
+    g.save(); g.setLineDash([10, 8]); g.lineWidth = 3; g.strokeStyle = '#f5b301'; g.strokeRect(b.x - 10, b.y - 10, b.w + 20, b.h + 20); g.restore();
+  }
 }
 function qtBaixar(){
   const c = document.getElementById('qtCanvas'); if(!c) return;
+  qtExportando = true; qtDesenhar(); qtExportando = false;
   const v = qtValores(); const [a, m, d] = (v.data || '--').split('-');
   c.toBlob(b => { const l = document.createElement('a'); l.href = URL.createObjectURL(b); l.download = `culto-de-quarta-${d || ''}-${m || ''}.png`; document.body.appendChild(l); l.click(); setTimeout(() => { URL.revokeObjectURL(l.href); l.remove(); }, 1000); }, 'image/png');
+  setTimeout(qtDesenhar, 50);
 }
 
 async function abrirAgendaLista(){
