@@ -4058,8 +4058,8 @@ async function abrirCalendario(){
       carregarEtiquetasAgendamento(),
       carregarTiposEvento(),
       api('agendamentos?select=*&status=eq.Agendado&order=data_inicio.asc'),
-      carregarLocaisEvento(),
       pregacoesParaCalendario(),
+      carregarLocaisEvento(),
     ]);
     calendarioAgendamentos = (dados || []).concat(pregacoes);
     if(cultoAtual === 'calendario' && document.getElementById('modalEvento').classList.contains('hidden')) desenharCalendario();
@@ -9466,7 +9466,7 @@ async function abrirCalendarioPublico(codigo){
   calendarioAno = hoje.getFullYear(); calendarioMes = hoje.getMonth();
   document.getElementById('calendarioGrid').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
-    const [, r] = await Promise.all([ carregarTiposEvento(), apiPublico('rpc/calendario_publico', { method:'POST', body:{ p_codigo: codigo } }) ]);
+    const [, r] = await Promise.all([ carregarTiposEvento(), apiPublico('rpc/calendario_publico', { method:'POST', body:{ p_codigo: codigo } }), carregarLocaisEvento() ]);
     if(!r || r.ok === false){
       document.querySelector('#paginaCalendario').innerHTML = '<div class="card"><h2>Link inválido</h2><p class="hint">Este link do calendário não existe mais. Peça um link novo à secretaria da igreja.</p></div>';
       return;
