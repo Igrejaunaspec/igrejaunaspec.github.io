@@ -710,6 +710,14 @@
   .tipos-editor-item{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
   @keyframes paginaSurge{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
   @keyframes paginaSurgeSoFade{from{opacity:0;}to{opacity:1;}}
+  /* janelas (pop-ups): entram dando um pulinho */
+  @keyframes modalPula{0%{opacity:0;transform:scale(.86) translateY(14px);}55%{opacity:1;transform:scale(1.035) translateY(-3px);}78%{transform:scale(.992);}100%{transform:none;}}
+  @keyframes modalPulaCel{0%{transform:translateY(100%);}62%{transform:translateY(-14px);}82%{transform:translateY(4px);}100%{transform:none;}}
+  @keyframes modalFundoSurge{from{background-color:rgba(20,22,28,0);}}
+  .modal-fundo:not(.hidden){animation:modalFundoSurge .22s ease-out;}
+  .modal-fundo:not(.hidden) > .modal-caixa{animation:modalPula .46s cubic-bezier(.22,.9,.3,1) backwards;}
+  @media screen and (max-width:700px){.modal-fundo:not(.hidden) > .modal-caixa{animation:modalPulaCel .48s cubic-bezier(.22,.9,.3,1) backwards;}}
+  @media (prefers-reduced-motion:reduce){.modal-fundo:not(.hidden) > .modal-caixa{animation:paginaSurgeSoFade .2s ease-out backwards;}}
   .pagina-surge{animation:paginaSurge .32s cubic-bezier(.2,.75,.25,1) both;}
   @media (prefers-reduced-motion:reduce){.pagina-surge{animation:paginaSurgeSoFade .2s ease-out both;}}
   .pas-pedido{background:#fff8e6;border:1px solid #f1d58a;border-radius:10px;padding:12px 14px;margin:0 0 14px;}
