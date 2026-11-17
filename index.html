@@ -708,6 +708,10 @@
   .tipo-evento-linha select{flex:1 1 200px;}
   .tipo-evento-bolinha{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15);}
   .tipos-editor-item{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  @keyframes paginaSurge{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+  @keyframes paginaSurgeSoFade{from{opacity:0;}to{opacity:1;}}
+  .pagina-surge{animation:paginaSurge .32s cubic-bezier(.2,.75,.25,1) both;}
+  @media (prefers-reduced-motion:reduce){.pagina-surge{animation:paginaSurgeSoFade .2s ease-out both;}}
   .pas-pedido{background:#fff8e6;border:1px solid #f1d58a;border-radius:10px;padding:12px 14px;margin:0 0 14px;}
   .pas-pedido-tit{font-weight:700;font-size:13.5px;margin-bottom:6px;}
   .pas-pedido-txt{font-size:14px;line-height:1.45;white-space:pre-wrap;margin-top:4px;}
@@ -6025,7 +6029,22 @@ async function soltarEmPasta(pastaId, ev){
   }
 }
 
+// Ao trocar de aba, a pagina nova surge suave (aparece e sobe um pouquinho)
+// em vez de entrar num corte seco.
+function paginaElemento(qual){ return document.getElementById('pagina' + qual.charAt(0).toUpperCase() + qual.slice(1)); }
 function mostrarPagina(qual){
+  const nova = paginaElemento(qual);
+  const jaVisivel = nova && !nova.classList.contains('hidden');
+  mostrarPaginaSemEfeito(qual);
+  if(nova && !jaVisivel){
+    nova.classList.remove('pagina-surge');
+    void nova.offsetWidth; // reinicia a animacao
+    nova.classList.add('pagina-surge');
+    // tira o efeito quando termina, para nao atrapalhar janelas que ficam dentro da pagina
+    nova.addEventListener('animationend', () => nova.classList.remove('pagina-surge'), { once:true });
+  }
+}
+function mostrarPaginaSemEfeito(qual){
   document.getElementById('paginaLista').classList.toggle('hidden',          qual !== 'lista');
   document.getElementById('paginaEditor').classList.toggle('hidden',         qual !== 'editor');
   document.getElementById('paginaPessoas').classList.toggle('hidden',        qual !== 'pessoas');
