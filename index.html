@@ -782,6 +782,16 @@
   .aj-campos dt{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;padding-top:2px;} .aj-campos dd{margin:0;white-space:pre-wrap;}
   @media (max-width:700px){.aj-campos{grid-template-columns:1fr;} .aj-campos dd{margin-bottom:6px;} .aj-quem{margin-left:0;}}
   .aj-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+  .aj-prints{border:1.5px dashed var(--border);border-radius:10px;padding:10px;transition:background .15s,border-color .15s;}
+  .aj-prints.arrastando{background:#eef5ff;border-color:var(--accent);}
+  .aj-prints-lista{display:flex;gap:8px;flex-wrap:wrap;}
+  .aj-thumb{position:relative;width:96px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:#f3f5f8;display:block;flex:none;}
+  .aj-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .aj-thumb button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:12px;cursor:pointer;line-height:22px;padding:0;}
+  .aj-thumb.aj-add{display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);border-style:dashed;background:#fff;}
+  .aj-thumb.aj-add span{font-size:24px;line-height:1;} .aj-thumb.aj-add small{font-size:11px;}
+  .aj-thumb.aj-add:hover{border-color:var(--accent);color:var(--accent);}
+  .aj-thumb.carregando{animation:ajPisca 1s ease-in-out infinite alternate;} @keyframes ajPisca{from{opacity:.5}to{opacity:1}}
   .pas-pedidos-banner{background:#fff8e6;border:1px solid #f1d58a;border-radius:12px;padding:12px 14px;margin:4px 0 14px;}
   .pas-pedidos-tit{font-weight:700;font-size:14.5px;margin-bottom:8px;} .pas-pedidos-tit span{font-weight:500;color:#92600a;font-size:13px;}
   .pas-pedidos-lista{display:flex;flex-wrap:wrap;gap:8px;}
@@ -10143,7 +10153,42 @@ const TUTORIAIS = [
 ===================================================================== */
 const AJ_STATUS = { novo:'Aguardando aprovação', aprovado:'Aprovado', andamento:'Em andamento', feito:'Feito', recusado:'Recusado' };
 const AJ_URG = { esperar:'Pode esperar', semana:'Esta semana', urgente:'Urgente' };
-let ajItens = [], ajFiltro = 'abertos';
+let ajItens = [], ajFiltro = 'abertos', ajPrints = [], ajUrls = {};
+const AJ_BUCKET = 'ajustes-prints', AJ_MAX_PRINTS = 5;
+async function ajStorage(caminho, opcoes){
+  const token = await tokenValido(); const o = opcoes || {};
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/${caminho}`, { method: o.method || 'POST',
+    headers: Object.assign({ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token }, o.headers || {}), body: o.body });
+  if(!r.ok){ let d = ''; try{ const j = await r.json(); d = j.message || j.error || ''; }catch(e){} throw new Error(d || 'Erro ' + r.status + ' ao enviar a imagem.'); }
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+async function ajAssinar(caminhos, segundos){
+  if(!caminhos.length) return {};
+  const r = await ajStorage('object/sign/' + AJ_BUCKET, { headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ expiresIn: segundos, paths: caminhos }) });
+  const m = {}; (r || []).forEach(x => { if(x.signedURL) m[x.path] = SUPABASE_URL + '/storage/v1' + x.signedURL; }); return m;
+}
+// reduz o print (no maximo 1600px, JPEG) antes de enviar, para ficar leve
+async function ajReduzir(arquivo){
+  const img = await createImageBitmap(arquivo);
+  const esc = Math.min(1, 1600 / Math.max(img.width, img.height));
+  const c = document.createElement('canvas'); c.width = Math.round(img.width * esc); c.height = Math.round(img.height * esc);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+  return await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.85));
+}
+async function ajAdicionarArquivos(lista){
+  const imgs = Array.from(lista || []).filter(f => /^image\//.test(f.type));
+  for(const f of imgs){
+    if(ajPrints.length >= AJ_MAX_PRINTS){ toast('No máximo ' + AJ_MAX_PRINTS + ' prints por pedido.', 'err'); break; }
+    try{ const b = await ajReduzir(f); ajPrints.push({ blob: b, url: URL.createObjectURL(b) }); }
+    catch(e){ toast('Não consegui abrir essa imagem.', 'err'); }
+  }
+  ajDesenharPrints();
+}
+function ajDesenharPrints(){
+  const el = document.getElementById('ajPrintsLista'); if(!el) return;
+  el.innerHTML = ajPrints.map((p, i) => `<div class="aj-thumb"><img src="${p.url}" alt="Print ${i + 1}"><button type="button" title="Tirar" onclick="URL.revokeObjectURL(ajPrints[${i}].url);ajPrints.splice(${i},1);ajDesenharPrints()">✕</button></div>`).join('')
+    + (ajPrints.length < AJ_MAX_PRINTS ? `<label class="aj-thumb aj-add" title="Adicionar print"><input type="file" accept="image/*" multiple hidden onchange="ajAdicionarArquivos(this.files);this.value=''"><span>+</span><small>Adicionar</small></label>` : '');
+}
 function ajSouAdmin(){ return !!(perfil && perfil.admin); }
 async function abrirAjustes(){
   cultoAtual = 'ajustes';
@@ -10159,6 +10204,8 @@ async function carregarAjustes(){
   try{
     ajItens = (await api('pedidos_ajuste?select=*&order=criado_em.desc&limit=200')) || [];
     desenharAjustes();
+    const todos = ajItens.flatMap(a => a.prints || []).filter(c => !ajUrls[c]);
+    if(todos.length){ try{ Object.assign(ajUrls, await ajAssinar(todos, 3600)); desenharAjustes(); }catch(e){} }
   }catch(e){ el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; }
 }
 function desenharAjustes(){
@@ -10182,7 +10229,8 @@ function desenharAjustes(){
       <dt>O que precisa</dt><dd>${escapar(a.detalhes)}</dd>
       <dt>Por que</dt><dd>${escapar(a.motivo)}</dd>
       <dt>Exemplo</dt><dd>${escapar(a.exemplo)}</dd>
-      ${a.link ? `<dt>Link / imagem</dt><dd><a href="${escapar(a.link)}" target="_blank" rel="noopener">${escapar(a.link)}</a></dd>` : ''}
+      ${(a.prints || []).length ? `<dt>Prints</dt><dd><div class="aj-prints-lista">${a.prints.map(c => ajUrls[c] ? `<a class="aj-thumb" href="${ajUrls[c]}" target="_blank" rel="noopener"><img src="${ajUrls[c]}" alt="Print"></a>` : '<span class="aj-thumb carregando"></span>').join('')}</div></dd>` : ''}
+      ${a.link ? `<dt>Link</dt><dd><a href="${escapar(a.link)}" target="_blank" rel="noopener">${escapar(a.link)}</a></dd>` : ''}
       ${a.resposta ? `<dt>Resposta</dt><dd>${escapar(a.resposta)}</dd>` : ''}
     </dl>
     ${adm ? `<div class="aj-acoes">
@@ -10203,7 +10251,12 @@ function abrirNovoAjuste(){
     fundo.onclick = e => { if(e.target === fundo) fundo.classList.add('hidden'); };
     fundo.innerHTML = '<div class="modal-caixa grande" id="modalAjusteCaixa"></div>';
     document.body.appendChild(fundo);
+    fundo.addEventListener('paste', e => { const f = e.clipboardData && e.clipboardData.files; if(f && f.length){ e.preventDefault(); ajAdicionarArquivos(f); } });
+    fundo.addEventListener('dragover', e => { e.preventDefault(); const z = document.getElementById('ajPrintsZona'); if(z) z.classList.add('arrastando'); });
+    fundo.addEventListener('dragleave', e => { if(e.target === fundo){ const z = document.getElementById('ajPrintsZona'); if(z) z.classList.remove('arrastando'); } });
+    fundo.addEventListener('drop', e => { e.preventDefault(); const z = document.getElementById('ajPrintsZona'); if(z) z.classList.remove('arrastando'); ajAdicionarArquivos(e.dataTransfer && e.dataTransfer.files); });
   }
+  ajPrints.forEach(p => URL.revokeObjectURL(p.url)); ajPrints = [];
   const abas = Object.values(NOMES_ABA_ATIVIDADE).filter(n => n !== 'Pedidos de ajuste').concat(['Formulário de agendamento (público)', 'Formulário do pastor (público)', 'Área do visitante', 'Votação', 'O app inteiro / outra coisa']);
   document.getElementById('modalAjusteCaixa').innerHTML = `
     <div class="evento-modal-topo"><h3>Novo pedido de ajuste</h3>
@@ -10217,14 +10270,18 @@ function abrirNovoAjuste(){
       <textarea id="ajMotivo" rows="3" maxlength="2000" placeholder="Que problema resolve? Quem usa? Com que frequência?"></textarea></div>
     <div class="field"><label for="ajExemplo">Dê um exemplo *</label>
       <textarea id="ajExemplo" rows="3" maxlength="2000" placeholder="Ex.: Toda sexta eu preciso mandar a agenda impressa para o pastor. Hoje eu tiro print e corto. Queria um botão que já gerasse a folha."></textarea></div>
+    <div class="field"><label>Prints da tela (opcional)</label>
+      <div class="aj-prints" id="ajPrintsZona"><div class="aj-prints-lista" id="ajPrintsLista"></div>
+        <div class="hint" style="margin:6px 0 0;">Clique em <b>+</b>, arraste a imagem para cá ou cole com <b>Ctrl+V</b> (no Mac, <b>Cmd+V</b>). Até ${AJ_MAX_PRINTS} imagens.</div></div></div>
     <div class="campo-2col">
       <div class="field"><label for="ajUrg">Urgência</label><select id="ajUrg">${Object.entries(AJ_URG).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
-      <div class="field"><label for="ajLink">Link de um print ou exemplo (opcional)</label><input type="text" id="ajLink" maxlength="500" placeholder="Ex.: link do Google Drive"></div>
+      <div class="field"><label for="ajLink">Link de exemplo (opcional)</label><input type="text" id="ajLink" maxlength="500" placeholder="Ex.: um site que faz parecido"></div>
     </div>
     <div id="ajErro"></div>
     <div class="modal-botoes"><button class="btn" onclick="document.getElementById('modalAjuste').classList.add('hidden')">Cancelar</button>
       <button class="btn primary" id="ajEnviar" onclick="enviarAjuste()">Enviar pedido</button></div>`;
   fundo.classList.remove('hidden');
+  ajDesenharPrints();
 }
 async function enviarAjuste(){
   const v = id => document.getElementById(id).value.trim();
@@ -10234,6 +10291,14 @@ async function enviarAjuste(){
   if(falta){ document.getElementById('ajErro').innerHTML = `<div class="aviso erro">Preencha ${falta}.</div>`; return; }
   const btn = document.getElementById('ajEnviar'); btn.disabled = true; btn.textContent = 'Enviando...';
   try{
+    corpo.prints = [];
+    for(let i = 0; i < ajPrints.length; i++){
+      btn.textContent = `Enviando print ${i + 1} de ${ajPrints.length}...`;
+      const caminho = `${perfil.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      await ajStorage(`object/${AJ_BUCKET}/${caminho}`, { headers:{ 'Content-Type':'image/jpeg' }, body: ajPrints[i].blob });
+      corpo.prints.push(caminho);
+    }
+    btn.textContent = 'Enviando...';
     await api('pedidos_ajuste', { method:'POST', prefer:'return=minimal', body: corpo });
     document.getElementById('modalAjuste').classList.add('hidden');
     toast('Pedido enviado! Você acompanha o andamento aqui.', 'ok');
@@ -10255,15 +10320,21 @@ async function mudarAjuste(id, status){
 }
 async function apagarAjuste(id){
   if(!confirm('Apagar este pedido?')) return;
-  try{ await api(`pedidos_ajuste?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' }); ajItens = ajItens.filter(x => x.id !== id); desenharAjustes(); }
+  const a = ajItens.find(x => x.id === id);
+  try{ await api(`pedidos_ajuste?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    if(a && (a.prints || []).length){ try{ await ajStorage('object/' + AJ_BUCKET, { method:'DELETE', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ prefixes: a.prints }) }); }catch(e){} }
+    ajItens = ajItens.filter(x => x.id !== id); desenharAjustes(); }
   catch(e){ toast('Não foi possível apagar: ' + e.message, 'err'); }
 }
-function copiarAjusteClaude(id){
+async function copiarAjusteClaude(id){
   const a = ajItens.find(x => x.id === id); if(!a) return;
+  let links = {};
+  if((a.prints || []).length){ try{ links = await ajAssinar(a.prints, 7 * 24 * 3600); }catch(e){} }
   const txt = `Pedido de ajuste APROVADO no app igrejaunaspec.com (id ${a.id})\n` +
     `Aba: ${a.aba}\nPedido por: ${a.autor_nome || '-'} em ${new Date(a.criado_em).toLocaleDateString('pt-BR')}\nUrgência: ${AJ_URG[a.urgencia] || a.urgencia}\n\n` +
     `Resumo: ${a.titulo}\n\nO que precisa:\n${a.detalhes}\n\nPor que:\n${a.motivo}\n\nExemplo:\n${a.exemplo}\n` +
-    (a.link ? `\nLink/print: ${a.link}\n` : '') + `\nPor favor, faça essa mudança partindo da versão atual do GitHub e me mostre antes se for uma mudança visual grande.`;
+    (a.link ? `\nLink: ${a.link}\n` : '') +
+    ((a.prints || []).length ? `\nPrints (links valem 7 dias):\n${a.prints.map((c, i) => `${i + 1}. ${links[c] || '(não consegui gerar o link)'}`).join('\n')}\n` : '') + `\nPor favor, faça essa mudança partindo da versão atual do GitHub e me mostre antes se for uma mudança visual grande.`;
   try{ navigator.clipboard.writeText(txt); toast('Copiado! Cole na conversa com o Claude.', 'ok'); }
   catch(e){ prompt('Copie o texto:', txt); }
 }
