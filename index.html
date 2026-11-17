@@ -722,9 +722,13 @@
     .pas-card:hover,.pas-cartao:hover,.pas-mes-ev:hover,.pas-ev:hover,.evento-etiquetas-lista label:hover,.local-atalho:hover,
     .opcoes-grupo label:hover,.lista-item:hover,.agendamento-item:hover,.hom-dia-item:hover,.hom-status label:hover,
     .proximo-item:hover,.filtros-suspensos>button:hover,.calendario-evento-pill:hover,.cor-legenda:hover{
-      transform:scale(1.035);box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
+      transform:scale(var(--flutua,1.035));box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
+    /* cartoes largos (listas): sobem um pouco em vez de crescer, para nao invadir o menu lateral */
+    .lista-item:hover,.agendamento-item:hover,.hom-dia-item:hover,.proximo-item:hover,.aj-item:hover,.tri-item:hover{transform:translateY(-3px) scale(var(--flutua,1.006));}
+    .aj-item,.tri-item{transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s cubic-bezier(.2,.8,.2,1);}
+    .aj-item:hover,.tri-item:hover{box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
     .cor-evento-opcao:hover{transform:scale(1.15);box-shadow:0 0 0 1px rgba(20,32,52,.05),0 2px 8px rgba(20,32,52,.18),0 6px 18px rgba(20,32,52,.18);}
-    .calendario-dia:hover{transform:scale(1.025);box-shadow:0 0 0 1px rgba(20,32,52,.04),0 4px 14px rgba(20,32,52,.10),0 14px 40px rgba(20,32,52,.16);z-index:2;}
+    .calendario-dia:hover{transform:scale(var(--flutua,1.025));box-shadow:0 0 0 1px rgba(20,32,52,.04),0 4px 14px rgba(20,32,52,.10),0 14px 40px rgba(20,32,52,.16);z-index:2;}
     .pas-ev:hover,.pas-mes-ev:hover,.calendario-evento-pill:hover{z-index:3;}
     .btn:not(:disabled):active,.pas-chips button:active,.pas-card:active,.pas-cartao:active,.calendario-evento-pill:active,
     .lista-item:active,.agendamento-item:active,.local-atalho:active,.chip-filtro:active{
@@ -743,6 +747,19 @@
   @media (prefers-reduced-motion:reduce){.modal-fundo:not(.hidden) > .modal-caixa{animation:paginaSurgeSoFade .2s ease-out backwards;}}
   .pagina-surge{animation:paginaSurge .32s cubic-bezier(.2,.75,.25,1) both;}
   @media (prefers-reduced-motion:reduce){.pagina-surge{animation:paginaSurgeSoFade .2s ease-out both;}}
+  #paginaAgendamentos:has(#listaAgendamentos.hidden) #pasTriagem{display:none;}
+  .tri-card{border:1.5px solid #f1d58a;background:#fffcf3;}
+  .tri-topo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;} .tri-topo h3{margin:0;font-size:16px;}
+  .tri-n{display:inline-block;background:#c0392b;color:#fff;border-radius:99px;font-size:12px;padding:1px 8px;margin-left:4px;vertical-align:2px;}
+  .tri-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-top:10px;}
+  .tri-item.tratado{opacity:.75;}
+  .tri-cab{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;} .tri-cab b{font-size:15px;}
+  .tri-tipo{font-weight:700;color:var(--accent);} .tri-data{color:var(--muted);margin-left:auto;font-size:12px;}
+  .tri-st{font-weight:700;font-size:11px;text-transform:uppercase;padding:2px 8px;border-radius:6px;} .tri-st.ok{background:#dcfce7;color:#166534;} .tri-st.no{background:#fee2e2;color:#991b1b;}
+  .tri-campos{margin:8px 0 0;display:grid;grid-template-columns:130px 1fr;gap:4px 12px;font-size:14px;}
+  .tri-campos dt{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;padding-top:2px;} .tri-campos dd{margin:0;white-space:pre-wrap;}
+  @media (max-width:700px){.tri-campos{grid-template-columns:1fr;} .tri-data{margin-left:0;}}
+  .tri-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
   .aj-filtros{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
   .aj-item{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--panel);}
   .aj-topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;}
@@ -762,7 +779,7 @@
   .pas-pedidos-lista button span{color:var(--muted);} .pas-pedidos-lista button i{font-style:normal;font-weight:700;color:#92600a;margin-left:4px;}
   @media (hover:hover) and (pointer:fine){
     .pas-pedidos-lista button{transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s cubic-bezier(.2,.8,.2,1);}
-    .pas-pedidos-lista button:hover{transform:scale(1.035);box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
+    .pas-pedidos-lista button:hover{transform:scale(var(--flutua,1.035));box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
   }
   .pas-pedido{background:#fff8e6;border:1px solid #f1d58a;border-radius:10px;padding:12px 14px;margin:0 0 14px;}
   .pas-pedido-tit{font-weight:700;font-size:13.5px;margin-bottom:6px;}
@@ -1559,6 +1576,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
         </div>
         </div>
       </div>
+      <div id="pasTriagem"></div>
       <div id="listaAgendamentos"></div>
       <div id="editorFormularioAgendamento" class="hidden"></div>
       <div id="editorEtiquetasAgendamento" class="hidden"></div>
@@ -1809,7 +1827,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="pfFormulario">
       <div class="card">
         <p class="hint" style="margin:0;">Preencha para pedir um horário com o pastor. <strong>O horário só fica garantido depois da confirmação.</strong>
-          O pastor pode confirmar ou sugerir outro dia, e a secretaria da igreja entra em contato com você pelo WhatsApp.</p>
+          A secretaria da igreja vê o seu pedido, combina com um dos pastores e entra em contato com você pelo WhatsApp.</p>
       </div>
       <div class="card" id="pfCampos">
         <div class="field"><label for="pfNome">Seu nome completo *</label><input type="text" id="pfNome" maxlength="120" autocomplete="name"></div>
@@ -1833,7 +1851,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
         </div>
         <input type="text" id="pfEndereco" class="hidden" maxlength="200" placeholder="Endereço completo da visita" style="margin-top:8px;"></div>
         <div class="field"><label for="pfDetalhes">Quer contar um pouco sobre o assunto? (opcional)</label>
-          <textarea id="pfDetalhes" rows="3" maxlength="1000" placeholder="Só o pastor vai ler. Não precisa entrar em detalhes."></textarea></div>
+          <textarea id="pfDetalhes" rows="3" maxlength="1000" placeholder="Só a secretaria e o pastor vão ler. Não precisa entrar em detalhes."></textarea></div>
         <div id="pfErro"></div>
         <button class="btn primary" id="pfEnviar" style="width:100%;padding:13px;font-size:15.5px;" onclick="enviarPedidoPastoral()">Enviar pedido</button>
       </div>
@@ -1841,7 +1859,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="pfSucesso" class="agendar-sucesso hidden">
       <div class="emoji">🙏</div>
       <h2>Pedido enviado!</h2>
-      <p>O Pr. Silvano vai confirmar ou sugerir outro horário. A secretaria da igreja entra em contato com você pelo WhatsApp.</p>
+      <p>A secretaria da igreja vai combinar o atendimento com um dos pastores e entra em contato com você pelo WhatsApp.</p>
     </div>
   </div>
 </div>
@@ -3830,6 +3848,7 @@ async function abrirAgendamentosLista(){
     ]);
     agendamentos = lista;
     if(cultoAtual !== 'agendamentos') return;
+    carregarTriagemPastoral();
     montarFiltrosAgendamentos();
     montarFiltroAnoAgendamentos();
     montarFiltrosEtiquetasAgendamentos();
@@ -5620,6 +5639,22 @@ function fecharFolhaCelular(){
     const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
     x0 = null;
     if(Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) navegarCalendario(dx < 0 ? 1 : -1);
+  }, { passive:true });
+})();
+
+/* "flutuar" ao passar o mouse: itens largos crescem no maximo ~8px de cada lado,
+   para nao passar por baixo do menu lateral nem sair da tela */
+(function(){
+  const SEL = '.btn,.chip-filtro,.etiqueta-toggle,.pas-chips button,.pas-visoes button,.pas-card,.pas-cartao,.pas-mes-ev,.pas-ev,'
+    + '.evento-etiquetas-lista label,.local-atalho,.opcoes-grupo label,.lista-item,.agendamento-item,.hom-dia-item,.hom-status label,'
+    + '.proximo-item,.filtros-suspensos>button,.calendario-dia,.calendario-evento-pill,.cor-legenda,.aj-item,.tri-item,.pas-pedidos-lista button';
+  document.addEventListener('mouseover', e => {
+    const el = e.target && e.target.closest ? e.target.closest(SEL) : null;
+    if(!el || el.dataset.flutuaW == el.offsetWidth) return;
+    const w = el.offsetWidth || 1, h = el.offsetHeight || 1;
+    const max = el.classList.contains('calendario-dia') ? 1.025 : 1.035;
+    el.style.setProperty('--flutua', Math.min(max, 1 + 16 / Math.max(w, h)).toFixed(4));
+    el.dataset.flutuaW = w;
   }, { passive:true });
 })();
 
@@ -7917,6 +7952,88 @@ async function excluirPastoral(){
    Cada decisao do pastor vira um aviso (tabela pastoral_avisos, criado
    pelo banco) que so a secretaria ve, com o botao de WhatsApp.
 ===================================================================== */
+/* ---------- Pedidos do formulario do pastor: a secretaria decide na aba Agendamentos ---------- */
+let triItens = [], triVerTratados = false;
+const TRI_TIPOS = { espiritual:'Atendimento espiritual', aconselhamento:'Aconselhamento individual', reuniao:'Reunião', visita:'Visita' };
+async function carregarTriagemPastoral(){
+  const box = document.getElementById('pasTriagem'); if(!box) return;
+  if(!pasEhSecretaria()){ box.innerHTML = ''; return; }
+  try{
+    triItens = (await api('pastoral_pedidos?select=*&order=criado_em.desc&limit=60')) || [];
+  }catch(e){ box.innerHTML = ''; return; }
+  desenharTriagemPastoral();
+}
+function desenharTriagemPastoral(){
+  const box = document.getElementById('pasTriagem');
+  const novos = triItens.filter(x => x.status === 'novo');
+  const tratados = triItens.filter(x => x.status !== 'novo');
+  const quando = d => { const x = new Date(d); return x.toLocaleDateString('pt-BR', { weekday:'short', day:'2-digit', month:'2-digit' }).replace('.', '') + ' às ' + x.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }); };
+  const dur = m => m >= 60 ? (m / 60).toString().replace('.', ',').replace(',5', 'h30').replace(/^(\d+)$/, '$1h') : m + ' min';
+  const cartao = x => `<div class="tri-item${x.status !== 'novo' ? ' tratado' : ''}">
+    <div class="tri-cab"><b>${escapar(x.nome)}</b><span class="tri-tipo">${escapar(TRI_TIPOS[x.tipo] || x.tipo)}</span>
+      ${x.status === 'encaminhado' ? `<span class="tri-st ok">Encaminhado: ${escapar(x.pastor || '')}</span>` : x.status === 'recusado' ? '<span class="tri-st no">Recusado</span>' : ''}
+      <span class="tri-data">enviado em ${new Date(x.criado_em).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</span></div>
+    <dl class="tri-campos">
+      <dt>Quando prefere</dt><dd>${escapar(quando(x.inicio))} · ${dur(x.dur)}</dd>
+      <dt>Onde</dt><dd>${escapar(x.local)}${x.endereco ? ' — ' + escapar(x.endereco) : ''}</dd>
+      <dt>WhatsApp</dt><dd>${escapar(x.contato)}</dd>
+      ${x.detalhes ? `<dt>Assunto</dt><dd>${escapar(x.detalhes)}</dd>` : ''}
+      ${x.motivo ? `<dt>Motivo</dt><dd>${escapar(x.motivo)}</dd>` : ''}
+      ${x.tratado_por ? `<dt>Decidido por</dt><dd>${escapar(x.tratado_por)}</dd>` : ''}
+    </dl>
+    ${x.status === 'novo' ? `<div class="tri-acoes">
+      <button class="btn small primary" onclick="triEncaminhar('${x.id}', '')">➜ Agenda do Pr. Silvano</button>
+      <button class="btn small" onclick="triOutroPastor('${x.id}')">👤 Outro pastor</button>
+      <button class="btn small" onclick="triWhats('${x.id}')">💬 WhatsApp da pessoa</button>
+      <button class="btn small" style="color:#c0392b;" onclick="triRecusar('${x.id}')">✕ Recusar</button>
+    </div>` : `<div class="tri-acoes"><button class="btn small" onclick="triWhats('${x.id}')">💬 WhatsApp da pessoa</button></div>`}
+  </div>`;
+  if(!novos.length && !tratados.length){ box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="card tri-card">
+    <div class="tri-topo"><h3>🙏 Pedidos de atendimento pastoral ${novos.length ? `<span class="tri-n">${novos.length}</span>` : ''}</h3>
+      <span class="hint" style="flex:1;min-width:200px;">Vieram pelo formulário do pastor. Escolha quem vai atender.</span>
+      <button class="btn small" onclick="copiarLinkPedidoPastoral()">🔗 Link do formulário</button>
+      ${tratados.length ? `<button class="btn small" onclick="triVerTratados=!triVerTratados;desenharTriagemPastoral()">${triVerTratados ? 'Esconder' : 'Ver'} já decididos (${tratados.length})</button>` : ''}</div>
+    ${novos.length ? novos.map(cartao).join('') : '<div class="vazio" style="padding:10px 0;">Nenhum pedido esperando.</div>'}
+    ${triVerTratados ? tratados.map(cartao).join('') : ''}
+  </div>`;
+}
+async function triEncaminhar(id, pastor){
+  try{
+    await api('rpc/pastoral_encaminhar', { method:'POST', prefer:'return=minimal', body:{ p_id:id, p_pastor:pastor || '' } });
+    toast(pastor ? 'Encaminhado para ' + pastor : 'Enviado para a Agenda Pastoral do Pr. Silvano', 'ok');
+    await carregarTriagemPastoral();
+  }catch(e){ toast('Não foi possível: ' + e.message, 'err'); }
+}
+async function triOutroPastor(id){
+  const x = triItens.find(i => i.id === id); if(!x) return;
+  const nome = prompt('Nome do pastor que vai atender:', 'Pr. '); if(!nome || nome.trim().length < 4) return;
+  const tel = prompt('WhatsApp do ' + nome.trim() + ' (para mandar o pedido para ele). Deixe vazio para pular:', '');
+  await triEncaminhar(id, nome.trim());
+  if(tel && tel.trim()){
+    const numero = telefoneParaWhatsApp(tel);
+    const d = new Date(x.inicio);
+    const msg = `Olá, ${nome.trim()}! Chegou um pedido de atendimento pastoral pelo site da igreja:\n\n` +
+      `Nome: ${x.nome}\nWhatsApp: ${x.contato}\nAssunto: ${TRI_TIPOS[x.tipo] || x.tipo}\n` +
+      `Dia e horário que prefere: ${d.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'2-digit' })} às ${d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}\n` +
+      `Onde: ${x.local}${x.endereco ? ' (' + x.endereco + ')' : ''}` + (x.detalhes ? `\n\nO que contou: ${x.detalhes}` : '') + `\n\nVocê pode atender?`;
+    window.open((numero ? `https://wa.me/${numero}` : 'https://web.whatsapp.com/') + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  }
+}
+async function triRecusar(id){
+  const r = prompt('Motivo (fica registrado para a equipe):', ''); if(r === null) return;
+  try{
+    await api(`pastoral_pedidos?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal',
+      body:{ status:'recusado', motivo: r.trim() || null, tratado_por: (perfil && (perfil.nome || perfil.email)) || '', tratado_em: new Date().toISOString() } });
+    toast('Pedido recusado', 'ok'); await carregarTriagemPastoral();
+  }catch(e){ toast('Não foi possível: ' + e.message, 'err'); }
+}
+function triWhats(id){
+  const x = triItens.find(i => i.id === id); if(!x) return;
+  const numero = telefoneParaWhatsApp(x.contato);
+  const msg = `Olá, ${x.nome.split(' ')[0]}! Aqui é da secretaria da Igreja UNASP EC. Recebemos o seu pedido de atendimento pastoral.`;
+  window.open((numero ? `https://wa.me/${numero}` : 'https://web.whatsapp.com/') + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+}
 function pasEhSecretaria(){ return !!(perfil && (perfil.acesso_pastoral_secretaria || perfil.admin)); }
 function copiarLinkPedidoPastoral(){
   const link = location.origin + location.pathname + '?pastor=1';
