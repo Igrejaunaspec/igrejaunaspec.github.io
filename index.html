@@ -743,6 +743,17 @@
   @media (prefers-reduced-motion:reduce){.modal-fundo:not(.hidden) > .modal-caixa{animation:paginaSurgeSoFade .2s ease-out backwards;}}
   .pagina-surge{animation:paginaSurge .32s cubic-bezier(.2,.75,.25,1) both;}
   @media (prefers-reduced-motion:reduce){.pagina-surge{animation:paginaSurgeSoFade .2s ease-out both;}}
+  .aj-filtros{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
+  .aj-item{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--panel);}
+  .aj-topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;}
+  .aj-st{font-weight:700;text-transform:uppercase;padding:3px 8px;border-radius:6px;font-size:11px;background:#fef3c7;color:#92600a;}
+  .aj-st.aprovado{background:#dcfce7;color:#166534;} .aj-st.andamento{background:#dbeafe;color:#1e40af;} .aj-st.feito{background:#e5e7eb;color:#374151;} .aj-st.recusado{background:#fee2e2;color:#991b1b;}
+  .aj-aba{font-weight:700;color:var(--accent);} .aj-urg{font-weight:700;color:#c0392b;} .aj-urg.sem{color:#c46a12;} .aj-quem{color:var(--muted);margin-left:auto;}
+  .aj-tit{margin:8px 0 6px;font-size:16px;}
+  .aj-campos{margin:0;display:grid;grid-template-columns:130px 1fr;gap:6px 12px;font-size:14px;line-height:1.45;}
+  .aj-campos dt{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;padding-top:2px;} .aj-campos dd{margin:0;white-space:pre-wrap;}
+  @media (max-width:700px){.aj-campos{grid-template-columns:1fr;} .aj-campos dd{margin-bottom:6px;} .aj-quem{margin-left:0;}}
+  .aj-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
   .pas-pedidos-banner{background:#fff8e6;border:1px solid #f1d58a;border-radius:12px;padding:12px 14px;margin:4px 0 14px;}
   .pas-pedidos-tit{font-weight:700;font-size:14.5px;margin-bottom:8px;} .pas-pedidos-tit span{font-weight:500;color:#92600a;font-size:13px;}
   .pas-pedidos-lista{display:flex;flex-wrap:wrap;gap:8px;}
@@ -1606,6 +1617,22 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
           <span class="hom-legenda"><span class="hom-ponto ok"></span>Confirmado <span class="hom-ponto pend"></span>A confirmar <span class="hom-ponto sem"></span>Sem pregador</span>
         </div>
         <div id="homLista"></div>
+      </div>
+    </div>
+
+    <!-- ---------- Pedidos de ajuste (sugestoes de mudanca no app) ---------- -->
+    <div id="paginaAjustes" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+          <div style="flex:1;min-width:220px;">
+            <h2>Pedidos de ajuste</h2>
+            <p class="hint" id="ajCabDica" style="margin:4px 0 0;">Precisa que alguma parte do app mude ou ganhe algo novo? Conte aqui com detalhes. Depois que o pedido for aprovado, ele é feito.</p>
+          </div>
+          <button class="btn primary" onclick="abrirNovoAjuste()">+ Novo pedido</button>
+          <button class="btn" onclick="carregarAjustes()">↻ Atualizar</button>
+        </div>
+        <div class="aj-filtros" id="ajFiltros"></div>
+        <div id="ajLista"><div class="vazio">Carregando...</div></div>
       </div>
     </div>
 
@@ -2937,7 +2964,7 @@ async function api(caminho, opcoes){
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
 const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
   calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Agenda', medicos:'Médicos em Missão',
-  youtube:'YouTube', passador:'Passador', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
+  youtube:'YouTube', passador:'Passador', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
 function nomeAbaAtividade(caminho){
   if(/^formulario_schema/.test(caminho || '')){
@@ -4445,7 +4472,7 @@ function desenharLegendaETProximos(){
 // montarAbas() criou e insere titulos de grupo -- os botoes e seus cliques
 // continuam os mesmos, e a barra do celular continua lendo deles.
 const GRUPOS_MENU = [
-  ['Início', ['inicio']],
+  ['Início', ['inicio', 'ajustes']],
   ['Culto', ['sexta', 'sabado', 'homiletico', 'escala']],
   ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'minhaagenda', 'agenda']],
   ['Comunidade', ['medicos', 'youtube', 'passador']],
@@ -4472,6 +4499,7 @@ const ICONES_MENU_SVG = {
   visitantes:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="M17 3l3 3-3 3"/>',
   compartilhar:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   inicio:'<circle cx="12" cy="12" r="9.5"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/>',
+  ajustes:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   ponto:'<circle cx="12" cy="12" r="3"/>'
 };
 function svgIconeMenu(miolo){
@@ -5313,6 +5341,7 @@ function montarAbas(){
   const permitidos = cultosPermitidos();
   abas.innerHTML = '';
   { const b = document.createElement('button'); b.textContent = 'Como usar'; b.onclick = () => abrirInicio(); b.dataset.culto = 'inicio'; abas.appendChild(b); }
+  { const b = document.createElement('button'); b.textContent = 'Pedidos de ajuste'; b.title = 'Pedir uma mudança ou novidade no app'; b.onclick = () => abrirAjustes(); b.dataset.culto = 'ajustes'; abas.appendChild(b); }
 
   permitidos.forEach(c => {
     const b = document.createElement('button');
@@ -6103,6 +6132,7 @@ function mostrarPaginaSemEfeito(qual){
   document.getElementById('paginaHomiletico').classList.toggle('hidden',   qual !== 'homiletico');
   document.getElementById('paginaPastoral').classList.toggle('hidden',     qual !== 'pastoral');
   document.getElementById('paginaInicio').classList.toggle('hidden',       qual !== 'inicio');
+  document.getElementById('paginaAjustes').classList.toggle('hidden',      qual !== 'ajustes');
 }
 
 /* =====================================================================
@@ -9967,6 +9997,139 @@ const TUTORIAIS = [
     'Use as setas para mudar a ordem, o <b>×</b> para tirar e <b>+ Adicionar item</b> para incluir.',
     'Tudo é salvo sozinho. <b>Gerar PDF</b> imprime e <b>Gerar link</b> compartilha com a equipe.' ] },
 ];
+/* =====================================================================
+   PEDIDOS DE AJUSTE: qualquer pessoa com login pede uma mudanca no app
+   (em qual aba, o que, por que, um exemplo). O administrador aprova ou
+   recusa; os aprovados ganham o botao "Copiar para o Claude", com o texto
+   pronto para colar na conversa e fazer a mudanca. Tabela pedidos_ajuste.
+===================================================================== */
+const AJ_STATUS = { novo:'Aguardando aprovação', aprovado:'Aprovado', andamento:'Em andamento', feito:'Feito', recusado:'Recusado' };
+const AJ_URG = { esperar:'Pode esperar', semana:'Esta semana', urgente:'Urgente' };
+let ajItens = [], ajFiltro = 'abertos';
+function ajSouAdmin(){ return !!(perfil && perfil.admin); }
+async function abrirAjustes(){
+  cultoAtual = 'ajustes';
+  marcarAba('ajustes');
+  mostrarPagina('ajustes');
+  document.getElementById('ajCabDica').textContent = ajSouAdmin()
+    ? 'Pedidos de mudança no app feitos pela equipe. Aprove, recuse ou marque o andamento. Os aprovados têm o botão "Copiar para o Claude".'
+    : 'Precisa que alguma parte do app mude ou ganhe algo novo? Conte aqui com detalhes. Depois que o pedido for aprovado, ele é feito.';
+  await carregarAjustes();
+}
+async function carregarAjustes(){
+  const el = document.getElementById('ajLista');
+  try{
+    ajItens = (await api('pedidos_ajuste?select=*&order=criado_em.desc&limit=200')) || [];
+    desenharAjustes();
+  }catch(e){ el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; }
+}
+function desenharAjustes(){
+  const filtros = [['abertos','Abertos'],['novo','Aguardando'],['aprovado','Aprovados'],['feito','Feitos'],['recusado','Recusados'],['todos','Todos']];
+  const conta = k => k === 'todos' ? ajItens.length : k === 'abertos' ? ajItens.filter(a => ['novo','aprovado','andamento'].includes(a.status)).length : ajItens.filter(a => a.status === k).length;
+  document.getElementById('ajFiltros').innerHTML = filtros.map(([k, n]) =>
+    `<button class="chip-filtro${ajFiltro === k ? ' on' : ''}" onclick="ajFiltro='${k}';desenharAjustes()">${n} (${conta(k)})</button>`).join('');
+  const lista = ajItens.filter(a => ajFiltro === 'todos' ? true : ajFiltro === 'abertos' ? ['novo','aprovado','andamento'].includes(a.status) : a.status === ajFiltro);
+  const el = document.getElementById('ajLista');
+  if(!lista.length){ el.innerHTML = `<div class="vazio">${ajItens.length ? 'Nenhum pedido neste filtro.' : 'Nenhum pedido ainda. Toque em "+ Novo pedido" para fazer o primeiro.'}</div>`; return; }
+  const adm = ajSouAdmin();
+  el.innerHTML = lista.map(a => `<div class="aj-item">
+    <div class="aj-topo">
+      <span class="aj-st ${a.status}">${AJ_STATUS[a.status] || a.status}</span>
+      <span class="aj-aba">${escapar(a.aba)}</span>
+      ${a.urgencia === 'urgente' ? '<span class="aj-urg">Urgente</span>' : a.urgencia === 'semana' ? '<span class="aj-urg sem">Esta semana</span>' : ''}
+      <span class="aj-quem">${escapar(a.autor_nome || '')} · ${new Date(a.criado_em).toLocaleDateString('pt-BR')}</span>
+    </div>
+    <h3 class="aj-tit">${escapar(a.titulo)}</h3>
+    <dl class="aj-campos">
+      <dt>O que precisa</dt><dd>${escapar(a.detalhes)}</dd>
+      <dt>Por que</dt><dd>${escapar(a.motivo)}</dd>
+      <dt>Exemplo</dt><dd>${escapar(a.exemplo)}</dd>
+      ${a.link ? `<dt>Link / imagem</dt><dd><a href="${escapar(a.link)}" target="_blank" rel="noopener">${escapar(a.link)}</a></dd>` : ''}
+      ${a.resposta ? `<dt>Resposta</dt><dd>${escapar(a.resposta)}</dd>` : ''}
+    </dl>
+    ${adm ? `<div class="aj-acoes">
+      ${a.status === 'novo' ? `<button class="btn small" style="background:#15803d;border-color:#15803d;color:#fff;" onclick="mudarAjuste('${a.id}','aprovado')">✅ Aprovar</button>
+        <button class="btn small" style="color:#c0392b;" onclick="mudarAjuste('${a.id}','recusado')">✕ Recusar</button>` : ''}
+      ${a.status === 'aprovado' ? `<button class="btn small" onclick="mudarAjuste('${a.id}','andamento')">🛠️ Em andamento</button>` : ''}
+      ${['aprovado','andamento'].includes(a.status) ? `<button class="btn small" onclick="mudarAjuste('${a.id}','feito')">✓ Feito</button>
+        <button class="btn small primary" onclick="copiarAjusteClaude('${a.id}')">📋 Copiar para o Claude</button>` : ''}
+      ${['feito','recusado'].includes(a.status) ? `<button class="btn small" onclick="mudarAjuste('${a.id}','novo')">↺ Reabrir</button>` : ''}
+    </div>` : (a.status === 'novo' && perfil && a.autor === perfil.id ? `<div class="aj-acoes"><button class="btn small" style="color:#c0392b;" onclick="apagarAjuste('${a.id}')">Apagar pedido</button></div>` : '')}
+  </div>`).join('');
+}
+function abrirNovoAjuste(){
+  let fundo = document.getElementById('modalAjuste');
+  if(!fundo){
+    fundo = document.createElement('div');
+    fundo.id = 'modalAjuste'; fundo.className = 'modal-fundo hidden';
+    fundo.onclick = e => { if(e.target === fundo) fundo.classList.add('hidden'); };
+    fundo.innerHTML = '<div class="modal-caixa grande" id="modalAjusteCaixa"></div>';
+    document.body.appendChild(fundo);
+  }
+  const abas = Object.values(NOMES_ABA_ATIVIDADE).filter(n => n !== 'Pedidos de ajuste').concat(['Formulário de agendamento (público)', 'Formulário do pastor (público)', 'Área do visitante', 'Votação', 'O app inteiro / outra coisa']);
+  document.getElementById('modalAjusteCaixa').innerHTML = `
+    <div class="evento-modal-topo"><h3>Novo pedido de ajuste</h3>
+      <button class="evento-modal-fechar" onclick="document.getElementById('modalAjuste').classList.add('hidden')">✕</button></div>
+    <p class="hint" style="margin:0 0 12px;">Quanto mais detalhes, mais rápido e certo fica. Imagine que quem vai fazer nunca viu o seu dia a dia.</p>
+    <div class="field"><label for="ajAba">Em qual aba? *</label><select id="ajAba"><option value="">Escolha...</option>${abas.map(n => `<option>${escapar(n)}</option>`).join('')}</select></div>
+    <div class="field"><label for="ajTitulo">Resuma em uma frase *</label><input type="text" id="ajTitulo" maxlength="140" placeholder="Ex.: Botão para imprimir a agenda da semana"></div>
+    <div class="field"><label for="ajDetalhes">O que você precisa, com detalhes *</label>
+      <textarea id="ajDetalhes" rows="4" maxlength="3000" placeholder="Onde fica, o que deveria aparecer, o que deveria acontecer quando clicar..."></textarea></div>
+    <div class="field"><label for="ajMotivo">Por que isso é importante? *</label>
+      <textarea id="ajMotivo" rows="3" maxlength="2000" placeholder="Que problema resolve? Quem usa? Com que frequência?"></textarea></div>
+    <div class="field"><label for="ajExemplo">Dê um exemplo *</label>
+      <textarea id="ajExemplo" rows="3" maxlength="2000" placeholder="Ex.: Toda sexta eu preciso mandar a agenda impressa para o pastor. Hoje eu tiro print e corto. Queria um botão que já gerasse a folha."></textarea></div>
+    <div class="campo-2col">
+      <div class="field"><label for="ajUrg">Urgência</label><select id="ajUrg">${Object.entries(AJ_URG).map(([k, n]) => `<option value="${k}">${n}</option>`).join('')}</select></div>
+      <div class="field"><label for="ajLink">Link de um print ou exemplo (opcional)</label><input type="text" id="ajLink" maxlength="500" placeholder="Ex.: link do Google Drive"></div>
+    </div>
+    <div id="ajErro"></div>
+    <div class="modal-botoes"><button class="btn" onclick="document.getElementById('modalAjuste').classList.add('hidden')">Cancelar</button>
+      <button class="btn primary" id="ajEnviar" onclick="enviarAjuste()">Enviar pedido</button></div>`;
+  fundo.classList.remove('hidden');
+}
+async function enviarAjuste(){
+  const v = id => document.getElementById(id).value.trim();
+  const corpo = { aba: v('ajAba'), titulo: v('ajTitulo'), detalhes: v('ajDetalhes'), motivo: v('ajMotivo'), exemplo: v('ajExemplo'),
+    urgencia: v('ajUrg') || 'esperar', link: v('ajLink') || null, autor_nome: (perfil && (perfil.nome || perfil.email)) || (sessao && sessao.email) || '' };
+  const falta = !corpo.aba ? 'em qual aba' : !corpo.titulo ? 'o resumo' : corpo.detalhes.length < 15 ? 'o que você precisa (com mais detalhes)' : corpo.motivo.length < 8 ? 'por que é importante' : corpo.exemplo.length < 8 ? 'um exemplo' : '';
+  if(falta){ document.getElementById('ajErro').innerHTML = `<div class="aviso erro">Preencha ${falta}.</div>`; return; }
+  const btn = document.getElementById('ajEnviar'); btn.disabled = true; btn.textContent = 'Enviando...';
+  try{
+    await api('pedidos_ajuste', { method:'POST', prefer:'return=minimal', body: corpo });
+    document.getElementById('modalAjuste').classList.add('hidden');
+    toast('Pedido enviado! Você acompanha o andamento aqui.', 'ok');
+    ajFiltro = 'abertos'; carregarAjustes();
+  }catch(e){
+    document.getElementById('ajErro').innerHTML = `<div class="aviso erro">Não foi possível enviar: ${escapar(e.message)}</div>`;
+    btn.disabled = false; btn.textContent = 'Enviar pedido';
+  }
+}
+async function mudarAjuste(id, status){
+  const a = ajItens.find(x => x.id === id); if(!a) return;
+  let resposta = a.resposta || null;
+  if(status === 'recusado'){ const r = prompt('Motivo da recusa (a pessoa vai ver):', ''); if(r === null) return; resposta = r.trim() || null; }
+  try{
+    await api(`pedidos_ajuste?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ status, resposta, atualizado_em: new Date().toISOString() } });
+    a.status = status; a.resposta = resposta; desenharAjustes();
+    toast('Pedido: ' + AJ_STATUS[status], 'ok');
+  }catch(e){ toast('Não foi possível mudar: ' + e.message, 'err'); }
+}
+async function apagarAjuste(id){
+  if(!confirm('Apagar este pedido?')) return;
+  try{ await api(`pedidos_ajuste?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' }); ajItens = ajItens.filter(x => x.id !== id); desenharAjustes(); }
+  catch(e){ toast('Não foi possível apagar: ' + e.message, 'err'); }
+}
+function copiarAjusteClaude(id){
+  const a = ajItens.find(x => x.id === id); if(!a) return;
+  const txt = `Pedido de ajuste APROVADO no app igrejaunaspec.com (id ${a.id})\n` +
+    `Aba: ${a.aba}\nPedido por: ${a.autor_nome || '-'} em ${new Date(a.criado_em).toLocaleDateString('pt-BR')}\nUrgência: ${AJ_URG[a.urgencia] || a.urgencia}\n\n` +
+    `Resumo: ${a.titulo}\n\nO que precisa:\n${a.detalhes}\n\nPor que:\n${a.motivo}\n\nExemplo:\n${a.exemplo}\n` +
+    (a.link ? `\nLink/print: ${a.link}\n` : '') + `\nPor favor, faça essa mudança partindo da versão atual do GitHub e me mostre antes se for uma mudança visual grande.`;
+  try{ navigator.clipboard.writeText(txt); toast('Copiado! Cole na conversa com o Claude.', 'ok'); }
+  catch(e){ prompt('Copie o texto:', txt); }
+}
+
 function abrirInicio(){
   cultoAtual = 'inicio';
   marcarAba('inicio');
