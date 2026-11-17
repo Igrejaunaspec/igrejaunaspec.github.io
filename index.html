@@ -771,6 +771,10 @@
   .tri-campos dt{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;padding-top:2px;} .tri-campos dd{margin:0;white-space:pre-wrap;}
   @media (max-width:700px){.tri-campos{grid-template-columns:1fr;} .tri-data{margin-left:0;}}
   .tri-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .qt-grade{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,520px);gap:24px;align-items:start;}
+  .qt-previa{position:sticky;top:16px;} .qt-previa canvas{width:100%;height:auto;border-radius:12px;box-shadow:0 6px 24px rgba(20,32,52,.18);display:block;}
+  .qt-ajustes{display:grid;gap:6px;margin-top:8px;font-size:13px;color:var(--muted);} .qt-ajustes input{width:100%;}
+  @media (max-width:860px){.qt-grade{grid-template-columns:1fr;} .qt-previa{position:static;}}
   .aj-filtros{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
   .aj-item{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--panel);}
   .aj-topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;}
@@ -1737,6 +1741,12 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 
     <!-- ---------- Agenda: lista de edicoes ---------- -->
     <div id="paginaAgendaLista" class="hidden">
+      <div class="subabas" id="subabasArtes" role="tablist">
+        <button role="tab" data-sub="agenda" class="on" onclick="irSubAbaArtes('agenda')" title="Agenda da semana"><span class="ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg></span><span class="rot">Agenda da semana</span></button>
+        <button role="tab" data-sub="quarta" onclick="irSubAbaArtes('quarta')" title="Culto de quarta"><span class="ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M12 13v5M9.5 15.5h5"/></svg></span><span class="rot">Culto de quarta</span></button>
+      </div>
+      <div id="artesQuarta" class="card hidden"></div>
+      <div id="artesAgenda">
       <div class="card">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
@@ -1750,6 +1760,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
         </div>
       </div>
       <div id="listaAgendas"></div>
+      </div>
     </div>
 
     <!-- ---------- Agenda: editor ---------- -->
@@ -3003,7 +3014,7 @@ async function api(caminho, opcoes){
 
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
 const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
-  calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Agenda', medicos:'Médicos em Missão',
+  calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Artes', medicos:'Médicos em Missão',
   youtube:'YouTube', passador:'Passador', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
 function nomeAbaAtividade(caminho){
@@ -5394,7 +5405,8 @@ function montarAbas(){
 
   if(podeEditarAgenda()){
     const b = document.createElement('button');
-    b.textContent = 'Agenda';
+    b.textContent = 'Artes';
+    b.title = 'Artes: Agenda da semana e Culto de quarta';
     b.onclick = () => abrirAgendaLista();
     b.dataset.culto = 'agenda';
     abas.appendChild(b);
@@ -8251,6 +8263,170 @@ function lembretePastoral(id){
 let agendas = [];
 let agendaEmEdicao = null;
 
+/* =====================================================================
+   ARTES > CULTO DE QUARTA ("50 Minutos de Poder"): gera a arte 1080x1080
+   no mesmo modelo do Canva. Titulo e logo vem de /assets/arte-quarta.js.
+===================================================================== */
+let qtFoto = null, qtFonteOk = null;
+const QT_LOCAIS = ['Hall da Igreja', 'Nave da Igreja', 'Auditório do Prédio Infantil'];
+function irSubAbaArtes(qual){
+  document.querySelectorAll('#subabasArtes button').forEach(b => b.classList.toggle('on', b.dataset.sub === qual));
+  document.getElementById('artesAgenda').classList.toggle('hidden', qual !== 'agenda');
+  document.getElementById('artesQuarta').classList.toggle('hidden', qual !== 'quarta');
+  if(qual === 'quarta') abrirArteQuarta();
+}
+function qtCarregarScript(src){
+  return new Promise((ok, erro) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => erro(new Error('Não consegui carregar ' + src)); document.head.appendChild(s); });
+}
+async function qtPreparar(){
+  if(!window.ARTE_QUARTA || !window.ARTE_QUARTA.iasd) await qtCarregarScript('/assets/arte-quarta.js?v=2');
+  if(!window.__qtImgs){
+    const carregar = src => new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = src; });
+    window.__qtImgs = { topo: await carregar(ARTE_QUARTA.topo), iasd: await carregar(ARTE_QUARTA.iasd) };
+  }
+  if(!qtFonteOk){
+    if(!document.getElementById('qtFontes')){
+      const l = document.createElement('link'); l.id = 'qtFontes'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;600&family=Cormorant+Garamond:wght@400&display=swap';
+      document.head.appendChild(l);
+    }
+    qtFonteOk = Promise.all(['300 40px Oswald', '500 40px Oswald', '600 40px Oswald', '400 40px "Cormorant Garamond"'].map(f => document.fonts.load(f, 'Áá')))
+      .catch(() => null);
+  }
+  await qtFonteOk;
+}
+function qtProximaQuarta(){ const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() + ((3 - d.getDay() + 7) % 7)); return pasISOData ? pasISOData(d) : d.toISOString().slice(0,10); }
+function qtLer(){ try{ return JSON.parse(localStorage.getItem('arteQuarta') || '{}'); }catch(e){ return {}; } }
+function qtGuardar(v){ try{ localStorage.setItem('arteQuarta', JSON.stringify(v)); }catch(e){} }
+async function abrirArteQuarta(){
+  const box = document.getElementById('artesQuarta');
+  const u = qtLer();
+  const local = u.local || QT_LOCAIS[0], outro = !QT_LOCAIS.includes(local);
+  box.innerHTML = `<div class="qt-grade">
+    <div class="qt-form">
+      <h2 style="margin:0 0 4px;">Culto de quarta</h2>
+      <p class="hint" style="margin:0 0 12px;">50 Minutos de Poder. Preencha e baixe a arte pronta, no mesmo modelo do Canva.</p>
+      <div class="campo-2col">
+        <div class="field"><label for="qtData">Data</label><input type="date" id="qtData" value="${qtProximaQuarta()}" oninput="qtDesenhar()"></div>
+        <div class="field"><label>Horário</label><div style="display:flex;gap:6px;align-items:center;">
+          <input type="time" id="qtIni" value="${u.ini || '18:30'}" oninput="qtDesenhar()"> às <input type="time" id="qtFim" value="${u.fim || '19:20'}" oninput="qtDesenhar()"></div></div>
+      </div>
+      <div class="field"><label for="qtLocal">Local</label><select id="qtLocal" onchange="document.getElementById('qtLocalOutro').classList.toggle('hidden', this.value !== '__outro');qtDesenhar()">
+        ${QT_LOCAIS.map(n => `<option${n === local ? ' selected' : ''}>${n}</option>`).join('')}<option value="__outro"${outro ? ' selected' : ''}>Outro...</option></select>
+        <input type="text" id="qtLocalOutro" class="${outro ? '' : 'hidden'}" maxlength="40" placeholder="Nome do local" value="${outro ? escapar(local) : ''}" style="margin-top:6px;" oninput="qtDesenhar()"></div>
+      <div class="field"><label for="qtTema">Tema (opcional)</label><textarea id="qtTema" rows="2" maxlength="90" placeholder="Ex.: O Deus que me vê" oninput="qtDesenhar()"></textarea><div class="hint" style="margin-top:4px;">As aspas entram sozinhas na arte.</div></div>
+      <div class="field"><label for="qtQuem">Quem vai pregar</label><input type="text" id="qtQuem" maxlength="45" placeholder="Ex.: Pr. Luiz Carlos Araújo" oninput="qtDesenhar()">
+        <div class="hint" style="margin-top:4px;">Na arte aparece "Com" antes do nome.</div></div>
+      <div class="field"><label>Foto de quem vai pregar (opcional)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="file" id="qtArquivo" accept="image/*" hidden onchange="qtEscolherFoto(this.files[0]);this.value=''">
+          <button class="btn small" onclick="document.getElementById('qtArquivo').click()">Escolher foto</button>
+          <button class="btn small hidden" id="qtTirarFoto" onclick="qtFoto=null;qtAjustesFoto();qtDesenhar()">Tirar foto</button>
+        </div>
+        <div id="qtAjustes" class="hidden qt-ajustes">
+          <label>Zoom <input type="range" id="qtZoom" min="1" max="3" step="0.01" value="1" oninput="qtDesenhar()"></label>
+          <label>Para os lados <input type="range" id="qtPx" min="-1" max="1" step="0.01" value="0" oninput="qtDesenhar()"></label>
+          <label>Para cima/baixo <input type="range" id="qtPy" min="-1" max="1" step="0.01" value="0" oninput="qtDesenhar()"></label>
+        </div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button class="btn primary" onclick="qtBaixar()">Baixar imagem</button>
+      </div>
+    </div>
+    <div class="qt-previa"><canvas id="qtCanvas" width="1080" height="1080"></canvas><div class="hint" id="qtStatus" style="text-align:center;margin-top:6px;">Carregando o modelo...</div></div>
+  </div>`;
+  qtAjustesFoto();
+  try{ await qtPreparar(); document.getElementById('qtStatus').textContent = 'Prévia (a imagem baixada sai em 1080 × 1080)'; }
+  catch(e){ document.getElementById('qtStatus').textContent = e.message; }
+  qtDesenhar();
+}
+function qtAjustesFoto(){
+  const a = document.getElementById('qtAjustes'), t = document.getElementById('qtTirarFoto');
+  if(a) a.classList.toggle('hidden', !qtFoto); if(t) t.classList.toggle('hidden', !qtFoto);
+}
+function qtEscolherFoto(arq){
+  if(!arq) return;
+  const url = URL.createObjectURL(arq), i = new Image();
+  i.onload = () => { qtFoto = i; ['qtZoom','qtPx','qtPy'].forEach((id, k) => document.getElementById(id).value = k ? 0 : 1); qtAjustesFoto(); qtDesenhar(); };
+  i.src = url;
+}
+function qtValores(){
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const local = v('qtLocal') === '__outro' ? v('qtLocalOutro').trim() : v('qtLocal');
+  const r = { data: v('qtData'), ini: v('qtIni'), fim: v('qtFim'), local, tema: v('qtTema').trim(), quem: v('qtQuem').trim() };
+  qtGuardar({ ini: r.ini, fim: r.fim, local: r.local });
+  return r;
+}
+function qtQuebrar(g, texto, larg){
+  const linhas = []; let atual = '';
+  texto.split(/\s+/).forEach(p => { const t = atual ? atual + ' ' + p : p; if(g.measureText(t).width > larg && atual){ linhas.push(atual); atual = p; } else atual = t; });
+  if(atual) linhas.push(atual); return linhas;
+}
+function qtDesenhar(){
+  const c = document.getElementById('qtCanvas'); if(!c || !window.__qtImgs) return;
+  const g = c.getContext('2d'), W = 1080, I = window.__qtImgs, v = qtValores();
+  const OSW = '"Oswald", "Arial Narrow", sans-serif', SERIF = '"Cormorant Garamond", Georgia, serif';
+  g.fillStyle = '#011627'; g.fillRect(0, 0, W, W);
+  g.fillStyle = '#fff'; g.textBaseline = 'alphabetic';
+  // titulo "50 MINUTOS DE PODER" (mesma posicao do modelo do Canva)
+  const esc = 516 / 823, tw = I.topo.width * esc, th = I.topo.height * esc;
+  g.drawImage(I.topo, 270 - 8 * esc, 115 - 8 * esc, tw, th);
+  // dia e local: mesma largura do modelo (cabe em 520px)
+  const linhaLocal = 'Quarta Feira - ' + (v.local || 'Hall da Igreja');
+  let tl = 37; g.font = `500 ${tl}px ${OSW}`;
+  while(g.measureText(linhaLocal).width > 600 && tl > 30){ tl -= 2; g.font = `500 ${tl}px ${OSW}`; }
+  g.textAlign = 'center'; g.fillText(linhaLocal, W / 2, 472);
+  // tema entre aspas
+  let desloc = 0;
+  if(v.tema){
+    const tema = '"' + v.tema.replace(/^["“”']+|["“”']+$/g, '') + '"';
+    let tam = 60, linhas;
+    do{ g.font = `400 ${tam}px ${SERIF}`; linhas = qtQuebrar(g, tema, 900); if(linhas.length > 2 || (linhas.length === 2 && tam > 54)) tam -= 2; else break; } while(tam > 38);
+    linhas = linhas.slice(0, 2);
+    if(linhas.length === 1) g.fillText(linhas[0], W / 2, 592);
+    else { g.fillText(linhas[0], W / 2, 572); g.fillText(linhas[1], W / 2, 572 + tam * 1.1); desloc = Math.round(tam * 1.1 - 20); }
+  } else desloc = -50;
+  // foto + "Com ..." e a data embaixo da foto
+  const D = 162, cy = 752 + desloc;
+  const [ano, mes, dia] = (v.data || '').split('-');
+  const dataTxt = dia ? `${dia}.${mes}` : '';
+  if(v.quem || qtFoto){
+    const nome = v.quem ? 'Com ' + v.quem : '';
+    let tam = 62; g.font = `500 ${tam}px ${OSW}`;
+    const maxNome = qtFoto ? 640 : 900;
+    while(nome && g.measureText(nome).width > maxNome && tam > 34){ tam -= 2; g.font = `500 ${tam}px ${OSW}`; }
+    const nw = nome ? g.measureText(nome).width : 0;
+    const total = qtFoto ? D + (nome ? 30 + nw : 0) : nw, x0 = Math.round((W - total) / 2);
+    let cxData = W / 2;
+    if(qtFoto){
+      const cx = x0 + D / 2; cxData = cx;
+      g.save(); g.beginPath(); g.arc(cx, cy, D / 2, 0, Math.PI * 2); g.clip();
+      const z = parseFloat(document.getElementById('qtZoom').value) || 1, px = parseFloat(document.getElementById('qtPx').value) || 0, py = parseFloat(document.getElementById('qtPy').value) || 0;
+      const base = D / Math.min(qtFoto.width, qtFoto.height) * z, fw = qtFoto.width * base, fh = qtFoto.height * base;
+      g.drawImage(qtFoto, cx - fw / 2 - px * (fw - D) / 2, cy - fh / 2 - py * (fh - D) / 2, fw, fh);
+      g.restore();
+    }
+    if(nome){ g.textAlign = 'left'; g.fillText(nome, qtFoto ? x0 + D + 30 : x0, cy + tam * 0.36); }
+    if(dataTxt){ g.textAlign = 'center'; g.font = `600 42px ${OSW}`; g.fillText(dataTxt, cxData, qtFoto ? cy + D / 2 + 68 : cy + 92); }
+  } else if(dataTxt){
+    g.textAlign = 'center'; g.font = `600 52px ${OSW}`; g.fillText(dataTxt, W / 2, cy + 20);
+  }
+  // rodape: horario em pilula | logo da Igreja Adventista
+  const hora = t => t ? t.replace(':', 'h') : '';
+  const txt = `${hora(v.ini)} às ${hora(v.fim)}`;
+  g.textAlign = 'center'; g.font = `300 34px ${OSW}`;
+  const pw = Math.max(231, g.measureText(txt).width + 56), ph = 62, lw = I.iasd.width, lh = I.iasd.height;
+  const total = pw + 19 + 2 + 17 + lw, bx = Math.round((W - total) / 2), by = 972;
+  g.lineWidth = 2.5; g.strokeStyle = '#fff'; g.beginPath(); g.roundRect(bx + 1, by - ph / 2, pw - 2, ph, ph / 2); g.stroke();
+  g.fillText(txt, bx + pw / 2, by + 12);
+  g.fillRect(bx + pw + 19, 927, 2, 75);
+  g.drawImage(I.iasd, bx + pw + 19 + 2 + 17, by - lh / 2 - 2);
+}
+function qtBaixar(){
+  const c = document.getElementById('qtCanvas'); if(!c) return;
+  const v = qtValores(); const [a, m, d] = (v.data || '--').split('-');
+  c.toBlob(b => { const l = document.createElement('a'); l.href = URL.createObjectURL(b); l.download = `culto-de-quarta-${d || ''}-${m || ''}.png`; document.body.appendChild(l); l.click(); setTimeout(() => { URL.revokeObjectURL(l.href); l.remove(); }, 1000); }, 'image/png');
+}
+
 async function abrirAgendaLista(){
   if(sujo && !confirm('Você tem alterações não salvas. Sair do editor mesmo assim?')) return;
   sujo = false;
@@ -8258,6 +8434,7 @@ async function abrirAgendaLista(){
   cultoAtual = 'agenda';
   marcarAba('agenda');
   mostrarPagina('agendaLista');
+  irSubAbaArtes('agenda');
   document.getElementById('listaAgendas').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
     agendas = await api('agendas?select=*&order=atualizado_em.desc');
