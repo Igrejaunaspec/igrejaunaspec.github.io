@@ -711,24 +711,24 @@
   @keyframes paginaSurge{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
   @keyframes paginaSurgeSoFade{from{opacity:0;}to{opacity:1;}}
   .pas-fader{animation:paginaSurgeSoFade .55s ease-out backwards;}
-  /* ao passar o mouse, o que da para clicar "flutua": sobe um pouquinho e ganha sombra embaixo
+  /* ao passar o mouse, o que da para clicar "flutua" (estilo Apple): cresce um pouquinho e ganha sombra suave em volta
      (so em computador com mouse; no celular nao existe "passar por cima") */
   @media (hover:hover) and (pointer:fine){
     .btn,.chip-filtro,.etiqueta-toggle,.pas-chips button,.pas-visoes button,.pas-card,.pas-cartao,.pas-mes-ev,.pas-ev,
     .evento-etiquetas-lista label,.local-atalho,.opcoes-grupo label,.cor-evento-opcao,.lista-item,.agendamento-item,
     .hom-dia-item,.hom-status label,.proximo-item,.filtros-suspensos>button,.calendario-dia,.calendario-evento-pill,.cor-legenda{
-      transition:transform .16s ease, box-shadow .16s ease, background-color .16s ease, border-color .16s ease;}
+      transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s cubic-bezier(.2,.8,.2,1), background-color .16s ease, border-color .16s ease;}
     .btn:not(:disabled):hover,.chip-filtro:hover,.etiqueta-toggle:hover,.pas-chips button:not(:disabled):hover,.pas-visoes button:hover,
     .pas-card:hover,.pas-cartao:hover,.pas-mes-ev:hover,.pas-ev:hover,.evento-etiquetas-lista label:hover,.local-atalho:hover,
     .opcoes-grupo label:hover,.lista-item:hover,.agendamento-item:hover,.hom-dia-item:hover,.hom-status label:hover,
     .proximo-item:hover,.filtros-suspensos>button:hover,.calendario-evento-pill:hover,.cor-legenda:hover{
-      transform:translateY(-2px);box-shadow:0 7px 16px -4px rgba(20,32,52,.28);}
-    .cor-evento-opcao:hover{transform:translateY(-2px) scale(1.08);box-shadow:0 6px 12px -3px rgba(20,32,52,.35);}
-    .calendario-dia:hover{transform:translateY(-2px);box-shadow:0 10px 22px -8px rgba(20,32,52,.25);}
+      transform:scale(1.035);box-shadow:0 0 0 1px rgba(20,32,52,.04),0 3px 10px rgba(20,32,52,.10),0 10px 32px rgba(20,32,52,.16);}
+    .cor-evento-opcao:hover{transform:scale(1.15);box-shadow:0 0 0 1px rgba(20,32,52,.05),0 2px 8px rgba(20,32,52,.18),0 6px 18px rgba(20,32,52,.18);}
+    .calendario-dia:hover{transform:scale(1.025);box-shadow:0 0 0 1px rgba(20,32,52,.04),0 4px 14px rgba(20,32,52,.10),0 14px 40px rgba(20,32,52,.16);z-index:2;}
     .pas-ev:hover,.pas-mes-ev:hover,.calendario-evento-pill:hover{z-index:3;}
     .btn:not(:disabled):active,.pas-chips button:active,.pas-card:active,.pas-cartao:active,.calendario-evento-pill:active,
     .lista-item:active,.agendamento-item:active,.local-atalho:active,.chip-filtro:active{
-      transform:translateY(0);box-shadow:0 2px 5px -2px rgba(20,32,52,.25);transition-duration:.06s;}
+      transform:scale(.985);box-shadow:0 0 0 1px rgba(20,32,52,.05),0 2px 8px rgba(20,32,52,.12);transition-duration:.08s;}
   }
   @media (prefers-reduced-motion:reduce){
     .btn:hover,.pas-card:hover,.calendario-dia:hover,.lista-item:hover,.agendamento-item:hover,.cor-evento-opcao:hover{transform:none !important;}
