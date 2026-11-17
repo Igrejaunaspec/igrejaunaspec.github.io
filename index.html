@@ -1668,6 +1668,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
             <p class="hint" id="ajCabDica" style="margin:4px 0 0;">Precisa que alguma parte do app mude ou ganhe algo novo? Conte aqui com detalhes. Depois que o pedido for aprovado, ele é feito.</p>
           </div>
           <button class="btn primary" onclick="abrirNovoAjuste()">+ Novo pedido</button>
+          <button class="btn" onclick="copiarLinkAjuste()">🔗 Link do formulário</button>
           <button class="btn" onclick="carregarAjustes()">↻ Atualizar</button>
         </div>
         <div class="aj-filtros" id="ajFiltros"></div>
@@ -5535,6 +5536,13 @@ function montarAbas(){
 
   montarNavCelular();
   agruparMenuLateral();
+
+  // link direto do formulario de pedidos de ajuste (?ajuste=1): depois do login abre a aba ja com o formulario
+  if(new URLSearchParams(location.search).get('ajuste') === '1'){
+    try{ const u = new URL(location.href); u.searchParams.delete('ajuste'); history.replaceState(null, '', u.pathname + u.search + u.hash); }catch(e){}
+    abrirAjustes().then(() => abrirNovoAjuste());
+    return;
+  }
 
   // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
   // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
@@ -10188,6 +10196,11 @@ function ajDesenharPrints(){
   const el = document.getElementById('ajPrintsLista'); if(!el) return;
   el.innerHTML = ajPrints.map((p, i) => `<div class="aj-thumb"><img src="${p.url}" alt="Print ${i + 1}"><button type="button" title="Tirar" onclick="URL.revokeObjectURL(ajPrints[${i}].url);ajPrints.splice(${i},1);ajDesenharPrints()">✕</button></div>`).join('')
     + (ajPrints.length < AJ_MAX_PRINTS ? `<label class="aj-thumb aj-add" title="Adicionar print"><input type="file" accept="image/*" multiple hidden onchange="ajAdicionarArquivos(this.files);this.value=''"><span>+</span><small>Adicionar</small></label>` : '');
+}
+function copiarLinkAjuste(){
+  const link = location.origin + location.pathname + '?ajuste=1';
+  try{ navigator.clipboard.writeText(link); toast('Link copiado: ' + link + ' (a pessoa entra com o login dela)', 'ok'); }
+  catch(e){ prompt('Copie o link:', link); }
 }
 function ajSouAdmin(){ return !!(perfil && perfil.admin); }
 async function abrirAjustes(){
