@@ -4643,13 +4643,19 @@ function desenharModalEvento(d){
     <div class="field">
       <label>Quem precisa ver este evento na agenda?</label>
       <div class="evento-etiquetas-lista">
+        <label>
+          <input type="checkbox" id="evSetorTodos" ${d.setoresVisiveis.length ? '' : 'checked'}
+            onchange="if(this.checked){document.querySelectorAll('.evSetorChk').forEach(c=>c.checked=false);}else if(!document.querySelector('.evSetorChk:checked')){this.checked=true;}">
+          Todos
+        </label>
         ${SETORES_AGENDA.map(s => `<label>
-          <input type="checkbox" class="evSetorChk" value="${escapar(s)}" ${d.setoresVisiveis.includes(s) ? 'checked' : ''}>
+          <input type="checkbox" class="evSetorChk" value="${escapar(s)}" ${d.setoresVisiveis.includes(s) ? 'checked' : ''}
+            onchange="document.getElementById('evSetorTodos').checked=!document.querySelector('.evSetorChk:checked');">
           ${escapar(s)}
         </label>`).join('')}
       </div>
       <p class="dica" style="margin:6px 0 0;font-size:12.5px;color:var(--muted);">
-        Sem marcar nada, o evento fica visível pra todo mundo que acessa a agenda (padrão). Marcando um ou mais setores, só quem for desses setores (e administradores) passa a ver esse evento.
+        "Todos" (padrão): o evento fica visível pra todo mundo que acessa a agenda. Marcando um ou mais setores, só quem for desses setores (e administradores) passa a ver esse evento.
       </p>
     </div>
 
