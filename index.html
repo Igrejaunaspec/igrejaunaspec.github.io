@@ -804,6 +804,10 @@
   .sq .sq-q label{display:block;font-size:11.5px;color:var(--sqApagado);margin-top:8px;text-transform:uppercase;letter-spacing:.06em}
   .sq .sq-rodape{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
   .sq .sq-aviso{background:rgba(232,196,106,.14);border:1px solid rgba(232,196,106,.45);border-radius:14px;padding:10px 14px;font-size:14px;color:var(--sqOuro2);margin-bottom:14px}
+  .sq .sq-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:12px 14px;border-radius:16px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.12)}
+  .sq .sq-barra .bt.grande{font-family:Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;font-size:19px;padding:13px 34px}
+  .sq .sq-prox{color:var(--sqApagado);font-size:14px} .sq .sq-prox b{color:var(--sqOuro2)}
+  .sq .sq-con.hidden{display:none}
   .sq .sq-ctl{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0 16px}
   .sq .sq-ctl .bt.ouro{font-family:Oswald,sans-serif;letter-spacing:.06em;text-transform:uppercase;font-size:17px;padding:14px 30px}
   .sq .sq-titulo{text-align:center;margin:4px 0 22px}
@@ -10822,7 +10826,8 @@ function abrirSorteioQuartetos(){
   cultoAtual = 'sorteio'; marcarAba('sorteio'); mostrarPagina('sorteio');
   sqModo = 'controle'; sqFontes(); sqLigarCanal();
   if(!sqQ) sqQ = sqCarregar();
-  sqDesenharControle();
+  if(!sqPlano){ sqPlano = sqMontarPlano(); sqRev = 0; }
+  sqDesenharControle(); sqEnviarEstado();
 }
 function sqLinkTelao(){ return location.origin + location.pathname + '?telao=quartetos'; }
 function sqAbrirTelao(){
@@ -10834,24 +10839,40 @@ function sqDesenharControle(){
   document.getElementById('sqRaiz').innerHTML = `
     <div class="sq-topo">
       <h2>Sorteio de quartetos<small>Tela de controle (só você vê). O telão mostra apenas o resultado.</small></h2>
-      <span class="sq-con" id="sqCon">Telão não conectado</span>
+      <span class="sq-con hidden" id="sqCon">Telão conectado</span>
       <button class="bt ${sqAba === 'cadastro' ? 'on' : ''}" onclick="sqIrAba('cadastro')">Quartetos</button>
-      <button class="bt ${sqAba === 'sorteio' ? 'on' : ''}" onclick="sqIrAba('sorteio')">Sorteio</button>
+      <button class="bt ${sqAba === 'sorteio' ? 'on' : ''}" onclick="sqIrAba('sorteio')">Prévia do telão</button>
     </div>
-    <div class="sq-info"><button class="bt ouro" onclick="sqAbrirTelao()" style="margin-right:8px;">Abrir telão</button>
-      <button class="bt" onclick="sqCopiarLink()" style="margin-right:10px;">Copiar link do telão</button>
-      Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia.
-      <b>No ProPresenter:</b> crie um slide com um objeto de site (Website) e cole o link do telão; ele acompanha o sorteio pela internet, com cerca de 1 segundo de atraso.</div>
+    <div class="sq-barra" id="sqBotoes"></div>
+    <div class="sq-info">Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia.
+      <b>No ProPresenter:</b> crie um slide com um objeto de site (Website) e cole o link do telão; ele acompanha o sorteio pela internet, com cerca de 1 segundo de atraso.
+      Atalhos: <b>Espaço</b> = próxima voz, <b>T</b> = todas, <b>R</b> = recomeçar.</div>
     <div id="sqConteudo"></div>`;
+  sqDesenharBotoes();
   sqDesenharConexao();
   if(sqAba === 'cadastro') sqDesenharCadastro(); else sqDesenharSorteio();
 }
 function sqDesenharConexao(){
   const el = document.getElementById('sqCon'); if(!el) return;
-  const ok = Date.now() - sqTelaoVisto < 7000; el.classList.toggle('ok', ok); el.textContent = ok ? 'Telão conectado' : 'Telão não conectado';
+  const ok = Date.now() - sqTelaoVisto < 7000; el.classList.toggle('ok', ok); el.classList.toggle('hidden', !ok);
 }
 setInterval(() => { if(sqModo === 'controle') sqDesenharConexao(); }, 2000);
-function sqIrAba(a){ sqAba = a; if(a === 'sorteio' && !sqPlano){ sqPlano = sqMontarPlano(); sqRev = 0; sqEnviarEstado(); } sqDesenharControle(); }
+function sqIrAba(a){ sqAba = a; sqDesenharControle(); }
+// botoes de sortear: aparecem sempre (nas duas partes), e tambem o link do telao
+function sqDesenharBotoes(){
+  const el = document.getElementById('sqBotoes'); if(!el) return;
+  if(!sqPlano){ sqPlano = sqMontarPlano(); sqRev = 0; sqEnviarEstado(); }
+  const acabou = sqRev >= SQ_ORDEM.length;
+  const prox = SQ_ORDEM[sqRev], vozProx = prox ? `${SQ_VOZES.find(v => v.id === prox.voz).nome} do Quarteto ${prox.time === 0 ? 'A' : 'B'}` : '';
+  el.innerHTML = `
+    <button class="bt ouro grande" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortear()">${acabou ? 'Sorteio completo!' : sqGirando ? 'Sorteando...' : 'Sortear'}</button>
+    <span class="sq-prox">${acabou ? `${sqRev} de ${SQ_ORDEM.length} sorteados` : `Próxima: <b>${vozProx}</b> · ${sqRev} de ${SQ_ORDEM.length}`}</span>
+    <button class="bt" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortearTudo()">Sortear todas</button>
+    <button class="bt" ${sqGirando ? 'disabled' : ''} onclick="sqRecomecar()">Recomeçar</button>
+    <span style="flex:1"></span>
+    <button class="bt" onclick="sqAbrirTelao()">Abrir telão</button>
+    <button class="bt" onclick="sqCopiarLink()">Copiar link do telão</button>`;
+}
 function sqDesenharCadastro(){
   document.getElementById('sqConteudo').innerHTML = `
     <p class="sq-dica">Preencha o nome de cada quarteto e de quem canta cada voz (fica guardado neste computador). Se deixar um nome em branco, aparece "1º Tenor do Quarteto X".
@@ -10861,31 +10882,27 @@ function sqDesenharCadastro(){
       <input class="nome-q" placeholder="Nome do quarteto" value="${escapar(q.nome)}" oninput="sqQ[${i}].nome=this.value;sqSalvar()">
       ${SQ_VOZES.map(v => `<label>${v.nome}<input placeholder="Nome de quem canta" value="${escapar(q[v.id])}" oninput="sqQ[${i}]['${v.id}']=this.value;sqSalvar()"></label>`).join('')}
     </div>`).join('')}</div>
-    <div class="sq-rodape"><button class="bt" onclick="sqQ.push({ nome:'', t1:'', t2:'', bar:'', bx:'' });sqPlano=null;sqSalvar();sqDesenharCadastro()">+ Adicionar quarteto</button>
+    <div class="sq-rodape"><button class="bt" onclick="sqQ.push({ nome:'', t1:'', t2:'', bar:'', bx:'' });sqPlano=null;sqDesenharBotoes();sqSalvar();sqDesenharCadastro()">+ Adicionar quarteto</button>
       <button class="bt" onclick="sqLimpar(this)">Voltar à lista original</button><button class="bt ouro" onclick="sqIrAba('sorteio')">Ir para o sorteio</button></div>`;
 }
 function sqLimpar(b){
   if(b.dataset.confirma !== '1'){ b.dataset.confirma = '1'; b.textContent = 'Clique de novo para confirmar'; setTimeout(() => { b.dataset.confirma = ''; b.textContent = 'Voltar à lista original'; }, 3000); return; }
-  sqQ = sqVazio(); sqPlano = null; sqSalvar(); sqDesenharCadastro();
+  sqQ = sqVazio(); sqPlano = null; sqDesenharBotoes(); sqSalvar(); sqDesenharCadastro();
 }
-function sqTirarQ(i){ if(sqQ.length <= SQ_MIN) return; sqQ.splice(i, 1); sqPlano = null; sqRev = 0; sqSalvar(); sqDesenharCadastro(); }
+function sqTirarQ(i){ if(sqQ.length <= SQ_MIN) return; sqQ.splice(i, 1); sqPlano = null; sqRev = 0; sqDesenharBotoes(); sqSalvar(); sqDesenharCadastro(); }
 function sqDesenharSorteio(){
-  if(sqModo !== 'controle' || sqAba !== 'sorteio') return;
+  if(sqModo !== 'controle') return;
+  sqDesenharBotoes();
+  if(sqAba !== 'sorteio') return;
   const c = document.getElementById('sqConteudo'); if(!c) return;
   const acabou = sqRev >= SQ_ORDEM.length, semNome = sqQ.filter(q => !SQ_VOZES.some(v => (q[v.id] || '').trim())).length;
   c.innerHTML = `${semNome ? `<div class="sq-aviso">${semNome} quarteto(s) ainda sem nomes de quem canta. Vai aparecer "1º Tenor do Quarteto X" no lugar do nome.</div>` : ''}
-    <div class="sq-ctl">
-      <button class="bt ouro" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortear()">${acabou ? 'Sorteio completo!' : 'Sortear próxima voz'}</button>
-      <button class="bt" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortearTudo()">Sortear todas</button>
-      <button class="bt" ${sqGirando ? 'disabled' : ''} onclick="sqRecomecar()">Recomeçar</button>
-    </div>
-    <div style="text-align:center;color:var(--sqApagado);font-size:13px;margin-bottom:12px;">Prévia do que está no telão · atalhos: Espaço = próxima voz, T = todas, R = recomeçar</div>
     ${sqPalcoHTML()}`;
 }
 document.addEventListener('keydown', e => {
   if(['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
   if(sqModo === 'telao'){ if(e.code === 'KeyF') sqTelaCheia(); return; }
-  if(cultoAtual !== 'sorteio' || sqAba !== 'sorteio' || document.getElementById('paginaSorteio').classList.contains('hidden')) return;
+  if(cultoAtual !== 'sorteio' || document.getElementById('paginaSorteio').classList.contains('hidden')) return;
   if(e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight'){ e.preventDefault(); sqSortear(); }
   else if(e.code === 'KeyT') sqSortearTudo();
   else if(e.code === 'KeyR') sqRecomecar();
