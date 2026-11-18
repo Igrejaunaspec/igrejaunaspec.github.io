@@ -777,6 +777,57 @@
   .qt-xy{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;} .qt-xy label{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;}
   .qt-xy input{width:86px;} .qt-setas{display:flex;gap:4px;} .qt-setas .btn{min-width:34px;padding-left:0;padding-right:0;}
   @media (max-width:860px){.qt-grade{grid-template-columns:1fr;} .qt-previa{position:static;}}
+
+  /* ===== Sorteio de quartetos ===== */
+  .sq{--sq1:#06261c;--sq2:#0b3d2c;--sq4:#1d7a57;--sqOuro:#e8c46a;--sqOuro2:#f6dc94;--sqTexto:#f2fbf6;--sqApagado:#9fc6b3;
+    color:var(--sqTexto);font-family:Inter,system-ui,sans-serif;border-radius:18px;padding:22px 24px 30px;
+    background:radial-gradient(1200px 700px at 50% -10%, #1d7a57 0%, transparent 60%),radial-gradient(900px 600px at 100% 110%, #12553d 0%, transparent 55%),linear-gradient(160deg,var(--sq2),var(--sq1))}
+  .sq-telao{position:fixed;inset:0;border-radius:0;overflow:auto;padding:5vh 3vw;z-index:50}
+  .sq-telao.sem-mouse,.sq-telao.sem-mouse *{cursor:none!important}
+  .sq .bt{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:var(--sqTexto);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit}
+  .sq .bt:hover{background:rgba(255,255,255,.14)} .sq .bt.on{background:rgba(255,255,255,.22)}
+  .sq .bt.ouro{background:linear-gradient(180deg,var(--sqOuro2),var(--sqOuro));color:#2b2206;border-color:transparent}
+  .sq .bt:disabled{opacity:.45;cursor:default}
+  .sq .sq-topo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .sq .sq-topo h2{flex:1;margin:0;font-family:Oswald,"Arial Narrow",sans-serif;letter-spacing:.06em;text-transform:uppercase;font-size:22px;color:var(--sqTexto)}
+  .sq .sq-topo h2 small{display:block;font-family:Inter,sans-serif;letter-spacing:0;text-transform:none;font-size:13px;color:var(--sqApagado);font-weight:500;margin-top:2px}
+  .sq .sq-con{font-size:13px;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.18);color:var(--sqApagado)}
+  .sq .sq-con.ok{color:#bff2d4;border-color:rgba(127,214,168,.6);background:rgba(127,214,168,.12)}
+  .sq .sq-info{padding:12px 16px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-size:14px;color:var(--sqApagado);line-height:1.6;margin-bottom:16px}
+  .sq .sq-info b{color:var(--sqTexto)}
+  .sq .sq-dica{color:var(--sqApagado);margin:0 0 16px;font-size:14px;line-height:1.5} .sq .sq-dica b{color:var(--sqTexto)}
+  .sq .sq-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .sq .sq-q{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px}
+  .sq .sq-q .num{font-family:Oswald,sans-serif;color:var(--sqOuro);font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  .sq .sq-q input{width:100%;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.18);color:var(--sqTexto);border-radius:10px;padding:9px 11px;font:inherit;font-size:14px;margin-top:6px}
+  .sq .sq-q input::placeholder{color:#7fa997} .sq .sq-q input.nome-q{font-weight:700}
+  .sq .sq-q label{display:block;font-size:11.5px;color:var(--sqApagado);margin-top:8px;text-transform:uppercase;letter-spacing:.06em}
+  .sq .sq-rodape{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+  .sq .sq-aviso{background:rgba(232,196,106,.14);border:1px solid rgba(232,196,106,.45);border-radius:14px;padding:10px 14px;font-size:14px;color:var(--sqOuro2);margin-bottom:14px}
+  .sq .sq-ctl{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0 16px}
+  .sq .sq-ctl .bt.ouro{font-family:Oswald,sans-serif;letter-spacing:.06em;text-transform:uppercase;font-size:17px;padding:14px 30px}
+  .sq .sq-titulo{text-align:center;margin:4px 0 22px}
+  .sq .sq-titulo .sup{font-family:Oswald,sans-serif;letter-spacing:.35em;color:var(--sqOuro);font-size:clamp(13px,1.5vw,20px);text-transform:uppercase}
+  .sq .sq-titulo h3{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;margin:4px 0 0;font-size:clamp(34px,5.5vw,86px);line-height:1;color:var(--sqTexto);text-shadow:0 6px 30px rgba(0,0,0,.35)}
+  .sq .sq-times{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media (max-width:800px){.sq .sq-times{grid-template-columns:1fr}}
+  .sq .sq-time{background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:18px 20px 20px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .sq .sq-time h4{margin:0 0 12px;font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:clamp(17px,2vw,26px);color:var(--sqOuro2);text-align:center}
+  .sq .sq-vaga{display:flex;align-items:center;gap:14px;border-radius:16px;padding:12px 16px;margin-top:10px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);min-height:78px;transition:background .3s,border-color .3s}
+  .sq .sq-vaga .sq-voz{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--sqApagado);font-size:clamp(12px,1.3vw,17px);width:110px;flex:none}
+  .sq .sq-vaga .sq-quem{flex:1;min-width:0}
+  .sq .sq-vaga .sq-pessoa{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(20px,2.6vw,38px);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sqTexto)}
+  .sq .sq-vaga .sq-grupo{color:var(--sqApagado);font-size:clamp(12px,1.1vw,15px);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sq .sq-vaga.vazia .sq-pessoa{color:rgba(255,255,255,.18)}
+  .sq .sq-vaga.girando{border-color:rgba(232,196,106,.6);box-shadow:0 0 0 3px rgba(232,196,106,.18) inset} .sq .sq-vaga.girando .sq-pessoa{color:var(--sqOuro2)}
+  .sq .sq-vaga.feita{background:linear-gradient(90deg,rgba(232,196,106,.18),rgba(255,255,255,.05));border-color:rgba(232,196,106,.55);animation:sqPulo .6s ease}
+  .sq .sq-vaga.proxima{border-style:dashed;border-color:rgba(232,196,106,.55)}
+  @keyframes sqPulo{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
+  .sq .sq-fora{text-align:center;margin-top:20px;color:var(--sqApagado);font-size:16px;min-height:22px} .sq .sq-fora b{color:var(--sqTexto)}
+  .sq .sq-esperando{text-align:center;color:var(--sqApagado);font-size:18px;margin-top:20vh}
+  .sq-confete{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
+  .sq-confete i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;opacity:.9;animation:sqCai linear forwards}
+  @keyframes sqCai{to{transform:translateY(110vh) rotate(720deg)}}
   .aj-filtros{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
   .aj-item{border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--panel);}
   .aj-topo{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;}
@@ -1668,6 +1719,9 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       </div>
     </div>
 
+    <!-- ---------- Sorteio de quartetos (controle; o telao abre em ?telao=quartetos) ---------- -->
+    <div id="paginaSorteio" class="hidden"><div class="sq" id="sqRaiz"></div></div>
+
     <!-- ---------- Pedidos de ajuste (sugestoes de mudanca no app) ---------- -->
     <div id="paginaAjustes" class="hidden">
       <div class="card">
@@ -1854,6 +1908,9 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="convidadoConteudo"><div class="vazio">Carregando roteiro...</div></div>
   </div>
 </div>
+
+<!-- ---------- telao do sorteio de quartetos (so mostra o que a tela de controle manda) ---------- -->
+<div id="telaSorteioTelao" class="hidden sq sq-telao"><div id="sqTelao"></div></div>
 
 <!-- ---------- formulario publico de agendamento (sem login) ---------- -->
 <div id="telaPastorForm" class="hidden convidado-tela">
@@ -3020,7 +3077,7 @@ async function api(caminho, opcoes){
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
 const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
   calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Artes', medicos:'Médicos em Missão',
-  youtube:'YouTube', passador:'Passador', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
+  youtube:'YouTube', passador:'Passador', sorteio:'Sorteio de quartetos', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
 function nomeAbaAtividade(caminho){
   if(/^formulario_schema/.test(caminho || '')){
@@ -4532,7 +4589,7 @@ const GRUPOS_MENU = [
   ['Início', ['inicio', 'ajustes']],
   ['Culto', ['sexta', 'sabado', 'homiletico', 'escala']],
   ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'minhaagenda', 'agenda']],
-  ['Comunidade', ['medicos', 'youtube', 'passador']],
+  ['Comunidade', ['medicos', 'youtube', 'passador', 'sorteio']],
   ['Acessos', ['pessoas', 'visualizadores', 'visitantes', 'votacao', 'compartilhar']],
 ];
 
@@ -4548,6 +4605,7 @@ const ICONES_MENU_SVG = {
   minhaagenda:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="14.5" r="2"/><path d="M8.5 19.5a3.5 3.5 0 0 1 7 0"/>',
   agenda:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>',
   passador:'<rect x="7" y="2" width="10" height="20" rx="5"/><path d="M12 6v3M10 13h4"/>',
+  sorteio:'<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>',
   medicos:'<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>',
   youtube:'<rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>',
   pessoas:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
@@ -5185,6 +5243,18 @@ function somarPeriodoData(d, freq){
     : new Date(d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours(), d.getMinutes());
 }
 
+// datas de cada repeticao, do inicio ate o dia final (inclusive o ultimo dia)
+function datasDaRecorrencia(dataInicioTxt, ateISO, freq, diaInteiro){
+  const fim = new Date(ateISO + 'T23:59:59');
+  let d = parseDataBR(dataInicioTxt); const datas = [];
+  while(d && d <= fim && datas.length < 104){
+    const horaTxt = diaInteiro ? '' : ` ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    datas.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}` + horaTxt);
+    d = somarPeriodoData(d, freq);
+  }
+  return datas;
+}
+
 async function salvarEventoModal(){
   const nome = document.getElementById('evTitulo').value.trim();
   if(!nome){ toast('Dá um título pro evento.', 'err'); return; }
@@ -5239,11 +5309,30 @@ async function salvarEventoModal(){
           }});
         }
       } else {
-        await api(`agendamentos?id=eq.${eventoModalId}`, { method:'PATCH', prefer:'return=minimal', body:{
+        // evento que ainda nao repete: se escolheram "Toda semana"/"Todo mes", vira uma serie a partir dele
+        const selRec = document.getElementById('evRecorrencia');
+        const recEd = selRec ? selRec.value : 'nenhuma';
+        let datasNovas = [], grupoNovo = null;
+        if(recEd !== 'nenhuma'){
+          const ateVal = document.getElementById('evRecorrenciaAte').value;
+          if(!ateVal){ toast('Escolhe até quando o evento se repete.', 'err'); btn.disabled = false; btn.textContent = '💾 Salvar'; return; }
+          datasNovas = datasDaRecorrencia(dataInicio, ateVal, recEd, diaInteiro).slice(1);
+          if(!datasNovas.length){ toast('A data final precisa ser depois da data deste evento.', 'err'); btn.disabled = false; btn.textContent = '💾 Salvar'; return; }
+          grupoNovo = crypto.randomUUID();
+        }
+        await api(`agendamentos?id=eq.${eventoModalId}`, { method:'PATCH', prefer:'return=minimal', body:Object.assign({
           nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email,
           data_inicio: dataInicio, data_saida: dataSaida, horarios_evento: horarios, cor, status, etiquetas,
           setores_visiveis: setoresVisiveis
-        }});
+        }, grupoNovo ? { recorrencia_grupo: grupoNovo, recorrencia_freq: recEd } : {})});
+        if(grupoNovo){
+          await api('agendamentos', { method:'POST', prefer:'return=minimal', body: datasNovas.map(dt => ({
+            nome_evento: nome, descricao, espacos_utilizados: local, nome_responsavel: responsavel, contato, email,
+            horarios_evento: horarios, status, cor, etiquetas, setores_visiveis: setoresVisiveis, origem: 'app',
+            data_inicio: dt, data_saida: null, recorrencia_grupo: grupoNovo, recorrencia_freq: recEd
+          })) });
+        }
+        if(grupoNovo){ toast(`Evento atualizado e repetido mais ${datasNovas.length} vez(es)!`, 'ok'); fecharModalEvento(); await abrirCalendario(); return; }
       }
       toast('Evento atualizado!', 'ok');
     } else {
@@ -5263,20 +5352,9 @@ async function salvarEventoModal(){
           return;
         }
         const grupo = crypto.randomUUID();
-        const dFinal = parseDataBR(ateVal.split('-').reverse().join('/'));
-        let dAtual = parseDataBR(dataInicio);
-        const linhas = [];
-        let n = 0;
-        while(dAtual && dFinal && dAtual <= dFinal && n < 104){
-          const horaTxt = diaInteiro ? '' : ` ${String(dAtual.getHours()).padStart(2,'0')}:${String(dAtual.getMinutes()).padStart(2,'0')}`;
-          const diaTxt = `${String(dAtual.getDate()).padStart(2,'0')}/${String(dAtual.getMonth()+1).padStart(2,'0')}/${dAtual.getFullYear()}`;
-          linhas.push(Object.assign({}, linhaBase, {
-            data_inicio: diaTxt + horaTxt, data_saida: null,
-            recorrencia_grupo: grupo, recorrencia_freq: recorrencia
-          }));
-          dAtual = somarPeriodoData(dAtual, recorrencia);
-          n++;
-        }
+        const linhas = datasDaRecorrencia(dataInicio, ateVal, recorrencia, diaInteiro).map(dt => Object.assign({}, linhaBase, {
+          data_inicio: dt, data_saida: null, recorrencia_grupo: grupo, recorrencia_freq: recorrencia
+        }));
         if(!linhas.length){ toast('A data final precisa ser depois da data de início.', 'err'); btn.disabled=false; btn.textContent='💾 Salvar'; return; }
         await api('agendamentos', { method:'POST', prefer:'return=minimal', body: linhas });
       }
@@ -5414,6 +5492,14 @@ function montarAbas(){
     b.title = 'Artes: Agenda da semana e Culto de quarta';
     b.onclick = () => abrirAgendaLista();
     b.dataset.culto = 'agenda';
+    abas.appendChild(b);
+  }
+  if(podeEditarAgenda()){
+    const b = document.createElement('button');
+    b.textContent = 'Sorteio de quartetos';
+    b.title = 'Sorteio das vozes da dinâmica dos quartetos, com tela para o telão';
+    b.onclick = () => abrirSorteioQuartetos();
+    b.dataset.culto = 'sorteio';
     abas.appendChild(b);
   }
 
@@ -6214,6 +6300,7 @@ function mostrarPaginaSemEfeito(qual){
   document.getElementById('paginaPastoral').classList.toggle('hidden',     qual !== 'pastoral');
   document.getElementById('paginaInicio').classList.toggle('hidden',       qual !== 'inicio');
   document.getElementById('paginaAjustes').classList.toggle('hidden',      qual !== 'ajustes');
+  document.getElementById('paginaSorteio').classList.toggle('hidden',      qual !== 'sorteio');
 }
 
 /* =====================================================================
@@ -10161,6 +10248,15 @@ document.addEventListener('keydown', ev => {
     await abrirVisualizacaoConvidado(rCurto ? curtoParaUuid(rCurto) : verId, params.get('imprimir') === '1');
     return;
   }
+  if(params.get('telao') === 'quartetos'){
+    if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
+    document.getElementById('telaLogin').classList.add('hidden');
+    document.getElementById('telaApp').classList.add('hidden');
+    document.getElementById('telaSorteioTelao').classList.remove('hidden');
+    document.title = 'Sorteio dos Quartetos — Telão';
+    sqIniciarTelao();
+    return;
+  }
   if(params.get('cal')){
     if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
     await abrirCalendarioPublico(params.get('cal'));
@@ -10611,6 +10707,181 @@ async function copiarAjusteClaude(id){
     ((a.prints || []).length ? `\nPrints (links valem 7 dias):\n${a.prints.map((c, i) => `${i + 1}. ${links[c] || '(não consegui gerar o link)'}`).join('\n')}\n` : '') + `\nPor favor, faça essa mudança partindo da versão atual do GitHub e me mostre antes se for uma mudança visual grande.`;
   try{ navigator.clipboard.writeText(txt); toast('Copiado! Cole na conversa com o Claude.', 'ok'); }
   catch(e){ prompt('Copie o texto:', txt); }
+}
+
+/* =====================================================================
+   SORTEIO DE QUARTETOS: 9 quartetos cadastrados; sorteia 2 de cada voz
+   (8 pessoas, 2 quartetos novos), nunca 2 do mesmo quarteto. A tela de
+   controle fica aqui; o telao abre em ?telao=quartetos no mesmo navegador
+   e so mostra o que o controle manda (BroadcastChannel / localStorage).
+   Os nomes ficam guardados so neste computador (localStorage).
+===================================================================== */
+const SQ_VOZES = [{ id:'t1', nome:'1º Tenor' }, { id:'t2', nome:'2º Tenor' }, { id:'bar', nome:'Barítono' }, { id:'bx', nome:'Baixo' }];
+const SQ_N = 9, SQ_CHAVE = 'sorteioQuartetos.v1';
+const SQ_ORDEM = []; SQ_VOZES.forEach(v => { SQ_ORDEM.push({ time:0, voz:v.id }); SQ_ORDEM.push({ time:1, voz:v.id }); });
+let sqModo = 'controle', sqQ = null, sqPlano = null, sqRev = 0, sqGirando = false, sqAba = 'cadastro', sqTelaoVisto = 0, sqCanal = null, sqUltima = '';
+function sqVazio(){ return Array.from({ length:SQ_N }, () => ({ nome:'', t1:'', t2:'', bar:'', bx:'' })); }
+function sqCarregar(){ try{ const q = JSON.parse(localStorage.getItem(SQ_CHAVE)); if(Array.isArray(q) && q.length === SQ_N) return q; }catch(e){} return sqVazio(); }
+function sqSalvar(){ try{ localStorage.setItem(SQ_CHAVE, JSON.stringify(sqQ)); }catch(e){} sqEnviarEstado(); }
+function sqNomeQ(i){ return (sqQ[i].nome || '').trim() || ('Quarteto ' + (i + 1)); }
+function sqPessoa(i, voz){ const n = (sqQ[i][voz] || '').trim(); return n || (SQ_VOZES.find(v => v.id === voz).nome + ' do ' + sqNomeQ(i)); }
+function sqLigarCanal(){
+  if(sqCanal !== null) return;
+  try{ sqCanal = new BroadcastChannel('sorteio-quartetos-app'); sqCanal.onmessage = e => sqReceber(e.data); }catch(e){ sqCanal = false; }
+  window.addEventListener('storage', e => { if(e.key === 'sorteioQuartetos.msg' && e.newValue){ try{ sqReceber(JSON.parse(e.newValue).m); }catch(x){} } });
+}
+function sqEnviar(m){
+  try{ if(sqCanal) sqCanal.postMessage(m); }catch(e){}
+  try{ localStorage.setItem('sorteioQuartetos.msg', JSON.stringify({ t:Date.now() + Math.random(), m })); }catch(e){}
+}
+function sqReceber(m){
+  if(!m) return;
+  const a = JSON.stringify(m); if(a === sqUltima) return; sqUltima = a; setTimeout(() => { if(sqUltima === a) sqUltima = ''; }, 300);
+  if(sqModo === 'controle'){
+    if(m.tipo === 'oi'){ sqTelaoVisto = Date.now(); sqDesenharConexao(); if(m.pedir) sqEnviarEstado(); }
+  } else {
+    if(m.tipo === 'estado'){ sqQ = m.quartetos; sqPlano = m.plano; if(!sqGirando) sqRev = m.revelados; sqDesenharTelao(); }
+    if(m.tipo === 'girar'){ sqRev = m.indice; sqAnimar(m.indice, m.seq, m.passos).then(() => { sqRev = m.indice + 1; sqDesenharTelao(); if(sqRev >= SQ_ORDEM.length) sqConfete(); }); }
+    if(m.tipo === 'recomecar'){ const c = document.getElementById('sqConfete'); if(c) c.innerHTML = ''; }
+  }
+}
+function sqEnviarEstado(){ if(sqModo === 'controle' && sqQ) sqEnviar({ tipo:'estado', quartetos:sqQ, plano:sqPlano, revelados:sqRev }); }
+function sqEmbaralhar(a){ for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function sqMontarPlano(){
+  const ids = sqEmbaralhar([...Array(SQ_N).keys()]), p = {};
+  SQ_ORDEM.forEach((v, k) => { p[v.time + '-' + v.voz] = ids[k]; });
+  p.fora = ids.slice(SQ_ORDEM.length); return p;
+}
+function sqPalcoHTML(){
+  const prox = SQ_ORDEM[sqRev], acabou = sqRev >= SQ_ORDEM.length;
+  return `<div class="sq-titulo"><div class="sup">Dinâmica dos quartetos</div><h3>Quem canta com quem?</h3></div>
+  <div class="sq-times">${[0, 1].map(t => `<div class="sq-time"><h4>Quarteto ${t === 0 ? 'A' : 'B'}</h4>
+    ${SQ_VOZES.map(v => {
+      const k = SQ_ORDEM.findIndex(o => o.time === t && o.voz === v.id), feito = k < sqRev, i = sqPlano ? sqPlano[t + '-' + v.id] : 0;
+      const ehProx = sqModo === 'controle' && !sqGirando && prox && prox.time === t && prox.voz === v.id;
+      return `<div class="sq-vaga ${feito ? 'feita' : 'vazia'} ${ehProx ? 'proxima' : ''}" id="sqVaga-${t}-${v.id}"><div class="sq-voz">${v.nome}</div>
+        <div class="sq-quem"><div class="sq-pessoa">${feito ? escapar(sqPessoa(i, v.id)) : '?'}</div><div class="sq-grupo">${feito ? escapar(sqNomeQ(i)) : '&nbsp;'}</div></div></div>`;
+    }).join('')}</div>`).join('')}</div>
+  <div class="sq-fora">${acabou && sqPlano ? `Ficou de fora desta vez: <b>${escapar(sqPlano.fora.map(sqNomeQ).join(', '))}</b>` : ''}</div>`;
+}
+async function sqAnimar(indice, seq, passos){
+  sqGirando = true;
+  if(sqModo === 'telao') sqDesenharTelao(); else sqDesenharSorteio();
+  const vaga = SQ_ORDEM[indice], el = document.getElementById(`sqVaga-${vaga.time}-${vaga.voz}`);
+  if(el){ el.classList.remove('vazia', 'proxima'); el.classList.add('girando'); }
+  for(let k = 0; k < seq.length; k++){
+    if(el){ el.querySelector('.sq-pessoa').textContent = sqPessoa(seq[k], vaga.voz); el.querySelector('.sq-grupo').textContent = sqNomeQ(seq[k]); }
+    await new Promise(r => setTimeout(r, passos[k]));
+  }
+  sqGirando = false;
+}
+async function sqSortear(rapido){
+  if(sqGirando || !sqPlano || sqRev >= SQ_ORDEM.length) return;
+  const usados = SQ_ORDEM.slice(0, sqRev).map(o => sqPlano[o.time + '-' + o.voz]);
+  const livres = [...Array(SQ_N).keys()].filter(i => !usados.includes(i));
+  const total = rapido ? 900 : 2600, seq = [], passos = []; let t = 0, passo = 50;
+  while(t < total){ seq.push(livres[Math.floor(Math.random() * livres.length)]); passos.push(passo); t += passo; passo = Math.min(260, passo * 1.12); }
+  const indice = sqRev;
+  sqEnviar({ tipo:'girar', indice, seq, passos });
+  await sqAnimar(indice, seq, passos);
+  sqRev = indice + 1; sqDesenharSorteio(); sqEnviarEstado();
+  if(sqRev >= SQ_ORDEM.length) sqConfete();
+}
+async function sqSortearTudo(){ while(sqRev < SQ_ORDEM.length){ await sqSortear(true); await new Promise(r => setTimeout(r, 250)); } }
+function sqRecomecar(){ if(sqGirando) return; sqPlano = sqMontarPlano(); sqRev = 0; const c = document.getElementById('sqConfete'); if(c) c.innerHTML = ''; sqEnviar({ tipo:'recomecar' }); sqDesenharSorteio(); sqEnviarEstado(); }
+function sqConfete(){
+  let box = document.getElementById('sqConfete');
+  if(!box){ box = document.createElement('div'); box.id = 'sqConfete'; box.className = 'sq-confete'; document.body.appendChild(box); }
+  const cores = ['#e8c46a', '#f6dc94', '#ffffff', '#1d7a57', '#7fd6a8'];
+  box.innerHTML = Array.from({ length:120 }, () => `<i style="left:${Math.random() * 100}%;background:${cores[Math.floor(Math.random() * cores.length)]};animation-duration:${2.5 + Math.random() * 2.5}s;animation-delay:${Math.random() * .8}s"></i>`).join('');
+  setTimeout(() => box.innerHTML = '', 6000);
+}
+function sqFontes(){
+  if(document.getElementById('sqFontes')) return;
+  const l = document.createElement('link'); l.id = 'sqFontes'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap'; document.head.appendChild(l);
+}
+/* ---- tela de controle (aba do app) ---- */
+function abrirSorteioQuartetos(){
+  cultoAtual = 'sorteio'; marcarAba('sorteio'); mostrarPagina('sorteio');
+  sqModo = 'controle'; sqFontes(); sqLigarCanal();
+  if(!sqQ) sqQ = sqCarregar();
+  sqDesenharControle();
+}
+function sqLinkTelao(){ return location.origin + location.pathname + '?telao=quartetos'; }
+function sqAbrirTelao(){
+  const w = window.open(sqLinkTelao(), 'sorteioQuartetosTelao', 'popup,width=1280,height=720');
+  if(!w) toast('O navegador bloqueou a janela. Copie o link do telão e abra em outra janela.', 'err');
+}
+function sqCopiarLink(){ try{ navigator.clipboard.writeText(sqLinkTelao()); toast('Link do telão copiado', 'ok'); }catch(e){ prompt('Copie o link:', sqLinkTelao()); } }
+function sqDesenharControle(){
+  document.getElementById('sqRaiz').innerHTML = `
+    <div class="sq-topo">
+      <h2>Sorteio de quartetos<small>Tela de controle (só você vê). O telão mostra apenas o resultado.</small></h2>
+      <span class="sq-con" id="sqCon">Telão não conectado</span>
+      <button class="bt ${sqAba === 'cadastro' ? 'on' : ''}" onclick="sqIrAba('cadastro')">Quartetos</button>
+      <button class="bt ${sqAba === 'sorteio' ? 'on' : ''}" onclick="sqIrAba('sorteio')">Sorteio</button>
+    </div>
+    <div class="sq-info"><button class="bt ouro" onclick="sqAbrirTelao()" style="margin-right:8px;">Abrir telão</button>
+      <button class="bt" onclick="sqCopiarLink()" style="margin-right:10px;">Copiar link do telão</button>
+      Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia. As duas janelas precisam estar no mesmo navegador deste computador.</div>
+    <div id="sqConteudo"></div>`;
+  sqDesenharConexao();
+  if(sqAba === 'cadastro') sqDesenharCadastro(); else sqDesenharSorteio();
+}
+function sqDesenharConexao(){
+  const el = document.getElementById('sqCon'); if(!el) return;
+  const ok = Date.now() - sqTelaoVisto < 7000; el.classList.toggle('ok', ok); el.textContent = ok ? 'Telão conectado' : 'Telão não conectado';
+}
+setInterval(() => { if(sqModo === 'controle') sqDesenharConexao(); }, 2000);
+function sqIrAba(a){ sqAba = a; if(a === 'sorteio' && !sqPlano){ sqPlano = sqMontarPlano(); sqRev = 0; sqEnviarEstado(); } sqDesenharControle(); }
+function sqDesenharCadastro(){
+  document.getElementById('sqConteudo').innerHTML = `
+    <p class="sq-dica">Preencha o nome de cada quarteto e de quem canta cada voz (fica guardado neste computador). Se deixar um nome em branco, aparece "1º Tenor do Quarteto X".
+      O sorteio tira <b>2 pessoas de cada voz</b> (8 no total), formando <b>2 quartetos novos</b>, e <b>nunca pega 2 pessoas do mesmo quarteto</b>.</p>
+    <div class="sq-grade">${sqQ.map((q, i) => `<div class="sq-q"><div class="num">Quarteto ${i + 1}</div>
+      <input class="nome-q" placeholder="Nome do quarteto" value="${escapar(q.nome)}" oninput="sqQ[${i}].nome=this.value;sqSalvar()">
+      ${SQ_VOZES.map(v => `<label>${v.nome}<input placeholder="Nome de quem canta" value="${escapar(q[v.id])}" oninput="sqQ[${i}]['${v.id}']=this.value;sqSalvar()"></label>`).join('')}
+    </div>`).join('')}</div>
+    <div class="sq-rodape"><button class="bt" onclick="sqLimpar(this)">Apagar tudo</button><button class="bt ouro" onclick="sqIrAba('sorteio')">Ir para o sorteio</button></div>`;
+}
+function sqLimpar(b){
+  if(b.dataset.confirma !== '1'){ b.dataset.confirma = '1'; b.textContent = 'Clique de novo para apagar'; setTimeout(() => { b.dataset.confirma = ''; b.textContent = 'Apagar tudo'; }, 3000); return; }
+  sqQ = sqVazio(); sqSalvar(); sqDesenharCadastro();
+}
+function sqDesenharSorteio(){
+  if(sqModo !== 'controle' || sqAba !== 'sorteio') return;
+  const c = document.getElementById('sqConteudo'); if(!c) return;
+  const acabou = sqRev >= SQ_ORDEM.length, semNome = sqQ.filter(q => !SQ_VOZES.some(v => (q[v.id] || '').trim())).length;
+  c.innerHTML = `${semNome ? `<div class="sq-aviso">${semNome} quarteto(s) ainda sem nomes de quem canta. Vai aparecer "1º Tenor do Quarteto X" no lugar do nome.</div>` : ''}
+    <div class="sq-ctl">
+      <button class="bt ouro" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortear()">${acabou ? 'Sorteio completo!' : 'Sortear próxima voz'}</button>
+      <button class="bt" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortearTudo()">Sortear todas</button>
+      <button class="bt" ${sqGirando ? 'disabled' : ''} onclick="sqRecomecar()">Recomeçar</button>
+    </div>
+    <div style="text-align:center;color:var(--sqApagado);font-size:13px;margin-bottom:12px;">Prévia do que está no telão · atalhos: Espaço = próxima voz, T = todas, R = recomeçar</div>
+    ${sqPalcoHTML()}`;
+}
+document.addEventListener('keydown', e => {
+  if(['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  if(sqModo === 'telao'){ if(e.code === 'KeyF') sqTelaCheia(); return; }
+  if(cultoAtual !== 'sorteio' || sqAba !== 'sorteio' || document.getElementById('paginaSorteio').classList.contains('hidden')) return;
+  if(e.code === 'Space' || e.code === 'Enter' || e.code === 'ArrowRight'){ e.preventDefault(); sqSortear(); }
+  else if(e.code === 'KeyT') sqSortearTudo();
+  else if(e.code === 'KeyR') sqRecomecar();
+});
+/* ---- telao (?telao=quartetos) ---- */
+function sqTelaCheia(){ try{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }catch(e){} }
+function sqDesenharTelao(){
+  document.getElementById('sqTelao').innerHTML = sqPlano && sqQ ? sqPalcoHTML()
+    : `<div class="sq-esperando">Aguardando a tela de controle...<br><small>No app, abra "Sorteio de quartetos" e vá para "Sorteio".</small></div>`;
+}
+function sqIniciarTelao(){
+  sqModo = 'telao'; sqFontes(); sqLigarCanal(); sqDesenharTelao();
+  sqEnviar({ tipo:'oi', pedir:true }); setInterval(() => sqEnviar({ tipo:'oi' }), 3000);
+  const t = document.getElementById('telaSorteioTelao'); let mt = null;
+  document.addEventListener('mousemove', () => { t.classList.remove('sem-mouse'); clearTimeout(mt); mt = setTimeout(() => t.classList.add('sem-mouse'), 2000); });
+  t.addEventListener('dblclick', sqTelaCheia);
 }
 
 function abrirInicio(){
