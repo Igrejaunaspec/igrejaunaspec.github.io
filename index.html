@@ -10812,6 +10812,7 @@ function sqPalcoHTML(){
 }
 async function sqAnimar(indice, seq, passos){
   sqGirando = true; sqGiro = sqGiro && sqGiro.indice === indice ? sqGiro : { indice };
+  sqPulo = -1; clearTimeout(sqPuloTimer); // o pulinho anterior nao se repete quando a proxima vaga comeca a girar
   if(sqModo === 'telao') sqDesenharTelao(); else sqDesenharSorteio();
   const vaga = SQ_ORDEM[indice];
   for(let k = 0; k < seq.length; k++){
