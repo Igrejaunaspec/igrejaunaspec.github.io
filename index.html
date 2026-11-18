@@ -809,8 +809,8 @@
   .sq .sq-titulo{text-align:center;margin:4px 0 22px}
   .sq .sq-titulo .sup{font-family:Oswald,sans-serif;letter-spacing:.35em;color:var(--sqOuro);font-size:clamp(13px,1.5vw,20px);text-transform:uppercase}
   .sq .sq-titulo h3{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;margin:4px 0 0;font-size:clamp(34px,5.5vw,86px);line-height:1;color:var(--sqTexto);text-shadow:0 6px 30px rgba(0,0,0,.35)}
-  .sq .sq-times{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-  @media (max-width:800px){.sq .sq-times{grid-template-columns:1fr}}
+  .sq .sq-times{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+  @media (max-width:800px){.sq .sq-times{grid-template-columns:minmax(0,1fr)}}
   .sq .sq-time{background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:18px 20px 20px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
   .sq .sq-time h4{margin:0 0 12px;font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:clamp(17px,2vw,26px);color:var(--sqOuro2);text-align:center}
   .sq .sq-vaga{display:flex;align-items:center;gap:14px;border-radius:16px;padding:12px 16px;margin-top:10px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);min-height:78px;transition:background .3s,border-color .3s}
@@ -10710,18 +10710,20 @@ async function copiarAjusteClaude(id){
 }
 
 /* =====================================================================
-   SORTEIO DE QUARTETOS: 9 quartetos cadastrados; sorteia 2 de cada voz
+   SORTEIO DE QUARTETOS: quartetos cadastrados (10 por padrao); sorteia 2 de cada voz
    (8 pessoas, 2 quartetos novos), nunca 2 do mesmo quarteto. A tela de
    controle fica aqui; o telao abre em ?telao=quartetos no mesmo navegador
    e so mostra o que o controle manda (BroadcastChannel / localStorage).
    Os nomes ficam guardados so neste computador (localStorage).
 ===================================================================== */
 const SQ_VOZES = [{ id:'t1', nome:'1º Tenor' }, { id:'t2', nome:'2º Tenor' }, { id:'bar', nome:'Barítono' }, { id:'bx', nome:'Baixo' }];
-const SQ_N = 9, SQ_CHAVE = 'sorteioQuartetos.v1';
+const SQ_CHAVE = 'sorteioQuartetos.v2', SQ_MIN = 8;
+const SQ_PADRAO = ['Cânticos Vocal', 'Karis', '4 Music', 'Ministério Ecoar', 'Novo Canto', 'Reflexo', 'Quarteto Tessares', 'Acappela Bantu', 'Revive', 'Cantores do Rei'];
 const SQ_ORDEM = []; SQ_VOZES.forEach(v => { SQ_ORDEM.push({ time:0, voz:v.id }); SQ_ORDEM.push({ time:1, voz:v.id }); });
 let sqModo = 'controle', sqQ = null, sqPlano = null, sqRev = 0, sqGirando = false, sqAba = 'cadastro', sqTelaoVisto = 0, sqCanal = null, sqUltima = '';
-function sqVazio(){ return Array.from({ length:SQ_N }, () => ({ nome:'', t1:'', t2:'', bar:'', bx:'' })); }
-function sqCarregar(){ try{ const q = JSON.parse(localStorage.getItem(SQ_CHAVE)); if(Array.isArray(q) && q.length === SQ_N) return q; }catch(e){} return sqVazio(); }
+let sqGiro = null, sqGiroVisto = '', sqNuvemTimer = null, sqNuvemErro = false;
+function sqVazio(){ return SQ_PADRAO.map(nome => ({ nome, t1:'', t2:'', bar:'', bx:'' })); }
+function sqCarregar(){ try{ const q = JSON.parse(localStorage.getItem(SQ_CHAVE)); if(Array.isArray(q) && q.length >= SQ_MIN) return q; }catch(e){} return sqVazio(); }
 function sqSalvar(){ try{ localStorage.setItem(SQ_CHAVE, JSON.stringify(sqQ)); }catch(e){} sqEnviarEstado(); }
 function sqNomeQ(i){ return (sqQ[i].nome || '').trim() || ('Quarteto ' + (i + 1)); }
 function sqPessoa(i, voz){ const n = (sqQ[i][voz] || '').trim(); return n || (SQ_VOZES.find(v => v.id === voz).nome + ' do ' + sqNomeQ(i)); }
@@ -10741,14 +10743,26 @@ function sqReceber(m){
     if(m.tipo === 'oi'){ sqTelaoVisto = Date.now(); sqDesenharConexao(); if(m.pedir) sqEnviarEstado(); }
   } else {
     if(m.tipo === 'estado'){ sqQ = m.quartetos; sqPlano = m.plano; if(!sqGirando) sqRev = m.revelados; sqDesenharTelao(); }
-    if(m.tipo === 'girar'){ sqRev = m.indice; sqAnimar(m.indice, m.seq, m.passos).then(() => { sqRev = m.indice + 1; sqDesenharTelao(); if(sqRev >= SQ_ORDEM.length) sqConfete(); }); }
+    if(m.tipo === 'girar') sqTelaoGirar(m);
     if(m.tipo === 'recomecar'){ const c = document.getElementById('sqConfete'); if(c) c.innerHTML = ''; }
   }
 }
-function sqEnviarEstado(){ if(sqModo === 'controle' && sqQ) sqEnviar({ tipo:'estado', quartetos:sqQ, plano:sqPlano, revelados:sqRev }); }
+function sqEnviarEstado(){ if(sqModo === 'controle' && sqQ){ sqEnviar({ tipo:'estado', quartetos:sqQ, plano:sqPlano, revelados:sqRev }); sqNuvem(false); } }
+// guarda o estado na internet (tabela sorteio_telao), para telao em outro programa/computador (ex.: ProPresenter)
+function sqNuvem(agora){
+  clearTimeout(sqNuvemTimer);
+  const mandar = async () => {
+    try{
+      await api('sorteio_telao?id=eq.quartetos', { method:'PATCH', prefer:'return=minimal',
+        body:{ estado:{ quartetos:sqQ, plano:sqPlano, revelados:sqRev, giro:sqGiro }, atualizado_em:new Date().toISOString() } });
+      sqNuvemErro = false;
+    }catch(e){ sqNuvemErro = true; }
+  };
+  if(agora) return mandar(); sqNuvemTimer = setTimeout(mandar, 600);
+}
 function sqEmbaralhar(a){ for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function sqMontarPlano(){
-  const ids = sqEmbaralhar([...Array(SQ_N).keys()]), p = {};
+  const ids = sqEmbaralhar([...Array(sqQ.length).keys()]), p = {};
   SQ_ORDEM.forEach((v, k) => { p[v.time + '-' + v.voz] = ids[k]; });
   p.fora = ids.slice(SQ_ORDEM.length); return p;
 }
@@ -10778,11 +10792,13 @@ async function sqAnimar(indice, seq, passos){
 async function sqSortear(rapido){
   if(sqGirando || !sqPlano || sqRev >= SQ_ORDEM.length) return;
   const usados = SQ_ORDEM.slice(0, sqRev).map(o => sqPlano[o.time + '-' + o.voz]);
-  const livres = [...Array(SQ_N).keys()].filter(i => !usados.includes(i));
+  const livres = [...Array(sqQ.length).keys()].filter(i => !usados.includes(i));
   const total = rapido ? 900 : 2600, seq = [], passos = []; let t = 0, passo = 50;
   while(t < total){ seq.push(livres[Math.floor(Math.random() * livres.length)]); passos.push(passo); t += passo; passo = Math.min(260, passo * 1.12); }
   const indice = sqRev;
-  sqEnviar({ tipo:'girar', indice, seq, passos });
+  sqGiro = { id: Date.now() + '-' + indice, indice, seq, passos, em: Date.now() };
+  sqEnviar({ tipo:'girar', id: sqGiro.id, indice, seq, passos });
+  sqNuvem(true);
   await sqAnimar(indice, seq, passos);
   sqRev = indice + 1; sqDesenharSorteio(); sqEnviarEstado();
   if(sqRev >= SQ_ORDEM.length) sqConfete();
@@ -10824,7 +10840,8 @@ function sqDesenharControle(){
     </div>
     <div class="sq-info"><button class="bt ouro" onclick="sqAbrirTelao()" style="margin-right:8px;">Abrir telão</button>
       <button class="bt" onclick="sqCopiarLink()" style="margin-right:10px;">Copiar link do telão</button>
-      Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia. As duas janelas precisam estar no mesmo navegador deste computador.</div>
+      Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia.
+      <b>No ProPresenter:</b> crie um slide com um objeto de site (Website) e cole o link do telão; ele acompanha o sorteio pela internet, com cerca de 1 segundo de atraso.</div>
     <div id="sqConteudo"></div>`;
   sqDesenharConexao();
   if(sqAba === 'cadastro') sqDesenharCadastro(); else sqDesenharSorteio();
@@ -10838,17 +10855,20 @@ function sqIrAba(a){ sqAba = a; if(a === 'sorteio' && !sqPlano){ sqPlano = sqMon
 function sqDesenharCadastro(){
   document.getElementById('sqConteudo').innerHTML = `
     <p class="sq-dica">Preencha o nome de cada quarteto e de quem canta cada voz (fica guardado neste computador). Se deixar um nome em branco, aparece "1º Tenor do Quarteto X".
-      O sorteio tira <b>2 pessoas de cada voz</b> (8 no total), formando <b>2 quartetos novos</b>, e <b>nunca pega 2 pessoas do mesmo quarteto</b>.</p>
-    <div class="sq-grade">${sqQ.map((q, i) => `<div class="sq-q"><div class="num">Quarteto ${i + 1}</div>
+      O sorteio tira <b>2 pessoas de cada voz</b> (8 no total), formando <b>2 quartetos novos</b>, e <b>nunca pega 2 pessoas do mesmo quarteto</b>. Com ${sqQ.length} quartetos, ${sqQ.length - 8} fica(m) de fora.</p>
+    <div class="sq-grade">${sqQ.map((q, i) => `<div class="sq-q"><div class="num" style="display:flex;justify-content:space-between;">Quarteto ${i + 1}
+      ${sqQ.length > SQ_MIN ? `<button class="bt" style="padding:2px 9px;font-size:12px;" title="Tirar este quarteto" onclick="sqTirarQ(${i})">✕</button>` : ''}</div>
       <input class="nome-q" placeholder="Nome do quarteto" value="${escapar(q.nome)}" oninput="sqQ[${i}].nome=this.value;sqSalvar()">
       ${SQ_VOZES.map(v => `<label>${v.nome}<input placeholder="Nome de quem canta" value="${escapar(q[v.id])}" oninput="sqQ[${i}]['${v.id}']=this.value;sqSalvar()"></label>`).join('')}
     </div>`).join('')}</div>
-    <div class="sq-rodape"><button class="bt" onclick="sqLimpar(this)">Apagar tudo</button><button class="bt ouro" onclick="sqIrAba('sorteio')">Ir para o sorteio</button></div>`;
+    <div class="sq-rodape"><button class="bt" onclick="sqQ.push({ nome:'', t1:'', t2:'', bar:'', bx:'' });sqPlano=null;sqSalvar();sqDesenharCadastro()">+ Adicionar quarteto</button>
+      <button class="bt" onclick="sqLimpar(this)">Voltar à lista original</button><button class="bt ouro" onclick="sqIrAba('sorteio')">Ir para o sorteio</button></div>`;
 }
 function sqLimpar(b){
-  if(b.dataset.confirma !== '1'){ b.dataset.confirma = '1'; b.textContent = 'Clique de novo para apagar'; setTimeout(() => { b.dataset.confirma = ''; b.textContent = 'Apagar tudo'; }, 3000); return; }
-  sqQ = sqVazio(); sqSalvar(); sqDesenharCadastro();
+  if(b.dataset.confirma !== '1'){ b.dataset.confirma = '1'; b.textContent = 'Clique de novo para confirmar'; setTimeout(() => { b.dataset.confirma = ''; b.textContent = 'Voltar à lista original'; }, 3000); return; }
+  sqQ = sqVazio(); sqPlano = null; sqSalvar(); sqDesenharCadastro();
 }
+function sqTirarQ(i){ if(sqQ.length <= SQ_MIN) return; sqQ.splice(i, 1); sqPlano = null; sqRev = 0; sqSalvar(); sqDesenharCadastro(); }
 function sqDesenharSorteio(){
   if(sqModo !== 'controle' || sqAba !== 'sorteio') return;
   const c = document.getElementById('sqConteudo'); if(!c) return;
@@ -10876,8 +10896,33 @@ function sqDesenharTelao(){
   document.getElementById('sqTelao').innerHTML = sqPlano && sqQ ? sqPalcoHTML()
     : `<div class="sq-esperando">Aguardando a tela de controle...<br><small>No app, abra "Sorteio de quartetos" e vá para "Sorteio".</small></div>`;
 }
+function sqTelaoGirar(m){
+  if(!m || !m.id || m.id === sqGiroVisto) return;
+  sqGiroVisto = m.id;
+  sqRev = m.indice;
+  sqAnimar(m.indice, m.seq, m.passos).then(() => { sqRev = Math.max(sqRev, m.indice + 1); sqDesenharTelao(); if(sqRev >= SQ_ORDEM.length) sqConfete(); });
+}
+// telao em outro programa (ProPresenter) ou outro computador: busca o estado na internet a cada segundo
+async function sqTelaoBuscar(){
+  try{
+    const [l] = await apiPublico('sorteio_telao?id=eq.quartetos&select=estado');
+    const e = l && l.estado; if(!e || !e.quartetos) return;
+    const g = e.giro;
+    if(g && g.id !== sqGiroVisto && Math.abs(Date.now() - (g.em || 0)) < 15000 && (e.revelados || 0) <= g.indice + 1){
+      sqQ = e.quartetos; sqPlano = e.plano; sqTelaoGirar(g); return;
+    }
+    if(sqGirando) return;
+    if(g) sqGiroVisto = g.id;
+    const mudou = JSON.stringify([e.quartetos, e.plano, e.revelados]) !== JSON.stringify([sqQ, sqPlano, sqRev]);
+    if(mudou){
+      const antes = sqRev; sqQ = e.quartetos; sqPlano = e.plano; sqRev = e.revelados || 0; sqDesenharTelao();
+      if(sqRev >= SQ_ORDEM.length && antes < sqRev) sqConfete();
+    }
+  }catch(x){}
+}
 function sqIniciarTelao(){
   sqModo = 'telao'; sqFontes(); sqLigarCanal(); sqDesenharTelao();
+  sqTelaoBuscar(); setInterval(sqTelaoBuscar, 1000);
   sqEnviar({ tipo:'oi', pedir:true }); setInterval(() => sqEnviar({ tipo:'oi' }), 3000);
   const t = document.getElementById('telaSorteioTelao'); let mt = null;
   document.addEventListener('mousemove', () => { t.classList.remove('sem-mouse'); clearTimeout(mt); mt = setTimeout(() => t.classList.add('sem-mouse'), 2000); });
