@@ -828,7 +828,28 @@
   .sq .sq-vaga.proxima{border-style:dashed;border-color:rgba(232,196,106,.55)}
   @keyframes sqPulo{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
   .sq .sq-fora{text-align:center;margin-top:20px;color:var(--sqApagado);font-size:16px;min-height:22px} .sq .sq-fora b{color:var(--sqTexto)}
+  .sq .sq-logo{text-align:center;padding-top:22px}
+  .sq .sq-logo img{height:clamp(40px,7vh,74px);width:auto;opacity:.95}
+  .sq-telao #sqTelao{min-height:100%;display:flex;flex-direction:column}
+  .sq-telao .sq-logo{margin-top:auto}
   .sq .sq-esperando{text-align:center;color:var(--sqApagado);font-size:18px;margin-top:20vh}
+  /* controle do sorteio: cores do app (so o telao/previa usa as cores do evento) */
+  .sqc-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .sqc-abas{display:flex;gap:6px}
+  .sqc-con{font-size:13px;font-weight:600;color:#15803d;background:#dcfce7;border-radius:999px;padding:6px 12px}
+  .sqc-con.hidden{display:none}
+  .sqc-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--panel)}
+  .sqc-barra .sqc-sortear{font-size:17px;padding:12px 30px}
+  .sqc-prox{color:var(--muted);font-size:14px} .sqc-prox b{color:var(--text)}
+  .sqc-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .sqc-q{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:var(--panel)}
+  .sqc-q-topo{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+  .sqc-q input{width:100%;margin-top:6px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;font-size:14px;background:#fff;color:var(--text);box-sizing:border-box}
+  .sqc-q input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(30,58,95,.12)}
+  .sqc-q .sqc-nome{font-weight:700}
+  .sqc-q label{display:block;font-size:11.5px;color:var(--muted);margin-top:8px;text-transform:uppercase;letter-spacing:.05em}
+  .sqc-rodape{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+  .sqc-previa{padding:22px 22px 26px}
   .sq-confete{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
   .sq-confete i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;opacity:.9;animation:sqCai linear forwards}
   @keyframes sqCai{to{transform:translateY(110vh) rotate(720deg)}}
@@ -1724,7 +1745,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     </div>
 
     <!-- ---------- Sorteio de quartetos (controle; o telao abre em ?telao=quartetos) ---------- -->
-    <div id="paginaSorteio" class="hidden"><div class="sq" id="sqRaiz"></div></div>
+    <div id="paginaSorteio" class="hidden"><div class="card sqc" id="sqRaiz"></div></div>
 
     <!-- ---------- Pedidos de ajuste (sugestoes de mudanca no app) ---------- -->
     <div id="paginaAjustes" class="hidden">
@@ -10723,6 +10744,8 @@ async function copiarAjusteClaude(id){
 const SQ_VOZES = [{ id:'t1', nome:'1º Tenor' }, { id:'t2', nome:'2º Tenor' }, { id:'bar', nome:'Barítono' }, { id:'bx', nome:'Baixo' }];
 const SQ_CHAVE = 'sorteioQuartetos.v2', SQ_MIN = 8;
 const SQ_PADRAO = ['Cânticos Vocal', 'Karis', '4 Music', 'Ministério Ecoar', 'Novo Canto', 'Reflexo', 'Quarteto Tessares', 'Acappela Bantu', 'Revive', 'Cantores do Rei'];
+// logo da Igreja UNASP EC (branca, fundo transparente) para o rodape do telao
+const SQ_LOGO = 'data:image/png;base64,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';
 const SQ_ORDEM = []; SQ_VOZES.forEach(v => { SQ_ORDEM.push({ time:0, voz:v.id }); SQ_ORDEM.push({ time:1, voz:v.id }); });
 let sqModo = 'controle', sqQ = null, sqPlano = null, sqRev = 0, sqGirando = false, sqAba = 'cadastro', sqTelaoVisto = 0, sqCanal = null, sqUltima = '';
 let sqGiro = null, sqGiroVisto = '', sqNuvemTimer = null, sqNuvemErro = false;
@@ -10780,7 +10803,8 @@ function sqPalcoHTML(){
       return `<div class="sq-vaga ${feito ? 'feita' : 'vazia'} ${ehProx ? 'proxima' : ''}" id="sqVaga-${t}-${v.id}"><div class="sq-voz">${v.nome}</div>
         <div class="sq-quem"><div class="sq-pessoa">${feito ? escapar(sqPessoa(i, v.id)) : '?'}</div><div class="sq-grupo">${feito ? escapar(sqNomeQ(i)) : '&nbsp;'}</div></div></div>`;
     }).join('')}</div>`).join('')}</div>
-  <div class="sq-fora">${acabou && sqPlano ? `Ficou de fora desta vez: <b>${escapar(sqPlano.fora.map(sqNomeQ).join(', '))}</b>` : ''}</div>`;
+  <div class="sq-fora">${acabou && sqPlano ? `Ficou de fora desta vez: <b>${escapar(sqPlano.fora.map(sqNomeQ).join(', '))}</b>` : ''}</div>
+  <div class="sq-logo"><img src="${SQ_LOGO}" alt="Igreja Adventista UNASP EC"></div>`;
 }
 async function sqAnimar(indice, seq, passos){
   sqGirando = true;
@@ -10837,16 +10861,19 @@ function sqAbrirTelao(){
 function sqCopiarLink(){ try{ navigator.clipboard.writeText(sqLinkTelao()); toast('Link do telão copiado', 'ok'); }catch(e){ prompt('Copie o link:', sqLinkTelao()); } }
 function sqDesenharControle(){
   document.getElementById('sqRaiz').innerHTML = `
-    <div class="sq-topo">
-      <h2>Sorteio de quartetos<small>Tela de controle (só você vê). O telão mostra apenas o resultado.</small></h2>
-      <span class="sq-con hidden" id="sqCon">Telão conectado</span>
-      <button class="bt ${sqAba === 'cadastro' ? 'on' : ''}" onclick="sqIrAba('cadastro')">Quartetos</button>
-      <button class="bt ${sqAba === 'sorteio' ? 'on' : ''}" onclick="sqIrAba('sorteio')">Prévia do telão</button>
+    <div class="sqc-topo">
+      <div style="flex:1;min-width:220px;"><h2 style="margin:0;">Sorteio de quartetos</h2>
+        <p class="hint" style="margin:4px 0 0;">Tela de controle (só você vê). O telão mostra apenas o resultado, nas cores do evento.</p></div>
+      <span class="sqc-con hidden" id="sqCon">● Telão conectado</span>
+      <div class="sqc-abas">
+        <button class="btn ${sqAba === 'cadastro' ? 'primary' : ''}" onclick="sqIrAba('cadastro')">Quartetos</button>
+        <button class="btn ${sqAba === 'sorteio' ? 'primary' : ''}" onclick="sqIrAba('sorteio')">Prévia do telão</button>
+      </div>
     </div>
-    <div class="sq-barra" id="sqBotoes"></div>
-    <div class="sq-info">Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia.
+    <div class="sqc-barra" id="sqBotoes"></div>
+    <p class="hint" style="margin:0 0 16px;">Arraste a janela do telão para o projetor e aperte <b>F</b> nela (ou dois cliques) para tela cheia.
       <b>No ProPresenter:</b> crie um slide com um objeto de site (Website) e cole o link do telão; ele acompanha o sorteio pela internet, com cerca de 1 segundo de atraso.
-      Atalhos: <b>Espaço</b> = próxima voz, <b>T</b> = todas, <b>R</b> = recomeçar.</div>
+      Atalhos: <b>Espaço</b> = próxima voz, <b>T</b> = todas, <b>R</b> = recomeçar.</p>
     <div id="sqConteudo"></div>`;
   sqDesenharBotoes();
   sqDesenharConexao();
@@ -10865,25 +10892,26 @@ function sqDesenharBotoes(){
   const acabou = sqRev >= SQ_ORDEM.length;
   const prox = SQ_ORDEM[sqRev], vozProx = prox ? `${SQ_VOZES.find(v => v.id === prox.voz).nome} do Quarteto ${prox.time === 0 ? 'A' : 'B'}` : '';
   el.innerHTML = `
-    <button class="bt ouro grande" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortear()">${acabou ? 'Sorteio completo!' : sqGirando ? 'Sorteando...' : 'Sortear'}</button>
-    <span class="sq-prox">${acabou ? `${sqRev} de ${SQ_ORDEM.length} sorteados` : `Próxima: <b>${vozProx}</b> · ${sqRev} de ${SQ_ORDEM.length}`}</span>
-    <button class="bt" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortearTudo()">Sortear todas</button>
-    <button class="bt" ${sqGirando ? 'disabled' : ''} onclick="sqRecomecar()">Recomeçar</button>
+    <button class="btn primary sqc-sortear" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortear()">${acabou ? 'Sorteio completo!' : sqGirando ? 'Sorteando...' : 'Sortear'}</button>
+    <span class="sqc-prox">${acabou ? `${sqRev} de ${SQ_ORDEM.length} sorteados` : `Próxima: <b>${vozProx}</b> · ${sqRev} de ${SQ_ORDEM.length}`}</span>
+    <button class="btn" ${acabou || sqGirando ? 'disabled' : ''} onclick="sqSortearTudo()">Sortear todas</button>
+    <button class="btn" ${sqGirando ? 'disabled' : ''} onclick="sqRecomecar()">Recomeçar</button>
     <span style="flex:1"></span>
-    <button class="bt" onclick="sqAbrirTelao()">Abrir telão</button>
-    <button class="bt" onclick="sqCopiarLink()">Copiar link do telão</button>`;
+    <button class="btn" onclick="sqAbrirTelao()">Abrir telão</button>
+    <button class="btn" onclick="sqCopiarLink()">🔗 Copiar link do telão</button>`;
 }
 function sqDesenharCadastro(){
   document.getElementById('sqConteudo').innerHTML = `
-    <p class="sq-dica">Preencha o nome de cada quarteto e de quem canta cada voz (fica guardado neste computador). Se deixar um nome em branco, aparece "1º Tenor do Quarteto X".
+    <p class="hint" style="margin:0 0 14px;">Preencha o nome de cada quarteto e de quem canta cada voz (fica guardado neste computador). Se deixar um nome em branco, aparece "1º Tenor do Quarteto X".
       O sorteio tira <b>2 pessoas de cada voz</b> (8 no total), formando <b>2 quartetos novos</b>, e <b>nunca pega 2 pessoas do mesmo quarteto</b>. Com ${sqQ.length} quartetos, ${sqQ.length - 8} fica(m) de fora.</p>
-    <div class="sq-grade">${sqQ.map((q, i) => `<div class="sq-q"><div class="num" style="display:flex;justify-content:space-between;">Quarteto ${i + 1}
-      ${sqQ.length > SQ_MIN ? `<button class="bt" style="padding:2px 9px;font-size:12px;" title="Tirar este quarteto" onclick="sqTirarQ(${i})">✕</button>` : ''}</div>
-      <input class="nome-q" placeholder="Nome do quarteto" value="${escapar(q.nome)}" oninput="sqQ[${i}].nome=this.value;sqSalvar()">
+    <div class="sqc-grade">${sqQ.map((q, i) => `<div class="sqc-q">
+      <div class="sqc-q-topo"><span>Quarteto ${i + 1}</span>
+        ${sqQ.length > SQ_MIN ? `<button class="btn small" title="Tirar este quarteto" onclick="sqTirarQ(${i})">✕</button>` : ''}</div>
+      <input class="sqc-nome" placeholder="Nome do quarteto" value="${escapar(q.nome)}" oninput="sqQ[${i}].nome=this.value;sqSalvar()">
       ${SQ_VOZES.map(v => `<label>${v.nome}<input placeholder="Nome de quem canta" value="${escapar(q[v.id])}" oninput="sqQ[${i}]['${v.id}']=this.value;sqSalvar()"></label>`).join('')}
     </div>`).join('')}</div>
-    <div class="sq-rodape"><button class="bt" onclick="sqQ.push({ nome:'', t1:'', t2:'', bar:'', bx:'' });sqPlano=null;sqDesenharBotoes();sqSalvar();sqDesenharCadastro()">+ Adicionar quarteto</button>
-      <button class="bt" onclick="sqLimpar(this)">Voltar à lista original</button><button class="bt ouro" onclick="sqIrAba('sorteio')">Ir para o sorteio</button></div>`;
+    <div class="sqc-rodape"><button class="btn" onclick="sqQ.push({ nome:'', t1:'', t2:'', bar:'', bx:'' });sqPlano=null;sqDesenharBotoes();sqSalvar();sqDesenharCadastro()">+ Adicionar quarteto</button>
+      <button class="btn" onclick="sqLimpar(this)">Voltar à lista original</button><button class="btn primary" onclick="sqIrAba('sorteio')">Ver prévia do telão</button></div>`;
 }
 function sqLimpar(b){
   if(b.dataset.confirma !== '1'){ b.dataset.confirma = '1'; b.textContent = 'Clique de novo para confirmar'; setTimeout(() => { b.dataset.confirma = ''; b.textContent = 'Voltar à lista original'; }, 3000); return; }
@@ -10896,8 +10924,8 @@ function sqDesenharSorteio(){
   if(sqAba !== 'sorteio') return;
   const c = document.getElementById('sqConteudo'); if(!c) return;
   const acabou = sqRev >= SQ_ORDEM.length, semNome = sqQ.filter(q => !SQ_VOZES.some(v => (q[v.id] || '').trim())).length;
-  c.innerHTML = `${semNome ? `<div class="sq-aviso">${semNome} quarteto(s) ainda sem nomes de quem canta. Vai aparecer "1º Tenor do Quarteto X" no lugar do nome.</div>` : ''}
-    ${sqPalcoHTML()}`;
+  c.innerHTML = `${semNome ? `<div class="aviso" style="margin-bottom:12px;">${semNome} quarteto(s) ainda sem nomes de quem canta. Vai aparecer "1º Tenor do Quarteto X" no lugar do nome.</div>` : ''}
+    <div class="sq sqc-previa">${sqPalcoHTML()}</div>`;
 }
 document.addEventListener('keydown', e => {
   if(['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
