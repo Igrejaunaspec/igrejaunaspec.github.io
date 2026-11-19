@@ -825,7 +825,6 @@
   .sq .sq-vaga.vazia .sq-pessoa{color:rgba(255,255,255,.18)}
   .sq .sq-vaga.girando{border-color:rgba(232,196,106,.6);box-shadow:0 0 0 3px rgba(232,196,106,.18) inset} .sq .sq-vaga.girando .sq-pessoa{color:var(--sqOuro2)}
   .sq .sq-vaga.feita{background:linear-gradient(90deg,rgba(232,196,106,.18),rgba(255,255,255,.05));border-color:rgba(232,196,106,.55)}
-  .sq .sq-vaga.pulo{animation:sqPulo .7s cubic-bezier(.3,1.6,.5,1)}
   .sq .sq-vaga.proxima{border-style:dashed;border-color:rgba(232,196,106,.55)}
   @keyframes sqPulo{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-10px) scale(1.04)}70%{transform:translateY(2px) scale(.99)}100%{transform:translateY(0) scale(1)}}
   .sq .sq-fora{text-align:center;margin-top:20px;color:var(--sqApagado);font-size:16px;min-height:22px} .sq .sq-fora b{color:var(--sqTexto)}
@@ -10989,7 +10988,9 @@ function sqAplicarEstado(q, plano, rev){
 }
 function sqTelaoGirar(m){
   if(!m || !m.id || m.id === sqGiroVisto) return;
-  sqGiroVisto = m.id; sqGiro = m;
+  sqGiroVisto = m.id;
+  if(m.indice < sqRev) return; // esta voz ja aparece sorteada: nao gira de novo para tras
+  sqGiro = m;
   sqRev = m.indice;
   sqAnimar(m.indice, m.seq, m.passos).then(() => {
     sqRev = Math.max(sqRev, m.indice + 1); sqMarcarPulo(m.indice); sqDesenharTelao();
