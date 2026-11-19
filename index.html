@@ -11796,11 +11796,15 @@ function sqTelaoGirar(m){
     if(sqRev >= SQ_ORDEM.length) sqConfete();
   });
 }
-// telao em outro programa (ProPresenter) ou outro computador: busca o estado na internet a cada segundo
-async function sqTelaoBuscar(){
+// telao em outro programa (ProPresenter) ou outro computador: recebe o estado na hora
+// pelo Supabase Realtime (so quando muda). Se o aviso instantaneo cair, volta a
+// perguntar a cada segundo; com ele ligado, so confere a cada 30 s.
+let sqRtOk = false, sqUltBusca = 0;
+async function sqTelaoBuscar(estado){
   try{
-    const [l] = await apiPublico('sorteio_telao?id=eq.quartetos&select=estado');
-    const e = l && l.estado; if(!e || !e.quartetos) return;
+    let e = estado;
+    if(!e){ sqUltBusca = Date.now(); const [l] = await apiPublico('sorteio_telao?id=eq.quartetos&select=estado'); e = l && l.estado; }
+    if(!e || !e.quartetos) return;
     const g = e.giro;
     if(g && g.id !== sqGiroVisto && Math.abs(Date.now() - (g.em || 0)) < 15000 && (e.revelados || 0) <= g.indice + 1){
       sqQ = e.quartetos; sqPlano = e.plano; sqTelaoGirar(g); return;
@@ -11812,7 +11816,14 @@ async function sqTelaoBuscar(){
 }
 function sqIniciarTelao(){
   sqModo = 'telao'; sqFontes(); sqLigarCanal(); sqDesenharTelao();
-  sqTelaoBuscar(); setInterval(sqTelaoBuscar, 1000);
+  sqTelaoBuscar();
+  setInterval(() => { if(!sqRtOk || Date.now() - sqUltBusca > 30000) sqTelaoBuscar(); }, 1000);
+  setTimeout(() => { try{ carregarRealtime().then(cli => {
+    cli.channel('sorteio-telao')
+      .on('postgres_changes', { event:'*', schema:'public', table:'sorteio_telao', filter:'id=eq.quartetos' },
+        p => { const e = p && p.new && p.new.estado; if(e) sqTelaoBuscar(e); else sqTelaoBuscar(); })
+      .subscribe(st => { const antes = sqRtOk; sqRtOk = st === 'SUBSCRIBED'; if(sqRtOk && !antes) sqTelaoBuscar(); });
+  }).catch(() => {}); }catch(x){} }, 0);
   sqEnviar({ tipo:'oi', pedir:true }); setInterval(() => sqEnviar({ tipo:'oi' }), 3000);
   const t = document.getElementById('telaSorteioTelao'); let mt = null;
   document.addEventListener('mousemove', () => { t.classList.remove('sem-mouse'); clearTimeout(mt); mt = setTimeout(() => t.classList.add('sem-mouse'), 2000); });
