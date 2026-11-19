@@ -76,6 +76,11 @@ a{color:var(--acc)}
 .campoLogin{width:100%;max-width:400px;display:flex;flex-direction:column;gap:6px;text-align:left}
 .campoLogin input{letter-spacing:0;font-size:17px;text-align:left}
 .erroMsg{color:var(--bad);font-size:14px;min-height:18px}
+.ouPin{display:flex;align-items:center;gap:10px;width:100%;max-width:400px;color:var(--muted);font-size:13px}
+.ouPin:before,.ouPin:after{content:"";flex:1;border-top:1px solid #2c2c31}
+#blocoPin{display:contents}
+#blocoPin.hidden{display:none}
+#inPin{letter-spacing:.3em;text-align:center;font-size:22px}
 .voltar{font-size:14px;color:var(--muted);background:none;text-decoration:underline;padding:6px}
 
 /* ---------- tela (iPad) ---------- */
@@ -149,6 +154,12 @@ input[type=range]{width:100%;accent-color:var(--acc);height:34px}
   <div class="campoLogin"><label for="inSenha">Senha</label><input id="inSenha" type="password" autocomplete="current-password"></div>
   <div class="erroMsg" id="erroLogin"></div>
   <button id="btnEntrar" style="width:100%;max-width:400px;background:var(--acc);color:#2a1d00;font-weight:700">Entrar</button>
+  <div id="blocoPin" class="hidden">
+    <div class="ouPin">ou, se você recebeu um PIN</div>
+    <div class="campoLogin"><label for="inPin">PIN</label><input id="inPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+    <div class="erroMsg" id="erroPin"></div>
+    <button id="btnEntrarPin" style="width:100%;max-width:400px">Entrar com PIN</button>
+  </div>
   <button class="voltar" id="btnVoltarLogin">Voltar</button>
 </section>
 
@@ -189,6 +200,7 @@ input[type=range]{width:100%;accent-color:var(--acc);height:34px}
   <div class="cartao">
     <div class="rotulo">Sala</div>
     <div class="sala"><b id="ctrlCodigo"></b><span style="flex:1"></span><button id="btnCopiaLink">🔗 Copiar link da tela</button></div>
+    <button id="btnCopiaCtrl">🔗 Copiar link do controle (para outra pessoa)</button>
     <div class="nota">No iPad, abra <b>igrejaunaspec.com/teleprompter</b>, digite este código e toque em “Esta é a tela”. Ou mande o link para o iPad.</div>
   </div>
 
@@ -222,6 +234,14 @@ input[type=range]{width:100%;accent-color:var(--acc);height:34px}
     <textarea id="campoTexto" placeholder="Cole ou escreva aqui o texto que vai aparecer no iPad.&#10;&#10;Dica: o que estiver entre [colchetes] aparece em amarelo, como lembrete (ex.: [PAUSA], [OLHAR PARA A CÂMERA])."></textarea>
     <button id="btnEnviar" style="background:var(--acc);color:#2a1d00;font-weight:700">Enviar para a tela</button>
     <div class="nota" id="notaEnvio">O texto fica guardado neste celular.</div>
+  </div>
+
+  <div class="cartao hidden" id="cartaoPin">
+    <div class="rotulo">PIN para quem não tem login</div>
+    <div class="nota" id="pinSituacao">…</div>
+    <input id="novoPin" type="text" inputmode="numeric" maxlength="8" placeholder="Novo PIN (6 a 8 números)" style="background:#0f0f11;color:var(--fg);border:1px solid #2c2c31;border-radius:12px;padding:12px;font:18px inherit;font-family:inherit;letter-spacing:.2em;text-align:center">
+    <div class="linha"><button id="btnSalvaPin">Salvar PIN</button><button id="btnTiraPin">Desligar PIN</button></div>
+    <div class="nota">Quem tiver o PIN usa o celular como controle sem precisar de login. Ao trocar o PIN, quem usava o antigo precisa digitar o novo.</div>
   </div>
 
   <div class="linha"><button class="link" id="btnTrocaCtrl">Trocar de aparelho ou de sala</button><a class="link" href="/" style="text-align:right">← App</a></div>
@@ -344,8 +364,60 @@ async function token(){
 }
 async function temLogin(){
   try{ sessao = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || "null"); }catch(e){ sessao = null; }
-  if(!sessao) return false;
-  try{ await token(); return true; }catch(e){ return false; }
+  if(sessao){ try{ await token(); return true; }catch(e){} }
+  var pin = ler("pin", "");
+  if(pin && await conferePin(pin)) return true;
+  if(pin) guardar("pin", "");
+  return false;
+}
+/* ---------- PIN (para quem nao tem login no app) ---------- */
+async function rpc(nome, corpo, comLogin){
+  var h = { "Content-Type":"application/json", apikey: SUPABASE_KEY };
+  if(comLogin) h.Authorization = "Bearer " + await token();
+  var r = await fetch(SUPABASE_URL + "/rest/v1/rpc/" + nome, { method:"POST", headers:h, body: JSON.stringify(corpo || {}) });
+  var d = await r.json().catch(function(){ return null; });
+  if(!r.ok) throw new Error((d && (d.message || d.msg)) || "Não consegui falar com o servidor.");
+  return d;
+}
+async function conferePin(pin){ try{ return (await rpc("teleprompter_entrar_pin", { p_pin: String(pin) })) === true; }catch(e){ return false; } }
+async function mostrarLogin(){
+  $("inicio").classList.add("hidden"); $("login").classList.remove("hidden"); $("inEmail").focus();
+  try{ $("blocoPin").classList.toggle("hidden", !(await rpc("teleprompter_tem_pin"))); }catch(e){}
+}
+$("btnEntrarPin").onclick = async function(){
+  var pin = $("inPin").value.replace(/\D/g, ""), b = this;
+  if(pin.length < 6){ $("erroPin").textContent = "Digite o PIN completo."; return; }
+  b.disabled = true; b.textContent = "Conferindo…"; $("erroPin").textContent = "";
+  if(await conferePin(pin)){
+    guardar("pin", pin);
+    $("login").classList.add("hidden");
+    mostrar("controle");
+  } else $("erroPin").textContent = "PIN incorreto. (Depois de muitas tentativas erradas, espere 15 minutos.)";
+  b.disabled = false; b.textContent = "Entrar com PIN";
+};
+$("inPin").addEventListener("keydown", function(e){ if(e.key === "Enter") $("btnEntrarPin").click(); });
+async function iniciarCartaoPin(){
+  var admin = false;
+  try{ if(sessao) admin = (await rpc("sou_admin", {}, true)) === true; }catch(e){}
+  if(!admin) return;
+  $("cartaoPin").classList.remove("hidden");
+  async function situacao(){
+    try{ var tem = await rpc("teleprompter_tem_pin"); $("pinSituacao").textContent = tem ? "PIN ligado ✓ (por segurança ele não aparece aqui; para mudar, digite um novo)" : "Nenhum PIN ligado: hoje só entra quem tem login."; }
+    catch(e){ $("pinSituacao").textContent = "Não consegui ver o PIN agora."; }
+  }
+  situacao();
+  async function salvar(valor, b){
+    b.disabled = true;
+    try{ await rpc("teleprompter_definir_pin", { p_pin: valor }, true); $("novoPin").value = ""; await situacao(); }
+    catch(e){ $("pinSituacao").textContent = e.message; }
+    b.disabled = false;
+  }
+  $("btnSalvaPin").onclick = function(){
+    var v = $("novoPin").value.replace(/\D/g, "");
+    if(v.length < 6 || v.length > 8){ $("pinSituacao").textContent = "O PIN precisa ter de 6 a 8 números."; return; }
+    salvar(v, this);
+  };
+  $("btnTiraPin").onclick = function(){ if(confirm("Desligar o PIN? Só quem tem login vai conseguir usar o controle.")) salvar("", this); };
 }
 $("btnEntrar").onclick = async function(){
   var email = $("inEmail").value.trim(), senha = $("inSenha").value, b = this;
@@ -376,7 +448,7 @@ async function escolher(p){
   $("erroInicio").textContent = "";
   sala = c; guardar("sala", c);
   if(p === "controle" && !(await temLogin())){
-    $("inicio").classList.add("hidden"); $("login").classList.remove("hidden"); $("inEmail").focus(); return;
+    mostrarLogin(); return;
   }
   mostrar(p);
 }
@@ -532,8 +604,14 @@ var tela = null;
 var arrastando = false;
 
 function linkTela(){ return location.origin + location.pathname + "?sala=" + sala + "#tela"; }
+function copiar(l, b, rotulo){
+  try{ navigator.clipboard.writeText(l).then(function(){ b.textContent = "✓ Copiado"; setTimeout(function(){ b.textContent = rotulo; }, 2000); }, function(){ prompt("Copie o link:", l); }); }
+  catch(e){ prompt("Copie o link:", l); }
+}
 function iniciarControle(){
   $("ctrlCodigo").textContent = sala;
+  $("btnCopiaCtrl").onclick = function(){ copiar(location.origin + location.pathname + "?sala=" + sala + "#controle", this, "🔗 Copiar link do controle (para outra pessoa)"); };
+  iniciarCartaoPin();
   $("btnCopiaLink").onclick = function(){
     var l = linkTela(), b = this;
     try{ navigator.clipboard.writeText(l).then(function(){ b.textContent = "✓ Copiado"; setTimeout(function(){ b.textContent = "🔗 Copiar link da tela"; }, 2000); }, function(){ prompt("Copie o link:", l); }); }
