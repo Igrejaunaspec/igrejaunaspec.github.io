@@ -3413,11 +3413,11 @@ function renderizarCampoFormulario(campo){
         <input type="email" id="${id}" autocomplete="email" placeholder="voce@email.com"${req ? ' required' : ''}></div>`;
     case 'data':
       return `<div class="field"><label for="${id}">${rotuloHtml}</label>${dicaHtml}
-        <input type="date" id="${id}"${req ? ' required' : ''}></div>`;
+        <input type="date" id="${id}" min="2020-01-01" max="2099-12-31"${req ? ' required' : ''}></div>`;
     case 'data_hora':
       return `<div class="field"><label for="${id}_data">${rotuloHtml}</label>${dicaHtml}
         <div class="data-hora-par">
-          <input type="date" id="${id}_data"${req ? ' required' : ''}>
+          <input type="date" id="${id}_data" min="2020-01-01" max="2099-12-31"${req ? ' required' : ''}>
           <input type="time" id="${id}_hora"${req ? ' required' : ''}>
         </div></div>`;
     case 'radio':
@@ -3513,6 +3513,34 @@ async function enviarAgendamento(){
     const alvo = document.getElementById(id) || document.getElementById(id + '_data');
     if(alvo) alvo.scrollIntoView({ behavior:'smooth', block:'center' });
     return;
+  }
+
+  // Confere as datas: ano com 4 numeros e perto de hoje (um "20226" digitado
+  // sem querer fazia o evento cair em 2022 e sumir da agenda), e o fim nao
+  // pode ser antes do inicio.
+  {
+    const anoHoje = new Date().getFullYear();
+    let problema = null, alvoData = null, dIni = null, dFim = null;
+    for(const campo of todosCampos){
+      if(campo.tipo !== 'data' && campo.tipo !== 'data_hora') continue;
+      const v = lerValorCampo(campo);
+      if(!v) continue;
+      const id = inputIdCampo(campo);
+      const ano = (v.match(/^\d{1,2}\/\d{1,2}\/(\d+)/) || [])[1] || '';
+      if(ano.length !== 4 || Number(ano) < anoHoje - 1 || Number(ano) > anoHoje + 5){
+        problema = `Confira o ano em "${campo.rotulo || 'data'}" (${ano || '?'}).`;
+        alvoData = document.getElementById(id) || document.getElementById(id + '_data');
+        break;
+      }
+      if(campo.coluna === 'data_inicio') dIni = parseDataBR(v);
+      if(campo.coluna === 'data_saida') { dFim = parseDataBR(v); alvoData = document.getElementById(id) || document.getElementById(id + '_data'); }
+    }
+    if(!problema && dIni && dFim && dFim < dIni) problema = 'A data de saída está antes da data de início do evento. Confira as datas.';
+    if(problema){
+      erroEl.innerHTML = `<div class="aviso erro">${escapar(problema)}</div>`;
+      if(alvoData) alvoData.scrollIntoView({ behavior:'smooth', block:'center' });
+      return;
+    }
   }
 
   btn.disabled = true;
