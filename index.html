@@ -833,6 +833,90 @@
   .sq-telao #sqTelao{min-height:100%;display:flex;flex-direction:column}
   .sq-telao .sq-logo{margin-top:auto}
   .sq .sq-esperando{text-align:center;color:var(--sqApagado);font-size:18px;margin-top:20vh}
+  /* ---------- Escala de midia ---------- */
+  #paginaEscala > .subabas + .card{margin-top:0;position:relative;z-index:1;border-top-left-radius:0}
+  .es-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .es-stat{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .es-stat small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .es-stat b{display:block;font-size:19px;margin-top:3px;color:var(--text)}
+  .es-dia{border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:12px;background:var(--panel)}
+  .es-dia.passado{opacity:.8}
+  .es-dia-topo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .es-dia-topo h3{margin:0;font-size:15px;flex:1;min-width:180px}
+  .es-cultos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .es-culto{border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;background:#fafbfd}
+  .es-culto .es-cn{flex:1;min-width:0} .es-culto .es-cn b{display:block;font-size:15px}
+  .es-culto .es-cn span{font-size:12.5px;color:var(--muted)}
+  .es-tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;margin-top:3px;background:#eef1f5;color:#475569}
+  .es-tag.ok{background:#dcfce7;color:#15803d} .es-tag.meio{background:#fef3c7;color:#92600a}
+  .es-topo{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .es-topo h2{margin:0} .es-topo .es-sub{color:var(--muted);font-size:14px;margin-top:2px}
+  .es-linha{display:grid;grid-template-columns:170px minmax(0,1fr);gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+  .es-linha:first-of-type{border-top:0}
+  .es-linha.nn{opacity:.6} .es-linha.nn .es-fn{text-decoration:line-through}
+  .es-fn{font-weight:700;padding-top:8px;display:flex;gap:6px;align-items:flex-start}
+  .es-ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .es-ctl select{flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;background:#fff}
+  .es-fone{font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .es-chave{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap;text-transform:none;letter-spacing:0;font-weight:500;margin:0}
+  label.btn{text-transform:none;letter-spacing:0;margin:0}
+  .es-chave input{appearance:none;width:34px;height:20px;border-radius:999px;background:#d5dbe3;position:relative;cursor:pointer;margin:0;transition:background .15s}
+  .es-chave input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0003;transition:left .15s}
+  .es-chave input:checked{background:var(--accent)} .es-chave input:checked::after{left:16px}
+  .es-chave input.verde:checked{background:#15803d}
+  .es-info{margin-top:8px;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:#fafbfd;font-size:12.5px}
+  .es-info .es-ult{color:var(--muted);margin-left:6px}
+  .es-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .es-chip{font-size:11.5px;border-radius:6px;padding:2px 7px;background:#eef1f5;color:#334155}
+  .es-chip.on{background:var(--accent);color:#fff}
+  .es-alerta{margin-top:6px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:5px 9px}
+  .es-est{color:#d1d5db;letter-spacing:1px;font-size:14px;white-space:nowrap} .es-est i{font-style:normal;color:#E2A33B}
+  .es-est.editar span{cursor:pointer;font-size:20px}
+  .es-barra{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .es-barra input[type=search],.es-barra select{padding:8px 10px;border:1px solid var(--border);border-radius:9px;font:inherit;background:#fff}
+  .es-barra input[type=search]{flex:1 1 220px;min-width:180px;width:auto}
+  .es-barra select{flex:0 0 auto;width:auto;max-width:100%}
+  .es-tab{width:100%;border-collapse:collapse;font-size:13.5px}
+  .es-tab th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:8px 8px;border-bottom:1px solid var(--border)}
+  .es-tab td{padding:9px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+  .es-tab td small{display:block;color:var(--muted);font-size:12px}
+  .es-st{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;background:#dcfce7;color:#15803d} .es-st.off{background:#f1f5f9;color:#64748b}
+  .es-fun{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--border)}
+  .es-fun:first-child{border-top:0} .es-fun.off .es-fun-n{text-decoration:line-through;color:var(--muted)}
+  .es-fun-e{font-size:20px;width:28px;text-align:center} .es-fun-n{flex:1;min-width:0} .es-fun-n small{display:block;color:var(--muted);font-size:12px}
+  .es-icone{border:0;background:none;cursor:pointer;padding:6px;border-radius:8px;color:var(--muted);font-size:15px;line-height:1}
+  .es-icone:hover{background:#eef1f5;color:var(--text)} .es-icone:disabled{opacity:.3;cursor:default}
+  .es-icone.perigo{color:#c0392b}
+  .es-mtabs{display:flex;gap:6px;margin-bottom:14px;background:#eef1f5;border-radius:10px;padding:4px}
+  .es-mtabs button{flex:1;border:0;background:none;padding:8px;border-radius:8px;font:inherit;font-weight:600;cursor:pointer;color:var(--muted)}
+  .es-mtabs button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px #0001}
+  .es-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .es-checks label{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+  .es-checks input{width:17px;height:17px;accent-color:var(--accent)}
+  .es-qual{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+  .es-qual-topo{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:6px}
+  .es-qual textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:7px 9px;font:inherit;font-size:13.5px}
+  .es-gl{display:grid;grid-template-columns:40% minmax(0,1fr);gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+  .es-gerar select{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font:inherit}
+  .es-gerar .es-sem{color:#c0392b;font-size:12px}
+  @media (max-width:700px){
+    .es-stats{grid-template-columns:1fr} .es-cultos{grid-template-columns:1fr}
+    .es-linha{grid-template-columns:1fr;gap:4px} .es-fn{padding-top:0}
+    .es-tab thead{display:none} .es-tab tr{display:block;border-bottom:1px solid var(--border);padding:8px 0} .es-tab td{display:block;border:0;padding:3px 4px}
+    .es-checks{grid-template-columns:1fr}
+  }
+  /* pagina publica da escala (?escala=AAAA-MM-DD) */
+  .es-pub{max-width:640px;margin:0 auto;padding:28px 16px 60px}
+  .es-pub h1{text-align:center;margin:0;font-size:26px}
+  .es-pub .es-pub-data{text-align:center;color:var(--muted);margin:4px 0 2px}
+  .es-pub .es-pub-dica{text-align:center;color:var(--muted);font-size:13.5px;margin:0 0 18px}
+  .es-pub-culto{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px}
+  .es-pub-culto h2{margin:0 0 10px;font-size:17px;display:flex;justify-content:space-between;align-items:center}
+  .es-pub-p{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-top:8px}
+  .es-pub-p .es-cn{flex:1;min-width:0} .es-pub-p small{display:block;color:var(--muted);font-size:12px}
+  .es-pub-p label{display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;white-space:nowrap;text-transform:none;letter-spacing:0;font-weight:600;margin:0;color:var(--text)}
+  .es-pub-p input{width:20px;height:20px;accent-color:#15803d}
+  .es-pub-p.ok{border-color:#86efac;background:#f0fdf4}
   /* controle do sorteio: cores do app (so o telao/previa usa as cores do evento) */
   .sqc-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .sqc-abas{display:flex;gap:6px}
@@ -1748,6 +1832,16 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       </div>
     </div>
 
+    <!-- ---------- Escala de midia (antes era o app Lovable) ---------- -->
+    <div id="paginaEscala" class="hidden">
+      <div class="subabas" id="subabasEscala" role="tablist">
+        <button role="tab" data-sub="escalas" class="on" onclick="esIrSub('escalas')" title="Escalas"><span class="ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span class="rot">Escalas</span></button>
+        <button role="tab" data-sub="voluntarios" onclick="esIrSub('voluntarios')" title="Voluntários"><span class="ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg></span><span class="rot">Voluntários</span></button>
+        <button role="tab" data-sub="funcoes" onclick="esIrSub('funcoes')" title="Funções"><span class="ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg></span><span class="rot">Funções</span></button>
+      </div>
+      <div class="card" id="esConteudo"></div>
+    </div>
+
     <!-- ---------- Sorteio de quartetos (controle; o telao abre em ?telao=quartetos) ---------- -->
     <div id="paginaSorteio" class="hidden"><div class="card sqc" id="sqRaiz"></div></div>
 
@@ -1937,6 +2031,9 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="convidadoConteudo"><div class="vazio">Carregando roteiro...</div></div>
   </div>
 </div>
+
+<!-- ---------- escala publica (?escala=AAAA-MM-DD): voluntarios confirmam presenca ---------- -->
+<div id="telaEscalaPublica" class="hidden"><div class="es-pub" id="esPub"></div></div>
 
 <!-- ---------- telao do sorteio de quartetos (so mostra o que a tela de controle manda) ---------- -->
 <div id="telaSorteioTelao" class="hidden sq sq-telao"><div id="sqTelao"></div></div>
@@ -5532,15 +5629,14 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
-  // Atalho pra outro site (escala de voluntarios), abre numa aba nova --
-  // nao e uma pagina deste app, entao nao mexe em nenhum roteiro/estado
-  // nem fica marcada como aba "ativa". So aparece pra quem tem acesso liberado
-  // (aba Pessoas) ou e admin.
+  // Escala de midia (voluntarios, funcoes e escalas dos cultos de sabado).
+  // So aparece pra quem tem acesso liberado (aba Pessoas) ou e admin.
   if(perfil.admin || perfil.acesso_escala){
     const b = document.createElement('button');
     b.textContent = 'Escala';
-    b.title = 'Abre a Escala em outra aba';
-    b.onclick = () => window.open('https://escalaigrejaunasp.lovable.app/', '_blank', 'noopener');
+    b.title = 'Escala de mídia: voluntários e escalas dos cultos';
+    b.onclick = () => abrirEscala();
+    b.dataset.culto = 'escala';
     abas.appendChild(b);
   }
 
@@ -5676,10 +5772,9 @@ function montarAbas(){
     return;
   }
 
-  // Abas com pagina propria dentro do app (Escala nao entra aqui -- so abre
-  // link externo, nao tem onde "pousar"). Usado pra decidir a tela inicial
+  // Abas com pagina propria dentro do app. Usado pra decidir a tela inicial
   // de quem nao tem nenhum culto/agenda liberado.
-  const temPaginaExtra = perfil.admin || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_calendario_ver || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria || perfil.acesso_agenda_pessoal;
+  const temPaginaExtra = perfil.admin || perfil.acesso_escala || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_calendario_ver || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria || perfil.acesso_agenda_pessoal;
 
   if(permitidos.length === 0 && !podeEditarAgenda() && !temPaginaExtra){
     // Sem acesso de edicao a nenhum culto, agenda, ou aba extra: pode ser (a)
@@ -5703,6 +5798,7 @@ function montarAbas(){
   else if(perfil.acesso_homiletico) abrirHomiletico();
   else if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria) abrirAgendaPastoral();
   else if(perfil.acesso_agenda_pessoal) abrirMinhaAgenda();
+  else if(perfil.acesso_escala) abrirEscala();
 }
 
 
@@ -6330,6 +6426,7 @@ function mostrarPaginaSemEfeito(qual){
   document.getElementById('paginaInicio').classList.toggle('hidden',       qual !== 'inicio');
   document.getElementById('paginaAjustes').classList.toggle('hidden',      qual !== 'ajustes');
   document.getElementById('paginaSorteio').classList.toggle('hidden',      qual !== 'sorteio');
+  document.getElementById('paginaEscala').classList.toggle('hidden',       qual !== 'escala');
 }
 
 /* =====================================================================
@@ -10277,6 +10374,11 @@ document.addEventListener('keydown', ev => {
     await abrirVisualizacaoConvidado(rCurto ? curtoParaUuid(rCurto) : verId, params.get('imprimir') === '1');
     return;
   }
+  if(params.get('escala')){
+    if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
+    await abrirEscalaPublica(params.get('escala'));
+    return;
+  }
   if(params.get('telao') === 'quartetos'){
     if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
     document.getElementById('telaLogin').classList.add('hidden');
@@ -10756,6 +10858,539 @@ async function copiarAjusteClaude(id){
     ((a.prints || []).length ? `\nPrints (links valem 7 dias):\n${a.prints.map((c, i) => `${i + 1}. ${links[c] || '(não consegui gerar o link)'}`).join('\n')}\n` : '') + `\nPor favor, faça essa mudança partindo da versão atual do GitHub e me mostre antes se for uma mudança visual grande.`;
   try{ navigator.clipboard.writeText(txt); toast('Copiado! Cole na conversa com o Claude.', 'ok'); }
   catch(e){ prompt('Copie o texto:', txt); }
+}
+
+/* =====================================================================
+   ESCALA DE MIDIA (antes ficava no app Lovable escalaigrejaunasp.lovable.app)
+   Tabelas escala_*: funcoes, voluntarios (+ qualificacoes com estrelas),
+   cultos (sabado 1o/2o culto), funcoes nao necessarias por culto e as
+   designacoes (quem faz o que). Link publico ?escala=AAAA-MM-DD para os
+   voluntarios confirmarem presenca (so nome e funcao, via escala_publica).
+===================================================================== */
+const ES_TURNOS = { primeiro_culto:'1º Culto', segundo_culto:'2º Culto' };
+const ES_FREQ = { semanal:'Semanal', quinzenal:'Quinzenal', mensal:'Mensal' };
+let esSub = 'escalas', esCultoAberto = null, esVerPassadas = false, esDados = null;
+let esBusca = '', esFiltroFun = '', esFiltroSt = 'todos';
+
+function esHoje(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function esDataObj(iso){ return new Date(iso + 'T12:00:00'); }
+function esMaisDias(iso, n){ const d = esDataObj(iso); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function esDias(de, ate){ return Math.round((esDataObj(ate) - esDataObj(de)) / 864e5); }
+function esFmtData(iso){ const s = esDataObj(iso).toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' }); return s.charAt(0).toUpperCase() + s.slice(1); }
+function esFmtCurta(iso){ const [a, m, d] = iso.split('-'); return `${d}/${m}/${a}`; }
+function esProximoSabado(){ const h = esHoje(); const dow = esDataObj(h).getDay(); return esMaisDias(h, (6 - dow + 7) % 7); }
+function esEstrelas(n, editar){
+  if(editar) return `<span class="es-est editar" data-nota="${n || 0}">${[1, 2, 3, 4, 5].map(i => `<span data-i="${i}">${i <= (n || 0) ? '<i>★</i>' : '☆'}</span>`).join('')}</span>`;
+  return `<span class="es-est" title="${n ? n + ' de 5' : 'Sem avaliação'}">${[1, 2, 3, 4, 5].map(i => i <= (n || 0) ? '<i>★</i>' : '☆').join('')}</span>`;
+}
+
+async function esCarregar(){
+  const [funcoes, vols, qual, cultos, cf, des] = await Promise.all([
+    api('escala_funcoes?select=*&order=posicao.asc'),
+    api('escala_voluntarios?select=*&order=nome.asc'),
+    api('escala_qualificacoes?select=*'),
+    api('escala_cultos?select=*&order=data.asc'),
+    api('escala_culto_funcoes?select=*'),
+    api('escala_designacoes?select=*&limit=20000')
+  ]);
+  esDados = { funcoes: funcoes || [], vols: vols || [], qual: qual || [], cultos: cultos || [], cf: cf || [], des: des || [] };
+}
+function esFun(chave){ return esDados.funcoes.find(f => f.chave === chave); }
+function esFunNome(chave){ const f = esFun(chave); return f ? f.nome : chave; }
+function esVol(id){ return esDados.vols.find(v => v.id === id); }
+function esNota(volId, fun){ const q = esDados.qual.find(x => x.voluntario_id === volId && x.funcao === fun); return q ? q.nota : null; }
+function esCultosDoDia(data){ return esDados.cultos.filter(c => c.data === data).sort((a, b) => a.turno.localeCompare(b.turno)); }
+function esNecessaria(cultoId, fun){ const r = esDados.cf.find(x => x.culto_id === cultoId && x.funcao === fun); return r ? r.necessaria : true; }
+function esFuncoesDoCulto(cultoId){ return esDados.funcoes.filter(f => f.ativa && esNecessaria(cultoId, f.chave)); }
+function esDesDoCulto(cultoId){ return esDados.des.filter(d => d.culto_id === cultoId); }
+// ultima vez que a pessoa serviu ANTES desta data (pelas escalas; se nao tiver, usa o campo ultima_vez)
+function esUltimaAntes(volId, data){
+  let ult = null;
+  const datas = new Map(esDados.cultos.map(c => [c.id, c.data]));
+  for(const d of esDados.des){ if(d.voluntario_id !== volId) continue; const dt = datas.get(d.culto_id); if(dt && dt < data && (!ult || dt > ult)) ult = dt; }
+  const v = esVol(volId);
+  if(v && v.ultima_vez && v.ultima_vez < data && (!ult || v.ultima_vez > ult)) ult = v.ultima_vez;
+  return ult;
+}
+function esStatusCulto(cultoId){
+  const funs = esFuncoesDoCulto(cultoId), des = esDesDoCulto(cultoId);
+  const cheias = funs.filter(f => des.some(d => d.funcao === f.chave)).length;
+  const conf = funs.filter(f => des.some(d => d.funcao === f.chave && d.confirmado)).length;
+  return { total: funs.length, cheias, conf };
+}
+
+/* ---------- abrir a aba ---------- */
+async function abrirEscala(sub){
+  cultoAtual = 'escala'; marcarAba('escala'); mostrarPagina('escala');
+  if(sub) esSub = sub;
+  esMarcarSub();
+  const c = document.getElementById('esConteudo');
+  if(!esDados){ c.innerHTML = '<div class="vazio">Carregando a escala...</div>';
+    try{ await esCarregar(); }catch(e){ c.innerHTML = `<div class="aviso erro">Não foi possível carregar a escala: ${escapar(e.message)}</div>`; return; } }
+  esDesenhar();
+}
+function esIrSub(qual){ esSub = qual; esCultoAberto = null; esMarcarSub(); esDesenhar(); }
+function esMarcarSub(){ document.querySelectorAll('#subabasEscala button').forEach(b => b.classList.toggle('on', b.dataset.sub === esSub)); }
+async function esRecarregar(){ try{ await esCarregar(); esDesenhar(); toast('Atualizado', 'ok'); }catch(e){ toast('Erro ao atualizar: ' + e.message, 'err'); } }
+function esDesenhar(){
+  if(!esDados) return;
+  if(esSub === 'escalas') esCultoAberto ? esDesenharCulto() : esDesenharLista();
+  else if(esSub === 'voluntarios') esDesenharVols();
+  else esDesenharFuncoes();
+}
+
+/* ---------- lista de sabados ---------- */
+function esDesenharLista(){
+  const prox = esProximoSabado(), hoje = esHoje();
+  const ativos = esDados.vols.filter(v => v.ativo).length;
+  let cheias = 0, total = 0, conf = 0;
+  esCultosDoDia(prox).forEach(c => { const s = esStatusCulto(c.id); cheias += s.cheias; total += s.total; conf += s.conf; });
+  const datas = new Set();
+  for(let i = 0; i < 10; i++) datas.add(esMaisDias(prox, i * 7));
+  esDados.cultos.forEach(c => { if(c.data >= hoje) datas.add(c.data); });
+  const futuras = [...datas].sort();
+  const passadas = [...new Set(esDados.cultos.filter(c => c.data < hoje).map(c => c.data))].sort().reverse();
+  const dia = (data, passado) => {
+    const cs = esCultosDoDia(data);
+    const bloco = turno => {
+      const c = cs.find(x => x.turno === turno);
+      if(!c) return `<div class="es-culto"><div class="es-cn"><b>${ES_TURNOS[turno]}</b><span>Ainda não criada</span></div>
+        <button class="btn small primary" onclick="esCriarCulto('${data}','${turno}')">+ Criar</button></div>`;
+      const s = esStatusCulto(c.id);
+      const tag = s.total && s.cheias >= s.total ? `<span class="es-tag ok">✓ Completa · ${s.conf}/${s.total} confirmados</span>` : `<span class="es-tag ${s.cheias ? 'meio' : ''}">${s.cheias}/${s.total} preenchidas</span>`;
+      return `<div class="es-culto"><div class="es-cn"><b>${ES_TURNOS[turno]}</b>${tag}</div>
+        <button class="btn small" onclick="esAbrirCulto('${c.id}')">Abrir →</button>
+        ${passado ? '' : `<button class="btn small primary" onclick="esAbrirGerar('${c.id}')">✨ Gerar</button>`}</div>`;
+    };
+    return `<div class="es-dia ${passado ? 'passado' : ''}"><div class="es-dia-topo"><h3>📅 ${esFmtData(data)}</h3>
+      <button class="btn small" onclick="esCopiarLinkPublico('${data}')">🔗 Link público</button>
+      ${passado ? '' : `<button class="btn small" onclick="esAbrirCopiarAnterior('${data}')">Copiar anterior</button>`}
+      ${cs.length ? `<button class="btn small" onclick="esWhatsDia('${data}')">💬 WhatsApp</button>` : ''}</div>
+      <div class="es-cultos">${bloco('primeiro_culto')}${bloco('segundo_culto')}</div></div>`;
+  };
+  document.getElementById('esConteudo').innerHTML = `
+    <div class="es-topo"><div style="flex:1;min-width:200px;"><h2>Escalas</h2><div class="es-sub">Próximos sábados e cultos</div></div>
+      <button class="btn" onclick="esRecarregar()">↻ Atualizar</button></div>
+    <div class="es-stats">
+      <div class="es-stat"><small>Voluntários ativos</small><b>${ativos}</b></div>
+      <div class="es-stat"><small>Próximo sábado</small><b>${esFmtData(prox)}</b></div>
+      <div class="es-stat"><small>Vagas (próximo sábado)</small><b>${cheias} preenchidas · ${Math.max(0, total - cheias)} em aberto</b><small style="text-transform:none;letter-spacing:0;margin-top:2px;">${conf} confirmadas pelos voluntários</small></div>
+    </div>
+    ${futuras.map(d => dia(d, false)).join('')}
+    ${passadas.length ? `<div style="text-align:center;margin:8px 0 12px;"><button class="btn" onclick="esVerPassadas=!esVerPassadas;esDesenharLista()">${esVerPassadas ? 'Esconder' : 'Ver'} escalas passadas (${passadas.length})</button></div>` : ''}
+    ${esVerPassadas ? passadas.map(d => dia(d, true)).join('') : ''}`;
+}
+async function esCriarCulto(data, turno){
+  try{
+    const r = await api('escala_cultos', { method:'POST', body:{ data, turno } });
+    esDados.cultos.push(r[0]); esAbrirCulto(r[0].id);
+  }catch(e){ toast('Não foi possível criar: ' + e.message, 'err'); }
+}
+function esLinkPublico(data){ return location.origin + location.pathname + '?escala=' + data; }
+function esCopiar(txt, msg){
+  const ok = () => toast(msg || 'Copiado!', 'ok');
+  try{ navigator.clipboard.writeText(txt).then(ok, () => prompt('Copie o texto:', txt)); }catch(e){ prompt('Copie o texto:', txt); }
+}
+function esCopiarLinkPublico(data){ esCopiar(esLinkPublico(data), 'Link público copiado! Mande para os voluntários confirmarem.'); }
+function esTextoCulto(c){
+  const des = esDesDoCulto(c.id), linhas = [`📋 *Escala - ${esFmtData(c.data)} - ${ES_TURNOS[c.turno]}*`, ''];
+  esFuncoesDoCulto(c.id).forEach(f => { const d = des.find(x => x.funcao === f.chave), v = d && esVol(d.voluntario_id);
+    linhas.push(`${f.emoji || '•'} ${f.nome}: ${v ? v.nome : '_Vaga aberta_'}`); });
+  return linhas.join('\n');
+}
+function esWhatsDia(data){
+  const txt = esCultosDoDia(data).map(esTextoCulto).join('\n\n') + `\n\n✅ Confirme sua presença: ${esLinkPublico(data)}`;
+  esCopiar(txt, 'Texto copiado! Cole no WhatsApp.');
+}
+
+/* ---------- copiar escala de outro sabado ---------- */
+function esModal(html, larga){
+  let f = document.getElementById('modalEscala');
+  if(!f){ f = document.createElement('div'); f.id = 'modalEscala'; f.className = 'modal-fundo hidden';
+    f.onclick = e => { if(e.target === f) esFecharModal(); };
+    f.innerHTML = '<div class="modal-caixa" id="modalEscalaCaixa"></div>'; document.body.appendChild(f); }
+  const cx = document.getElementById('modalEscalaCaixa'); cx.className = 'modal-caixa' + (larga ? ' grande' : ''); cx.innerHTML = html;
+  f.classList.remove('hidden');
+}
+function esFecharModal(){ const f = document.getElementById('modalEscala'); if(f) f.classList.add('hidden'); }
+function esTopoModal(t){ return `<div class="evento-modal-topo"><h3>${t}</h3><button class="evento-modal-fechar" onclick="esFecharModal()">✕</button></div>`; }
+function esAbrirCopiarAnterior(data){
+  const origens = [...new Set(esDados.cultos.filter(c => c.data < data && esDesDoCulto(c.id).length).map(c => c.data))].sort().reverse();
+  if(!origens.length){ toast('Ainda não há outra escala para copiar.', 'err'); return; }
+  esModal(`${esTopoModal('Copiar escala anterior')}
+    <p class="hint">Copia as pessoas e as funções "não necessárias" do sábado escolhido para <b>${esFmtData(data)}</b>. O que já estiver neste sábado será substituído.</p>
+    <div class="field"><label for="esOrigem">Copiar de</label><select id="esOrigem">${origens.map(d => `<option value="${d}">${esFmtData(d)} (${esFmtCurta(d)})</option>`).join('')}</select></div>
+    <div class="modal-botoes"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esCopiarAnterior('${data}', this)">Copiar</button></div>`);
+}
+async function esCopiarAnterior(data, btn){
+  const origem = document.getElementById('esOrigem').value; btn.disabled = true; btn.textContent = 'Copiando...';
+  try{
+    for(const c of esCultosDoDia(origem)){
+      let alvo = esDados.cultos.find(x => x.data === data && x.turno === c.turno);
+      if(!alvo){ alvo = (await api('escala_cultos', { method:'POST', body:{ data, turno: c.turno } }))[0]; }
+      await api(`escala_designacoes?culto_id=eq.${alvo.id}`, { method:'DELETE', prefer:'return=minimal' });
+      await api(`escala_culto_funcoes?culto_id=eq.${alvo.id}`, { method:'DELETE', prefer:'return=minimal' });
+      const des = esDesDoCulto(c.id).map(d => ({ culto_id: alvo.id, voluntario_id: d.voluntario_id, funcao: d.funcao }));
+      const cf = esDados.cf.filter(x => x.culto_id === c.id).map(x => ({ culto_id: alvo.id, funcao: x.funcao, necessaria: x.necessaria }));
+      if(des.length) await api('escala_designacoes', { method:'POST', prefer:'return=minimal', body: des });
+      if(cf.length) await api('escala_culto_funcoes', { method:'POST', prefer:'return=minimal', body: cf });
+    }
+    await esCarregar(); esFecharModal(); esDesenhar(); toast('Escala copiada!', 'ok');
+  }catch(e){ toast('Não foi possível copiar: ' + e.message, 'err'); btn.disabled = false; btn.textContent = 'Copiar'; }
+}
+
+/* ---------- um culto ---------- */
+function esAbrirCulto(id){ esSub = 'escalas'; esCultoAberto = id; esMarcarSub(); esDesenhar(); window.scrollTo(0, 0); }
+function esDesenharCulto(){
+  const c = esDados.cultos.find(x => x.id === esCultoAberto);
+  if(!c){ esCultoAberto = null; esDesenharLista(); return; }
+  const des = esDesDoCulto(c.id);
+  const outro = esCultosDoDia(c.data).find(x => x.id !== c.id);
+  const noOutro = new Map(outro ? esDesDoCulto(outro.id).map(d => [d.voluntario_id, d.funcao]) : []);
+  const linhas = esDados.funcoes.filter(f => f.ativa).map(f => {
+    const nec = esNecessaria(c.id, f.chave), d = des.find(x => x.funcao === f.chave);
+    if(!nec) return `<div class="es-linha nn"><div class="es-fn">${f.emoji || ''} ${escapar(f.nome)}</div>
+      <div class="es-ctl"><span class="es-tag">Não necessária</span><span style="flex:1"></span>
+        <label class="es-chave"><input type="checkbox" checked onchange="esMudarNecessaria('${c.id}','${f.chave}',!this.checked)"> Não necessária</label></div></div>`;
+    const cand = esDados.vols.filter(v => (d && d.voluntario_id === v.id) || (v.ativo && (v.funcoes || []).includes(f.chave)));
+    const opc = cand.map(v => { const u = esUltimaAntes(v.id, c.data), dd = u ? esDias(u, c.data) : null;
+      return `<option value="${v.id}" ${d && d.voluntario_id === v.id ? 'selected' : ''}>${escapar(v.nome)} · ${dd == null ? 'novo' : 'há ' + dd + 'd' + (dd <= 14 ? ' ⚠' : '')}</option>`; }).join('');
+    let info = '';
+    if(d){
+      const v = esVol(d.voluntario_id), u = esUltimaAntes(d.voluntario_id, c.data), dd = u ? esDias(u, c.data) : null;
+      const outras = des.filter(x => x.voluntario_id === d.voluntario_id && x.funcao !== f.chave).map(x => esFunNome(x.funcao));
+      const alertas = [];
+      if(dd != null && dd <= 14) alertas.push(`Essa pessoa participou da última vez em ${esFmtCurta(u)} (${dd <= 7 ? 'na última semana' : 'nas últimas duas semanas'}).`);
+      if(outras.length) alertas.push(`Também está escalada neste culto em: ${escapar(outras.join(', '))}.`);
+      if(noOutro.has(d.voluntario_id)) alertas.push(`Também está no ${ES_TURNOS[outro.turno]} deste dia (${escapar(esFunNome(noOutro.get(d.voluntario_id)))}).`);
+      info = `<div class="es-info"><b>${escapar(v ? v.nome : '?')}</b><span class="es-ult">🕑 ${u ? `Última escala: ${esFmtCurta(u)} (há ${dd}d)` : 'Sem escalas anteriores'}</span>
+        <div class="es-chips">${((v && v.funcoes) || []).map(k => `<span class="es-chip ${k === f.chave ? 'on' : ''}">${escapar(esFunNome(k))}</span>`).join('')}</div>
+        ${alertas.map(a => `<div class="es-alerta">⚠ ${a}</div>`).join('')}</div>`;
+    }
+    const v = d && esVol(d.voluntario_id);
+    return `<div class="es-linha"><div class="es-fn">${f.emoji || ''} ${escapar(f.nome)}</div><div>
+      <div class="es-ctl"><select onchange="esDesignar('${c.id}','${f.chave}',this.value)"><option value="">— Vaga aberta —</option>${opc}</select>
+        ${esEstrelas(d ? esNota(d.voluntario_id, f.chave) : 0)}
+        ${v && v.telefone ? `<span class="es-fone">${escapar(v.telefone)}</span>` : ''}
+        <label class="es-chave" title="A pessoa confirmou que vai"><input type="checkbox" class="verde" ${d && d.confirmado ? 'checked' : ''} ${d ? '' : 'disabled'} onchange="esConfirmar('${d ? d.id : ''}',this.checked)"> Confirmado</label>
+        <label class="es-chave"><input type="checkbox" onchange="esMudarNecessaria('${c.id}','${f.chave}',!this.checked)"> Não necessária</label></div>
+      ${info}</div></div>`;
+  }).join('');
+  const s = esStatusCulto(c.id);
+  document.getElementById('esConteudo').innerHTML = `
+    <div class="es-topo"><div style="flex:1;min-width:200px;"><button class="btn small" onclick="esCultoAberto=null;esDesenhar()">← Voltar</button>
+      <h2 style="margin-top:8px;">${esFmtData(c.data)}</h2><div class="es-sub">${ES_TURNOS[c.turno]} · ${s.cheias}/${s.total} preenchidas · ${s.conf} confirmados</div></div>
+      <button class="btn" onclick="esCopiar(esTextoCulto(esDados.cultos.find(x=>x.id==='${c.id}')),'Texto copiado! Cole no WhatsApp.')">💬 Exportar p/ WhatsApp</button>
+      <button class="btn primary" onclick="esAbrirGerar('${c.id}')">✨ Gerar escala</button>
+      <button class="btn" style="color:#c0392b;" title="Apagar este culto e a escala dele" onclick="esApagarCulto('${c.id}')">🗑</button></div>
+    ${linhas || '<div class="vazio">Nenhuma função ativa. Cadastre em Funções.</div>'}`;
+}
+async function esDesignar(cultoId, fun, volId){
+  try{
+    await api(`escala_designacoes?culto_id=eq.${cultoId}&funcao=eq.${encodeURIComponent(fun)}`, { method:'DELETE', prefer:'return=minimal' });
+    esDados.des = esDados.des.filter(d => !(d.culto_id === cultoId && d.funcao === fun));
+    if(volId){ const r = await api('escala_designacoes', { method:'POST', body:{ culto_id: cultoId, funcao: fun, voluntario_id: volId } }); esDados.des.push(r[0]); await esMarcarUltima([volId], cultoId); }
+    esDesenharCulto();
+  }catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); esDesenharCulto(); }
+}
+// guarda a data mais recente em que a pessoa foi escalada (usada na frequencia)
+async function esMarcarUltima(ids, cultoId){
+  const c = esDados.cultos.find(x => x.id === cultoId); if(!c) return;
+  const atualizar = ids.filter(id => { const v = esVol(id); return v && (!v.ultima_vez || v.ultima_vez < c.data) && c.data <= esMaisDias(esHoje(), 60); });
+  if(!atualizar.length) return;
+  try{ await api(`escala_voluntarios?id=in.(${atualizar.join(',')})`, { method:'PATCH', prefer:'return=minimal', body:{ ultima_vez: c.data } });
+    atualizar.forEach(id => { esVol(id).ultima_vez = c.data; }); }catch(e){}
+}
+async function esConfirmar(desId, valor){
+  if(!desId) return;
+  try{ await api(`escala_designacoes?id=eq.${desId}`, { method:'PATCH', prefer:'return=minimal', body:{ confirmado: valor } });
+    const d = esDados.des.find(x => x.id === desId); if(d) d.confirmado = valor; esDesenharCulto(); }
+  catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); }
+}
+async function esMudarNecessaria(cultoId, fun, necessaria){
+  try{
+    await api(`escala_culto_funcoes?culto_id=eq.${cultoId}&funcao=eq.${encodeURIComponent(fun)}`, { method:'DELETE', prefer:'return=minimal' });
+    esDados.cf = esDados.cf.filter(x => !(x.culto_id === cultoId && x.funcao === fun));
+    if(!necessaria){ const r = await api('escala_culto_funcoes', { method:'POST', body:{ culto_id: cultoId, funcao: fun, necessaria:false } }); esDados.cf.push(r[0]); }
+    esDesenharCulto();
+  }catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); }
+}
+async function esApagarCulto(id){
+  const c = esDados.cultos.find(x => x.id === id); if(!c) return;
+  if(!confirm(`Apagar a escala do ${ES_TURNOS[c.turno]} de ${esFmtData(c.data)}? As pessoas escaladas nele saem da escala.`)) return;
+  try{ await api(`escala_cultos?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    esDados.cultos = esDados.cultos.filter(x => x.id !== id); esDados.des = esDados.des.filter(d => d.culto_id !== id); esDados.cf = esDados.cf.filter(x => x.culto_id !== id);
+    esCultoAberto = null; esDesenhar(); toast('Culto apagado', 'ok'); }
+  catch(e){ toast('Não foi possível apagar: ' + e.message, 'err'); }
+}
+
+/* ---------- gerar escala automaticamente (mesma regra do app antigo) ----------
+   Para cada funcao necessaria, em ordem: candidatos ativos que fazem a funcao,
+   respeitando a frequencia (quinzenal: 14 dias desde a ultima; mensal: 28),
+   sem repetir pessoa no mesmo culto nem quem ja esta no outro culto do dia.
+   Prioridade (pedido do Aquila em 19/11/2026): quem MAIS serviu nos ultimos 3 meses
+   (os voluntarios mais presentes) > mais estrelas na funcao > mais tempo sem servir. */
+const ES_JANELA_DIAS = 90;
+function esVezesRecentes(cultoId){
+  const c = esDados.cultos.find(x => x.id === cultoId);
+  const inicio = esMaisDias(c.data, -ES_JANELA_DIAS), datas = new Map(esDados.cultos.map(x => [x.id, x.data]));
+  const vezes = new Map();
+  esDados.des.forEach(d => { if(d.culto_id === cultoId) return; const dt = datas.get(d.culto_id); if(dt && dt >= inicio && dt <= c.data) vezes.set(d.voluntario_id, (vezes.get(d.voluntario_id) || 0) + 1); });
+  return vezes;
+}
+function esGerarProposta(cultoId){
+  const c = esDados.cultos.find(x => x.id === cultoId);
+  const outro = esCultosDoDia(c.data).find(x => x.id !== cultoId);
+  const noOutro = new Set(outro ? esDesDoCulto(outro.id).map(d => d.voluntario_id) : []);
+  const vezes = esVezesRecentes(cultoId);
+  const usados = new Set(), proposta = [];
+  for(const f of esFuncoesDoCulto(cultoId)){
+    let cand = esDados.vols.filter(v => v.ativo && (v.funcoes || []).includes(f.chave) && !usados.has(v.id) && !noOutro.has(v.id));
+    cand = cand.filter(v => { const u = esUltimaAntes(v.id, c.data), dd = u ? esDias(u, c.data) : Infinity;
+      return v.frequencia === 'quinzenal' ? dd >= 14 : v.frequencia === 'mensal' ? dd >= 28 : true; });
+    cand.sort((a, b) => {
+      const va = vezes.get(a.id) || 0, vb = vezes.get(b.id) || 0; if(va !== vb) return vb - va;
+      const na = esNota(a.id, f.chave) || 0, nb = esNota(b.id, f.chave) || 0; if(na !== nb) return nb - na;
+      const ua = esUltimaAntes(a.id, c.data), ub = esUltimaAntes(b.id, c.data);
+      const da = ua ? esDias(ua, c.data) : Infinity, db = ub ? esDias(ub, c.data) : Infinity; return db - da;
+    });
+    const v = cand[0]; if(v) usados.add(v.id);
+    proposta.push({ funcao: f.chave, voluntario_id: v ? v.id : '' });
+  }
+  return proposta;
+}
+function esAbrirGerar(cultoId){
+  const c = esDados.cultos.find(x => x.id === cultoId), prop = esGerarProposta(cultoId), vezes = esVezesRecentes(cultoId);
+  esModal(`${esTopoModal('Gerar escala')}
+    <p class="hint">${esFmtData(c.data)} · ${ES_TURNOS[c.turno]}. Sugestão automática: primeiro quem mais serviu nos últimos 3 meses, depois quem tem mais estrelas na função, respeitando a frequência de cada um (semanal, quinzenal, mensal). O número entre parênteses é quantas vezes a pessoa serviu nesse período. Ajuste o que quiser antes de salvar. <b>Salvar substitui a escala atual deste culto.</b></p>
+    <div class="es-gerar">${prop.map(p => { const f = esFun(p.funcao);
+      const cand = esDados.vols.filter(v => v.ativo && (v.funcoes || []).includes(p.funcao)).sort((a, b) => (vezes.get(b.id) || 0) - (vezes.get(a.id) || 0) || a.nome.localeCompare(b.nome));
+      return `<div class="es-gl"><span>${f.emoji || ''} ${escapar(f.nome)}</span><div><select data-fun="${p.funcao}"><option value="">— Vaga aberta —</option>${cand.map(v => `<option value="${v.id}" ${v.id === p.voluntario_id ? 'selected' : ''}>${escapar(v.nome)} (${vezes.get(v.id) || 0})</option>`).join('')}</select>
+        ${p.voluntario_id ? '' : '<div class="es-sem">Nenhum voluntário disponível</div>'}</div></div>`; }).join('')}</div>
+    <div class="modal-botoes" style="margin-top:14px;"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esSalvarGerada('${cultoId}', this)">Salvar escala</button></div>`, true);
+}
+async function esSalvarGerada(cultoId, btn){
+  const linhas = [...document.querySelectorAll('#modalEscalaCaixa select[data-fun]')].filter(s => s.value).map(s => ({ culto_id: cultoId, funcao: s.dataset.fun, voluntario_id: s.value }));
+  const repetidos = linhas.map(l => l.voluntario_id).filter((v, i, a) => a.indexOf(v) !== i);
+  if(repetidos.length && !confirm('Tem pessoa em mais de uma função neste culto. Salvar assim mesmo?')) return;
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try{
+    await api(`escala_designacoes?culto_id=eq.${cultoId}`, { method:'DELETE', prefer:'return=minimal' });
+    if(linhas.length) await api('escala_designacoes', { method:'POST', prefer:'return=minimal', body: linhas });
+    await esMarcarUltima([...new Set(linhas.map(l => l.voluntario_id))], cultoId);
+    await esCarregar(); esFecharModal(); esCultoAberto = cultoId; esSub = 'escalas'; esMarcarSub(); esDesenhar(); toast('Escala salva!', 'ok');
+  }catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); btn.disabled = false; btn.textContent = 'Salvar escala'; }
+}
+
+/* ---------- voluntarios ---------- */
+function esMediaNotas(volId){ const ns = esDados.qual.filter(q => q.voluntario_id === volId && q.nota).map(q => q.nota); return ns.length ? ns.reduce((a, b) => a + b, 0) / ns.length : null; }
+function esDesenharVols(){
+  const hoje = esHoje();
+  const lista = esDados.vols.filter(v => (!esBusca || v.nome.toLowerCase().includes(esBusca.toLowerCase()))
+    && (!esFiltroFun || (v.funcoes || []).includes(esFiltroFun)) && (esFiltroSt === 'todos' || (esFiltroSt === 'ativos') === !!v.ativo));
+  document.getElementById('esConteudo').innerHTML = `
+    <div class="es-topo"><div style="flex:1;min-width:200px;"><h2>Voluntários</h2><div class="es-sub">${esDados.vols.filter(v => v.ativo).length} ativos de ${esDados.vols.length} cadastrados</div></div>
+      <button class="btn" onclick="esModeloCsv()">⬇ Modelo CSV</button>
+      <label class="btn" style="cursor:pointer;">⬆ Importar CSV<input type="file" accept=".csv,text/csv" hidden onchange="esImportarCsv(this.files[0]);this.value=''"></label>
+      <button class="btn primary" onclick="esEditarVol(null)">+ Novo voluntário</button></div>
+    <div class="es-barra"><input type="search" placeholder="Buscar por nome..." value="${escapar(esBusca)}" oninput="esBusca=this.value;esAtualizarTabelaVols()">
+      <select onchange="esFiltroFun=this.value;esDesenharVols()"><option value="">Todas as funções</option>${esDados.funcoes.map(f => `<option value="${f.chave}" ${esFiltroFun === f.chave ? 'selected' : ''}>${escapar(f.nome)}</option>`).join('')}</select>
+      <select onchange="esFiltroSt=this.value;esDesenharVols()">${[['todos', 'Todos'], ['ativos', 'Ativos'], ['inativos', 'Inativos']].map(([k, n]) => `<option value="${k}" ${esFiltroSt === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+    <div id="esTabVols"></div>`;
+  esAtualizarTabelaVols();
+}
+function esAtualizarTabelaVols(){
+  const hoje = esHoje();
+  const lista = esDados.vols.filter(v => (!esBusca || v.nome.toLowerCase().includes(esBusca.toLowerCase()))
+    && (!esFiltroFun || (v.funcoes || []).includes(esFiltroFun)) && (esFiltroSt === 'todos' || (esFiltroSt === 'ativos') === !!v.ativo));
+  const el = document.getElementById('esTabVols'); if(!el) return;
+  if(!lista.length){ el.innerHTML = '<div class="vazio">Ninguém encontrado.</div>'; return; }
+  el.innerHTML = `<table class="es-tab"><thead><tr><th>Nome</th><th>Funções</th><th>Frequência</th><th>Última atuação</th><th>Nível médio</th><th>Status</th><th></th></tr></thead><tbody>
+    ${lista.map(v => { const u = esUltimaAntes(v.id, esMaisDias(hoje, 1)), m = esMediaNotas(v.id);
+      return `<tr><td><b>${escapar(v.nome)}</b><small>${escapar(v.telefone || '')}</small></td>
+        <td><div class="es-chips" style="margin:0;">${(v.funcoes || []).map(k => `<span class="es-chip">${escapar(esFunNome(k))}</span>`).join('')}</div></td>
+        <td>${ES_FREQ[v.frequencia] || v.frequencia}</td>
+        <td>${u ? `${esFmtCurta(u)}<small>há ${esDias(u, hoje)} dias</small>` : '<small>nunca</small>'}</td>
+        <td>${m ? esEstrelas(Math.round(m)) + `<small>${m.toFixed(1)}</small>` : '<small>—</small>'}</td>
+        <td><span class="es-st ${v.ativo ? '' : 'off'}">${v.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td style="white-space:nowrap;"><button class="es-icone" title="Editar" onclick="esEditarVol('${v.id}')">✏️</button><button class="es-icone perigo" title="Apagar" onclick="esApagarVol('${v.id}')">🗑</button></td></tr>`; }).join('')}
+  </tbody></table>`;
+}
+let esVolEdit = null;
+function esEditarVol(id){
+  const v = id ? esVol(id) : null;
+  esVolEdit = { id, nome: v ? v.nome : '', telefone: v ? v.telefone || '' : '', email: v ? v.email || '' : '', frequencia: v ? v.frequencia : 'semanal',
+    funcoes: v ? [...(v.funcoes || [])] : [], ativo: v ? v.ativo : true, aba: 'dados',
+    qual: Object.fromEntries(esDados.qual.filter(q => v && q.voluntario_id === v.id).map(q => [q.funcao, { nota: q.nota, observacoes: q.observacoes || '' }])) };
+  esDesenharVolModal();
+}
+function esLerVolModal(){
+  const g = id => document.getElementById(id);
+  if(g('esvNome')){ esVolEdit.nome = g('esvNome').value; esVolEdit.telefone = g('esvTel').value; esVolEdit.email = g('esvEmail').value; esVolEdit.ativo = g('esvAtivo').checked;
+    const fr = document.querySelector('input[name=esvFreq]:checked'); if(fr) esVolEdit.frequencia = fr.value;
+    esVolEdit.funcoes = [...document.querySelectorAll('.esvFun:checked')].map(x => x.value); }
+  document.querySelectorAll('.es-qual textarea').forEach(t => { const q = esVolEdit.qual[t.dataset.fun] || (esVolEdit.qual[t.dataset.fun] = { nota:null, observacoes:'' }); q.observacoes = t.value; });
+}
+function esDesenharVolModal(){
+  const e = esVolEdit;
+  const dados = `<div class="field"><label for="esvNome">Nome completo *</label><input type="text" id="esvNome" value="${escapar(e.nome)}"></div>
+    <div class="campo-2col"><div class="field"><label for="esvTel">Telefone (WhatsApp)</label><input type="text" id="esvTel" value="${escapar(e.telefone)}"></div>
+      <div class="field"><label for="esvEmail">E-mail</label><input type="text" id="esvEmail" value="${escapar(e.email)}"></div></div>
+    <div class="field"><label>Frequência de disponibilidade</label><div style="display:flex;gap:16px;flex-wrap:wrap;">${Object.entries(ES_FREQ).map(([k, n]) => `<label style="display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;"><input type="radio" name="esvFreq" value="${k}" ${e.frequencia === k ? 'checked' : ''}> ${n}</label>`).join('')}</div></div>
+    <div class="field"><label>Funções que pode desempenhar</label><div class="es-checks">${esDados.funcoes.map(f => `<label><input type="checkbox" class="esvFun" value="${f.chave}" ${e.funcoes.includes(f.chave) ? 'checked' : ''}> ${escapar(f.nome)}${f.ativa ? '' : ' <small style="color:var(--muted)">(inativa)</small>'}</label>`).join('')}</div></div>
+    <label class="es-chave" style="font-size:14px;color:var(--text);"><input type="checkbox" id="esvAtivo" ${e.ativo ? 'checked' : ''}> Ativo (entra nas escalas)</label>`;
+  const qual = e.funcoes.length ? e.funcoes.map(k => { const q = e.qual[k] || {}; return `<div class="es-qual"><div class="es-qual-topo"><span>${escapar(esFunNome(k))}</span>
+      <span onclick="esClicarEstrela(event,'${k}')">${esEstrelas(q.nota, true)}</span></div>
+      <textarea rows="2" data-fun="${k}" placeholder="Observações do gestor (ex.: bom enquadramento, melhorar foco manual)">${escapar(q.observacoes || '')}</textarea></div>`; }).join('')
+    : '<div class="vazio">Marque as funções na aba "Dados e disponibilidade" para avaliar.</div>';
+  esModal(`${esTopoModal(e.id ? 'Editar voluntário' : 'Novo voluntário')}
+    <div class="es-mtabs"><button class="${e.aba === 'dados' ? 'on' : ''}" onclick="esLerVolModal();esVolEdit.aba='dados';esDesenharVolModal()">Dados e disponibilidade</button>
+      <button class="${e.aba === 'qual' ? 'on' : ''}" onclick="esLerVolModal();esVolEdit.aba='qual';esDesenharVolModal()">Qualificação técnica</button></div>
+    ${e.aba === 'dados' ? dados : qual}
+    <div id="esvErro"></div>
+    <div class="modal-botoes"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esSalvarVol(this)">Salvar</button></div>`, true);
+}
+function esClicarEstrela(ev, fun){
+  const s = ev.target.closest('[data-i]'); if(!s) return;
+  esLerVolModal();
+  const q = esVolEdit.qual[fun] || (esVolEdit.qual[fun] = { nota:null, observacoes:'' });
+  const n = +s.dataset.i; q.nota = q.nota === n ? null : n;
+  esDesenharVolModal();
+}
+async function esSalvarVol(btn){
+  esLerVolModal();
+  const e = esVolEdit;
+  if(!e.nome.trim()){ document.getElementById('esvErro').innerHTML = '<div class="aviso erro">Escreva o nome. (Está na aba "Dados e disponibilidade".)</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  const corpo = { nome: e.nome.trim(), telefone: e.telefone.trim() || null, email: e.email.trim() || null, frequencia: e.frequencia, funcoes: e.funcoes, ativo: e.ativo };
+  try{
+    let id = e.id;
+    if(id) await api(`escala_voluntarios?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: corpo });
+    else id = (await api('escala_voluntarios', { method:'POST', body: corpo }))[0].id;
+    await api(`escala_qualificacoes?voluntario_id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    const quals = e.funcoes.map(k => ({ voluntario_id: id, funcao: k, nota: (e.qual[k] || {}).nota || null, observacoes: ((e.qual[k] || {}).observacoes || '').trim() || null, atualizado_em: new Date().toISOString() }))
+      .filter(q => q.nota || q.observacoes);
+    if(quals.length) await api('escala_qualificacoes', { method:'POST', prefer:'return=minimal', body: quals });
+    await esCarregar(); esFecharModal(); esDesenhar(); toast('Voluntário salvo', 'ok');
+  }catch(err){ document.getElementById('esvErro').innerHTML = `<div class="aviso erro">Não foi possível salvar: ${escapar(err.message)}</div>`; btn.disabled = false; btn.textContent = 'Salvar'; }
+}
+async function esApagarVol(id){
+  const v = esVol(id); if(!v) return;
+  const n = esDados.des.filter(d => d.voluntario_id === id).length;
+  if(!confirm(`Apagar ${v.nome}?${n ? ` A pessoa sai também das ${n} escalas em que aparece (inclusive as antigas). Se for só para tirar das próximas escalas, prefira marcar como inativo.` : ''}`)) return;
+  try{ await api(`escala_voluntarios?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' }); await esCarregar(); esDesenhar(); toast('Voluntário apagado', 'ok'); }
+  catch(e){ toast('Não foi possível apagar: ' + e.message, 'err'); }
+}
+function esModeloCsv(){
+  const txt = 'nome;telefone;email;frequencia;funcoes\nMaria da Silva;(19) 99999-0000;maria@email.com;semanal;' + esDados.funcoes.slice(0, 2).map(f => f.nome).join(',') + '\n';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + txt], { type:'text/csv' })); a.download = 'modelo-voluntarios.csv'; a.click();
+}
+async function esImportarCsv(arq){
+  if(!arq) return;
+  const txt = (await arq.text()).replace(/^﻿/, '');
+  const linhas = txt.split(/\r?\n/).filter(l => l.trim());
+  const sep = (linhas[0].match(/;/g) || []).length >= (linhas[0].match(/,/g) || []).length ? ';' : ',';
+  const cab = linhas[0].split(sep).map(s => s.trim().toLowerCase());
+  const col = n => cab.indexOf(n);
+  if(col('nome') < 0){ toast('O arquivo precisa ter a coluna "nome". Baixe o modelo.', 'err'); return; }
+  const porNome = s => { const t = s.trim().toLowerCase(); const f = esDados.funcoes.find(x => x.nome.toLowerCase() === t || x.chave === t); return f && f.chave; };
+  const novos = linhas.slice(1).map(l => { const c = l.split(sep); const g = n => col(n) >= 0 ? (c[col(n)] || '').trim() : '';
+    const fr = g('frequencia').toLowerCase();
+    return { nome: g('nome'), telefone: g('telefone') || null, email: g('email') || null, frequencia: ES_FREQ[fr] ? fr : 'semanal',
+      funcoes: g('funcoes').split(/[,|]/).map(porNome).filter(Boolean), ativo: true }; }).filter(v => v.nome);
+  const existentes = new Set(esDados.vols.map(v => v.nome.trim().toLowerCase()));
+  const inserir = novos.filter(v => !existentes.has(v.nome.toLowerCase()));
+  if(!inserir.length){ toast('Nenhum voluntário novo no arquivo (os nomes já existem).', 'err'); return; }
+  if(!confirm(`Importar ${inserir.length} voluntário(s)?${novos.length - inserir.length ? ` (${novos.length - inserir.length} já existiam e foram ignorados)` : ''}`)) return;
+  try{ await api('escala_voluntarios', { method:'POST', prefer:'return=minimal', body: inserir }); await esCarregar(); esDesenhar(); toast(`${inserir.length} voluntário(s) importado(s)`, 'ok'); }
+  catch(e){ toast('Não foi possível importar: ' + e.message, 'err'); }
+}
+
+/* ---------- funcoes ---------- */
+function esDesenharFuncoes(){
+  const fs = esDados.funcoes;
+  document.getElementById('esConteudo').innerHTML = `
+    <div class="es-topo"><div style="flex:1;min-width:200px;"><h2>Funções</h2><div class="es-sub">As funções que entram em cada culto, nesta ordem. Desative as que não usa mais.</div></div>
+      <button class="btn primary" onclick="esEditarFuncao(null)">+ Nova função</button></div>
+    <div>${fs.map((f, i) => `<div class="es-fun ${f.ativa ? '' : 'off'}"><span class="es-fun-e">${f.emoji || '•'}</span>
+      <div class="es-fun-n"><b>${escapar(f.nome)}</b><small>${esDados.vols.filter(v => v.ativo && (v.funcoes || []).includes(f.chave)).length} voluntários ativos</small></div>
+      <button class="es-icone" title="Subir" ${i ? '' : 'disabled'} onclick="esMoverFuncao(${i},-1)">↑</button><button class="es-icone" title="Descer" ${i < fs.length - 1 ? '' : 'disabled'} onclick="esMoverFuncao(${i},1)">↓</button>
+      <label class="es-chave"><input type="checkbox" ${f.ativa ? 'checked' : ''} onchange="esAtivarFuncao('${f.id}',this.checked)"> ${f.ativa ? 'Ativa' : 'Inativa'}</label>
+      <button class="es-icone" title="Editar" onclick="esEditarFuncao('${f.id}')">✏️</button><button class="es-icone perigo" title="Apagar" onclick="esApagarFuncao('${f.id}')">🗑</button></div>`).join('') || '<div class="vazio">Nenhuma função cadastrada.</div>'}</div>`;
+}
+async function esMoverFuncao(i, dir){
+  const fs = esDados.funcoes, a = fs[i], b = fs[i + dir]; if(!a || !b) return;
+  fs[i] = b; fs[i + dir] = a;
+  try{ await Promise.all(fs.map((f, k) => f.posicao === k + 1 ? null : api(`escala_funcoes?id=eq.${f.id}`, { method:'PATCH', prefer:'return=minimal', body:{ posicao: k + 1 } }).then(() => { f.posicao = k + 1; })));
+    esDesenharFuncoes(); }
+  catch(e){ toast('Não foi possível mover: ' + e.message, 'err'); await esCarregar(); esDesenharFuncoes(); }
+}
+async function esAtivarFuncao(id, ativa){
+  try{ await api(`escala_funcoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ ativa } }); esDados.funcoes.find(f => f.id === id).ativa = ativa; esDesenharFuncoes(); }
+  catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); }
+}
+function esEditarFuncao(id){
+  const f = id ? esDados.funcoes.find(x => x.id === id) : null;
+  esModal(`${esTopoModal(f ? 'Editar função' : 'Nova função')}
+    <div class="campo-2col"><div class="field" style="flex:0 0 90px;"><label for="esfEmoji">Ícone</label><input type="text" id="esfEmoji" maxlength="4" value="${escapar(f ? f.emoji || '' : '🎥')}" style="text-align:center;font-size:20px;"></div>
+      <div class="field"><label for="esfNome">Nome *</label><input type="text" id="esfNome" value="${escapar(f ? f.nome : '')}" placeholder="Ex.: Câmera 5"></div></div>
+    <div id="esfErro"></div>
+    <div class="modal-botoes"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esSalvarFuncao('${id || ''}', this)">Salvar</button></div>`);
+}
+async function esSalvarFuncao(id, btn){
+  const nome = document.getElementById('esfNome').value.trim(), emoji = document.getElementById('esfEmoji').value.trim();
+  if(!nome){ document.getElementById('esfErro').innerHTML = '<div class="aviso erro">Escreva o nome da função.</div>'; return; }
+  btn.disabled = true;
+  try{
+    if(id) await api(`escala_funcoes?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body:{ nome, emoji } });
+    else{
+      let chave = nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'funcao';
+      const base = chave; let n = 2; while(esDados.funcoes.some(f => f.chave === chave)) chave = base + '_' + n++;
+      await api('escala_funcoes', { method:'POST', prefer:'return=minimal', body:{ nome, emoji, chave, posicao: esDados.funcoes.length + 1, ativa:true } });
+    }
+    await esCarregar(); esFecharModal(); esDesenharFuncoes(); toast('Função salva', 'ok');
+  }catch(e){ document.getElementById('esfErro').innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; btn.disabled = false; }
+}
+async function esApagarFuncao(id){
+  const f = esDados.funcoes.find(x => x.id === id); if(!f) return;
+  const usos = esDados.des.filter(d => d.funcao === f.chave).length;
+  if(!confirm(`Apagar a função "${f.nome}"?${usos ? ` Ela aparece em ${usos} escalas; elas somem das escalas. Se for só para não usar mais, prefira desativar.` : ''}`)) return;
+  try{
+    await api(`escala_designacoes?funcao=eq.${encodeURIComponent(f.chave)}`, { method:'DELETE', prefer:'return=minimal' });
+    await api(`escala_funcoes?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+    await esCarregar(); esDesenharFuncoes(); toast('Função apagada', 'ok');
+  }catch(e){ toast('Não foi possível apagar: ' + e.message, 'err'); }
+}
+
+/* ---------- pagina publica: ?escala=AAAA-MM-DD ---------- */
+async function abrirEscalaPublica(data){
+  document.getElementById('telaLogin').classList.add('hidden');
+  document.getElementById('telaApp').classList.add('hidden');
+  const t = document.getElementById('telaEscalaPublica'); t.classList.remove('hidden');
+  document.title = 'Escala de Culto — ' + esFmtCurta(data);
+  const el = document.getElementById('esPub');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(data)){ el.innerHTML = '<div class="aviso erro">Link inválido.</div>'; return; }
+  el.innerHTML = '<div class="vazio">Carregando...</div>';
+  let linhas;
+  try{ linhas = await apiPublico('rpc/escala_publica', { method:'POST', body:{ p_data: data } }) || []; }
+  catch(e){ el.innerHTML = `<div class="aviso erro">Não foi possível carregar a escala: ${escapar(e.message)}</div>`; return; }
+  const desenhar = () => {
+    const turnos = ['primeiro_culto', 'segundo_culto'].filter(tu => linhas.some(l => l.turno === tu));
+    el.innerHTML = `<h1>Escala de Culto</h1><div class="es-pub-data">📅 ${esFmtData(data)}</div>
+      <p class="es-pub-dica">Marque a caixa ao lado do seu nome para confirmar sua presença.</p>
+      ${turnos.length ? turnos.map(tu => { const ls = linhas.filter(l => l.turno === tu);
+        return `<div class="es-pub-culto"><h2>${ES_TURNOS[tu]}<span class="es-tag ok">✓ ${ls.filter(l => l.confirmado).length}/${ls.length} confirmados</span></h2>
+          ${ls.map(l => `<div class="es-pub-p ${l.confirmado ? 'ok' : ''}"><div class="es-cn"><small>${escapar(l.emoji || '')} ${escapar(l.funcao_nome)}</small><b>${escapar(l.voluntario)}</b></div>
+            <label><input type="checkbox" ${l.confirmado ? 'checked' : ''} onchange="esPubConfirmar('${l.id}',this)"> ${l.confirmado ? 'Confirmado' : 'Confirmar'}</label></div>`).join('')}</div>`; }).join('')
+        : '<div class="vazio">A escala deste dia ainda não foi publicada.</div>'}`;
+  };
+  window.esPubConfirmar = async (id, cx) => {
+    cx.disabled = true;
+    try{ await apiPublico('rpc/escala_confirmar', { method:'POST', prefer:'return=minimal', body:{ p_id: id, p_confirmado: cx.checked } });
+      const l = linhas.find(x => x.id === id); if(l) l.confirmado = cx.checked; desenhar(); if(cx.checked) toast('Presença confirmada. Obrigado!', 'ok'); }
+    catch(e){ cx.checked = !cx.checked; cx.disabled = false; toast('Não foi possível confirmar: ' + e.message, 'err'); }
+  };
+  desenhar();
 }
 
 /* =====================================================================
