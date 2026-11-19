@@ -10867,7 +10867,10 @@ async function copiarAjusteClaude(id){
    designacoes (quem faz o que). Link publico ?escala=AAAA-MM-DD para os
    voluntarios confirmarem presenca (so nome e funcao, via escala_publica).
 ===================================================================== */
-const ES_TURNOS = { primeiro_culto:'1º Culto', segundo_culto:'2º Culto' };
+const ES_TURNOS = { primeiro_culto:'1º Culto', segundo_culto:'2º Culto', extra:'Culto extra' };
+const ES_ORDEM_TURNO = { primeiro_culto:1, segundo_culto:2, extra:3 };
+function esNomeCulto(c){ return c.turno === 'extra' ? (c.nome || 'Culto extra') : (c.nome || ES_TURNOS[c.turno]); }
+function esRotulo(c){ return esNomeCulto(c) + (c.horario ? ' · ' + c.horario : ''); }
 const ES_FREQ = { semanal:'Semanal', quinzenal:'Quinzenal', mensal:'Mensal' };
 let esSub = 'escalas', esCultoAberto = null, esVerPassadas = false, esDados = null;
 let esBusca = '', esFiltroFun = '', esFiltroSt = 'todos';
@@ -10899,7 +10902,7 @@ function esFun(chave){ return esDados.funcoes.find(f => f.chave === chave); }
 function esFunNome(chave){ const f = esFun(chave); return f ? f.nome : chave; }
 function esVol(id){ return esDados.vols.find(v => v.id === id); }
 function esNota(volId, fun){ const q = esDados.qual.find(x => x.voluntario_id === volId && x.funcao === fun); return q ? q.nota : null; }
-function esCultosDoDia(data){ return esDados.cultos.filter(c => c.data === data).sort((a, b) => a.turno.localeCompare(b.turno)); }
+function esCultosDoDia(data){ return esDados.cultos.filter(c => c.data === data).sort((a, b) => (ES_ORDEM_TURNO[a.turno] - ES_ORDEM_TURNO[b.turno]) || String(a.horario || '').localeCompare(String(b.horario || '')) || String(a.criado_em || '').localeCompare(String(b.criado_em || ''))); }
 function esNecessaria(cultoId, fun){ const r = esDados.cf.find(x => x.culto_id === cultoId && x.funcao === fun); return r ? r.necessaria : true; }
 function esFuncoesDoCulto(cultoId){ return esDados.funcoes.filter(f => f.ativa && esNecessaria(cultoId, f.chave)); }
 function esDesDoCulto(cultoId){ return esDados.des.filter(d => d.culto_id === cultoId); }
@@ -10952,24 +10955,30 @@ function esDesenharLista(){
   const passadas = [...new Set(esDados.cultos.filter(c => c.data < hoje).map(c => c.data))].sort().reverse();
   const dia = (data, passado) => {
     const cs = esCultosDoDia(data);
-    const bloco = turno => {
-      const c = cs.find(x => x.turno === turno);
-      if(!c) return `<div class="es-culto"><div class="es-cn"><b>${ES_TURNOS[turno]}</b><span>Ainda não criada</span></div>
-        <button class="btn small primary" onclick="esCriarCulto('${data}','${turno}')">+ Criar</button></div>`;
+    const ehSabado = esDataObj(data).getDay() === 6;
+    const blocoCulto = c => {
       const s = esStatusCulto(c.id);
       const tag = s.total && s.cheias >= s.total ? `<span class="es-tag ok">✓ Completa · ${s.conf}/${s.total} confirmados</span>` : `<span class="es-tag ${s.cheias ? 'meio' : ''}">${s.cheias}/${s.total} preenchidas</span>`;
-      return `<div class="es-culto"><div class="es-cn"><b>${ES_TURNOS[turno]}</b>${tag}</div>
+      return `<div class="es-culto"><div class="es-cn"><b>${escapar(esRotulo(c))}</b>${tag}</div>
         <button class="btn small" onclick="esAbrirCulto('${c.id}')">Abrir →</button>
         ${passado ? '' : `<button class="btn small primary" onclick="esAbrirGerar('${c.id}')">✨ Gerar</button>`}</div>`;
     };
+    const bloco = turno => {
+      const c = cs.find(x => x.turno === turno);
+      if(!c) return ehSabado ? `<div class="es-culto"><div class="es-cn"><b>${ES_TURNOS[turno]}</b><span>Ainda não criada</span></div>
+        <button class="btn small primary" onclick="esCriarCulto('${data}','${turno}')">+ Criar</button></div>` : '';
+      return blocoCulto(c);
+    };
     return `<div class="es-dia ${passado ? 'passado' : ''}"><div class="es-dia-topo"><h3>📅 ${esFmtData(data)}</h3>
+      ${passado ? '' : `<button class="btn small" onclick="esAbrirCultoExtra(null,'${data}')">+ Culto extra</button>`}
       <button class="btn small" onclick="esCopiarLinkPublico('${data}')">🔗 Link público</button>
       ${passado ? '' : `<button class="btn small" onclick="esAbrirCopiarAnterior('${data}')">Copiar anterior</button>`}
       ${cs.length ? `<button class="btn small" onclick="esWhatsDia('${data}')">💬 WhatsApp</button>` : ''}</div>
-      <div class="es-cultos">${bloco('primeiro_culto')}${bloco('segundo_culto')}</div></div>`;
+      <div class="es-cultos">${bloco('primeiro_culto')}${bloco('segundo_culto')}${cs.filter(c => c.turno === 'extra').map(blocoCulto).join('')}</div></div>`;
   };
   document.getElementById('esConteudo').innerHTML = `
     <div class="es-topo"><div style="flex:1;min-width:200px;"><h2>Escalas</h2><div class="es-sub">Próximos sábados e cultos</div></div>
+      <button class="btn" onclick="esAbrirCultoExtra(null,'')">+ Culto extra (outra data)</button>
       <button class="btn" onclick="esRecarregar()">↻ Atualizar</button></div>
     <div class="es-stats">
       <div class="es-stat"><small>Voluntários ativos</small><b>${ativos}</b></div>
@@ -10979,6 +10988,31 @@ function esDesenharLista(){
     ${futuras.map(d => dia(d, false)).join('')}
     ${passadas.length ? `<div style="text-align:center;margin:8px 0 12px;"><button class="btn" onclick="esVerPassadas=!esVerPassadas;esDesenharLista()">${esVerPassadas ? 'Esconder' : 'Ver'} escalas passadas (${passadas.length})</button></div>` : ''}
     ${esVerPassadas ? passadas.map(d => dia(d, true)).join('') : ''}`;
+}
+/* culto extra (ex.: JA): data, nome e horario; tambem edita nome/horario dos cultos normais */
+function esAbrirCultoExtra(id, data){
+  const c = id ? esDados.cultos.find(x => x.id === id) : null;
+  const extra = !c || c.turno === 'extra';
+  esModal(`${esTopoModal(c ? 'Nome e horário do culto' : 'Novo culto extra')}
+    <p class="hint">${extra ? 'Para cultos fora do padrão, como o JA. Pode ser no mesmo sábado dos outros cultos ou em outro dia.' : 'O horário aparece na mensagem do WhatsApp e no link público.'}</p>
+    <div class="campo-2col"><div class="field"><label for="esxData">Data *</label><input type="date" id="esxData" value="${c ? c.data : data || ''}" ${c && !extra ? 'disabled' : ''}></div>
+      <div class="field"><label for="esxHora">Horário</label><input type="time" id="esxHora" value="${escapar(c ? c.horario || '' : '')}"></div></div>
+    <div class="field"><label for="esxNome">Nome ${extra ? '*' : '(opcional)'}</label><input type="text" id="esxNome" maxlength="60" value="${escapar(c ? c.nome || '' : '')}" placeholder="${extra ? 'Ex.: JA, Culto de Jovens, Santa Ceia' : ES_TURNOS[c.turno]}"></div>
+    <div id="esxErro"></div>
+    <div class="modal-botoes"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esSalvarCultoExtra('${id || ''}', this)">Salvar</button></div>`);
+}
+async function esSalvarCultoExtra(id, btn){
+  const c = id ? esDados.cultos.find(x => x.id === id) : null, extra = !c || c.turno === 'extra';
+  const data = document.getElementById('esxData').value, horario = document.getElementById('esxHora').value || null, nome = document.getElementById('esxNome').value.trim() || null;
+  const erro = !data ? 'Escolha a data.' : extra && !nome ? 'Escreva o nome do culto (ex.: JA).' : '';
+  if(erro){ document.getElementById('esxErro').innerHTML = `<div class="aviso erro">${erro}</div>`; return; }
+  btn.disabled = true;
+  try{
+    if(c){ const corpo = extra ? { data, horario, nome } : { horario, nome };
+      await api(`escala_cultos?id=eq.${c.id}`, { method:'PATCH', prefer:'return=minimal', body: corpo }); Object.assign(c, corpo); esFecharModal(); esDesenhar(); }
+    else{ const r = await api('escala_cultos', { method:'POST', body:{ data, turno:'extra', nome, horario } }); esDados.cultos.push(r[0]); esFecharModal(); esAbrirCulto(r[0].id); }
+    toast('Culto salvo', 'ok');
+  }catch(e){ document.getElementById('esxErro').innerHTML = `<div class="aviso erro">Não foi possível salvar: ${escapar(e.message)}${/turno|horario|nome/.test(e.message) ? ' (falta rodar o SQL dos cultos extras no Supabase)' : ''}</div>`; btn.disabled = false; }
 }
 async function esCriarCulto(data, turno){
   try{
@@ -10993,7 +11027,7 @@ function esCopiar(txt, msg){
 }
 function esCopiarLinkPublico(data){ esCopiar(esLinkPublico(data), 'Link público copiado! Mande para os voluntários confirmarem.'); }
 function esTextoCulto(c){
-  const des = esDesDoCulto(c.id), linhas = [`📋 *Escala - ${esFmtData(c.data)} - ${ES_TURNOS[c.turno]}*`, ''];
+  const des = esDesDoCulto(c.id), linhas = [`📋 *Escala - ${esFmtData(c.data)} - ${esNomeCulto(c)}*`].concat(c.horario ? [`🕐 Horário: ${c.horario}`] : [], ['']);
   esFuncoesDoCulto(c.id).forEach(f => { const d = des.find(x => x.funcao === f.chave), v = d && esVol(d.voluntario_id);
     linhas.push(`${f.emoji || '•'} ${f.nome}: ${v ? v.nome : '_Vaga aberta_'}`); });
   return linhas.join('\n');
@@ -11045,8 +11079,8 @@ function esDesenharCulto(){
   const c = esDados.cultos.find(x => x.id === esCultoAberto);
   if(!c){ esCultoAberto = null; esDesenharLista(); return; }
   const des = esDesDoCulto(c.id);
-  const outro = esCultosDoDia(c.data).find(x => x.id !== c.id);
-  const noOutro = new Map(outro ? esDesDoCulto(outro.id).map(d => [d.voluntario_id, d.funcao]) : []);
+  const noOutro = new Map();
+  esCultosDoDia(c.data).filter(x => x.id !== c.id).forEach(o => esDesDoCulto(o.id).forEach(d => noOutro.set(d.voluntario_id, { funcao: d.funcao, culto: o })));
   const linhas = esDados.funcoes.filter(f => f.ativa).map(f => {
     const nec = esNecessaria(c.id, f.chave), d = des.find(x => x.funcao === f.chave);
     if(!nec) return `<div class="es-linha nn"><div class="es-fn">${f.emoji || ''} ${escapar(f.nome)}</div>
@@ -11062,7 +11096,7 @@ function esDesenharCulto(){
       const alertas = [];
       if(dd != null && dd <= 14) alertas.push(`Essa pessoa participou da última vez em ${esFmtCurta(u)} (${dd <= 7 ? 'na última semana' : 'nas últimas duas semanas'}).`);
       if(outras.length) alertas.push(`Também está escalada neste culto em: ${escapar(outras.join(', '))}.`);
-      if(noOutro.has(d.voluntario_id)) alertas.push(`Também está no ${ES_TURNOS[outro.turno]} deste dia (${escapar(esFunNome(noOutro.get(d.voluntario_id)))}).`);
+      if(noOutro.has(d.voluntario_id)){ const o = noOutro.get(d.voluntario_id); alertas.push(`Também está no ${escapar(esNomeCulto(o.culto))} deste dia (${escapar(esFunNome(o.funcao))}).`); }
       info = `<div class="es-info"><b>${escapar(v ? v.nome : '?')}</b><span class="es-ult">🕑 ${u ? `Última escala: ${esFmtCurta(u)} (há ${dd}d)` : 'Sem escalas anteriores'}</span>
         <div class="es-chips">${((v && v.funcoes) || []).map(k => `<span class="es-chip ${k === f.chave ? 'on' : ''}">${escapar(esFunNome(k))}</span>`).join('')}</div>
         ${alertas.map(a => `<div class="es-alerta">⚠ ${a}</div>`).join('')}</div>`;
@@ -11079,7 +11113,9 @@ function esDesenharCulto(){
   const s = esStatusCulto(c.id);
   document.getElementById('esConteudo').innerHTML = `
     <div class="es-topo"><div style="flex:1;min-width:200px;"><button class="btn small" onclick="esCultoAberto=null;esDesenhar()">← Voltar</button>
-      <h2 style="margin-top:8px;">${esFmtData(c.data)}</h2><div class="es-sub">${ES_TURNOS[c.turno]} · ${s.cheias}/${s.total} preenchidas · ${s.conf} confirmados</div></div>
+      <h2 style="margin-top:8px;">${esFmtData(c.data)}</h2><div class="es-sub">${escapar(esRotulo(c))} · ${s.cheias}/${s.total} preenchidas · ${s.conf} confirmados</div></div>
+      <button class="btn" onclick="esAbrirCultoExtra('${c.id}')">🕐 Nome e horário</button>
+      <button class="btn" onclick="esAbrirEnquete('${c.id}')">📋 Colar enquete</button>
       <button class="btn" onclick="esCopiar(esTextoCulto(esDados.cultos.find(x=>x.id==='${c.id}')),'Texto copiado! Cole no WhatsApp.')">💬 Exportar p/ WhatsApp</button>
       <button class="btn primary" onclick="esAbrirGerar('${c.id}')">✨ Gerar escala</button>
       <button class="btn" style="color:#c0392b;" title="Apagar este culto e a escala dele" onclick="esApagarCulto('${c.id}')">🗑</button></div>
@@ -11117,7 +11153,7 @@ async function esMudarNecessaria(cultoId, fun, necessaria){
 }
 async function esApagarCulto(id){
   const c = esDados.cultos.find(x => x.id === id); if(!c) return;
-  if(!confirm(`Apagar a escala do ${ES_TURNOS[c.turno]} de ${esFmtData(c.data)}? As pessoas escaladas nele saem da escala.`)) return;
+  if(!confirm(`Apagar a escala do ${esNomeCulto(c)} de ${esFmtData(c.data)}? As pessoas escaladas nele saem da escala.`)) return;
   try{ await api(`escala_cultos?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
     esDados.cultos = esDados.cultos.filter(x => x.id !== id); esDados.des = esDados.des.filter(d => d.culto_id !== id); esDados.cf = esDados.cf.filter(x => x.culto_id !== id);
     esCultoAberto = null; esDesenhar(); toast('Culto apagado', 'ok'); }
@@ -11140,8 +11176,10 @@ function esVezesRecentes(cultoId){
 }
 function esGerarProposta(cultoId){
   const c = esDados.cultos.find(x => x.id === cultoId);
-  const outro = esCultosDoDia(c.data).find(x => x.id !== cultoId);
-  const noOutro = new Set(outro ? esDesDoCulto(outro.id).map(d => d.voluntario_id) : []);
+  // 1o e 2o culto nao repetem pessoa; culto extra so evita (se nao tiver outro jeito, repete)
+  const outros = esCultosDoDia(c.data).filter(x => x.id !== cultoId);
+  const noOutro = new Set(outros.filter(o => c.turno !== 'extra' && o.turno !== 'extra').flatMap(o => esDesDoCulto(o.id).map(d => d.voluntario_id)));
+  const noDia = new Set(outros.flatMap(o => esDesDoCulto(o.id).map(d => d.voluntario_id)));
   const vezes = esVezesRecentes(cultoId);
   const usados = new Set(), proposta = [];
   for(const f of esFuncoesDoCulto(cultoId)){
@@ -11149,6 +11187,8 @@ function esGerarProposta(cultoId){
     cand = cand.filter(v => { const u = esUltimaAntes(v.id, c.data), dd = u ? esDias(u, c.data) : Infinity;
       return v.frequencia === 'quinzenal' ? dd >= 14 : v.frequencia === 'mensal' ? dd >= 28 : true; });
     cand.sort((a, b) => {
+      const ra = a.reserva ? 1 : 0, rb = b.reserva ? 1 : 0; if(ra !== rb) return ra - rb; // reserva so entra se nao tiver mais ninguem
+      const oa = noDia.has(a.id) ? 1 : 0, ob = noDia.has(b.id) ? 1 : 0; if(oa !== ob) return oa - ob;
       const va = vezes.get(a.id) || 0, vb = vezes.get(b.id) || 0; if(va !== vb) return vb - va;
       const na = esNota(a.id, f.chave) || 0, nb = esNota(b.id, f.chave) || 0; if(na !== nb) return nb - na;
       const ua = esUltimaAntes(a.id, c.data), ub = esUltimaAntes(b.id, c.data);
@@ -11159,13 +11199,14 @@ function esGerarProposta(cultoId){
   }
   return proposta;
 }
-function esAbrirGerar(cultoId){
-  const c = esDados.cultos.find(x => x.id === cultoId), prop = esGerarProposta(cultoId), vezes = esVezesRecentes(cultoId);
-  esModal(`${esTopoModal('Gerar escala')}
-    <p class="hint">${esFmtData(c.data)} · ${ES_TURNOS[c.turno]}. Sugestão automática: primeiro quem mais serviu nos últimos 3 meses, depois quem tem mais estrelas na função, respeitando a frequência de cada um (semanal, quinzenal, mensal). O número entre parênteses é quantas vezes a pessoa serviu nesse período. Ajuste o que quiser antes de salvar. <b>Salvar substitui a escala atual deste culto.</b></p>
+function esAbrirGerar(cultoId, propostaPronta, aviso){
+  const c = esDados.cultos.find(x => x.id === cultoId), prop = propostaPronta || esGerarProposta(cultoId), vezes = esVezesRecentes(cultoId);
+  esModal(`${esTopoModal(propostaPronta ? 'Escala pela enquete' : 'Gerar escala')}
+    ${aviso || ''}
+    <p class="hint">${esFmtData(c.data)} · ${escapar(esRotulo(c))}. ${propostaPronta ? 'Montada só com quem se ofereceu na enquete; quando tem mais gente que vaga, entra quem mais serviu nos últimos 3 meses.' : 'Sugestão automática: primeiro quem mais serviu nos últimos 3 meses, depois quem tem mais estrelas na função, respeitando a frequência de cada um (semanal, quinzenal, mensal).'} O número entre parênteses é quantas vezes a pessoa serviu nesse período. Ajuste o que quiser antes de salvar. <b>Salvar substitui a escala atual deste culto.</b></p>
     <div class="es-gerar">${prop.map(p => { const f = esFun(p.funcao);
-      const cand = esDados.vols.filter(v => v.ativo && (v.funcoes || []).includes(p.funcao)).sort((a, b) => (vezes.get(b.id) || 0) - (vezes.get(a.id) || 0) || a.nome.localeCompare(b.nome));
-      return `<div class="es-gl"><span>${f.emoji || ''} ${escapar(f.nome)}</span><div><select data-fun="${p.funcao}"><option value="">— Vaga aberta —</option>${cand.map(v => `<option value="${v.id}" ${v.id === p.voluntario_id ? 'selected' : ''}>${escapar(v.nome)} (${vezes.get(v.id) || 0})</option>`).join('')}</select>
+      const cand = esDados.vols.filter(v => v.ativo && (v.funcoes || []).includes(p.funcao)).sort((a, b) => (a.reserva ? 1 : 0) - (b.reserva ? 1 : 0) || (vezes.get(b.id) || 0) - (vezes.get(a.id) || 0) || a.nome.localeCompare(b.nome));
+      return `<div class="es-gl"><span>${f.emoji || ''} ${escapar(f.nome)}</span><div><select data-fun="${p.funcao}"><option value="">— Vaga aberta —</option>${cand.map(v => `<option value="${v.id}" ${v.id === p.voluntario_id ? 'selected' : ''}>${escapar(v.nome)} (${vezes.get(v.id) || 0})${v.reserva ? ' · reserva' : ''}</option>`).join('')}</select>
         ${p.voluntario_id ? '' : '<div class="es-sem">Nenhum voluntário disponível</div>'}</div></div>`; }).join('')}</div>
     <div class="modal-botoes" style="margin-top:14px;"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esSalvarGerada('${cultoId}', this)">Salvar escala</button></div>`, true);
 }
@@ -11180,6 +11221,87 @@ async function esSalvarGerada(cultoId, btn){
     await esMarcarUltima([...new Set(linhas.map(l => l.voluntario_id))], cultoId);
     await esCarregar(); esFecharModal(); esCultoAberto = cultoId; esSub = 'escalas'; esMarcarSub(); esDesenhar(); toast('Escala salva!', 'ok');
   }catch(e){ toast('Não foi possível salvar: ' + e.message, 'err'); btn.disabled = false; btn.textContent = 'Salvar escala'; }
+}
+
+/* ---------- enquete do WhatsApp: cola a lista de quem se ofereceu por funcao ----------
+   Aceita "Funcao: Nome, Nome" ou um titulo com a funcao e os nomes nas linhas de baixo.
+   "Câmera" sem numero vale para todas as Câmeras (o mesmo para Fotografia etc.). */
+function esNorm(s){ return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/s{2,}/g, 's').replace(/\s+/g, ' ').trim(); }
+function esGrupoFuncao(txt){
+  let t = esNorm(txt).replace(/^(\d+\s*)+/, ''); if(!t || t.length < 3) return null;
+  const sing = w => w.replace(/oes$/, 'ao').replace(/s$/, '');
+  const tt = t.split(' ').map(sing).join(' ');
+  const funs = esDados.funcoes.filter(f => f.ativa);
+  const exato = funs.filter(f => esNorm(f.nome) === t || esNorm(f.chave.replace(/_/g, ' ')) === t);
+  if(exato.length) return exato.map(f => f.chave);
+  const base = f => esNorm(f.nome).replace(/\s*\d+$/, '').split(' ').map(sing).join(' ');
+  const grupo = funs.filter(f => base(f) === tt || (tt.length >= 4 && (base(f).startsWith(tt) || tt.startsWith(base(f)))));
+  return grupo.length ? grupo.map(f => f.chave) : null;
+}
+function esAcharVol(nome){
+  const n = esNorm(nome); if(!n) return null;
+  const vs = esDados.vols;
+  let r = vs.filter(v => esNorm(v.nome) === n); if(r.length === 1) return r[0];
+  r = vs.filter(v => esNorm(v.nome).startsWith(n + ' ')); if(r.length === 1) return r[0];
+  const p = n.split(' ');
+  if(p.length > 1){ r = vs.filter(v => { const w = esNorm(v.nome).split(' '); return w[0] === p[0] && p.slice(1).every(x => w.includes(x)); }); if(r.length === 1) return r[0]; }
+  r = vs.filter(v => v.ativo && esNorm(v.nome).split(' ')[0] === n); if(r.length === 1) return r[0];
+  return null;
+}
+function esLerEnquete(txt){
+  const grupos = []; let atual = null;
+  const limpar = s => s.replace(/^[\s\-•*·>]+|^\d+\s*[).:-]\s*/g, '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, '').replace(/\(\s*\d+\s*votos?\s*\)/i, '').trim();
+  const nomes = s => s.split(/,|;|\/|\s+e\s+/i).map(limpar).filter(x => x && esNorm(x).length >= 2);
+  for(const linhaBruta of String(txt).split(/\r?\n/)){
+    const linha = limpar(linhaBruta); if(!linha) continue;
+    const m = linha.match(/^([^:–-]{3,40})\s*[:–-]\s*(.*)$/);
+    if(m && esGrupoFuncao(m[1])){ atual = { rotulo: m[1].trim(), funcoes: esGrupoFuncao(m[1]), nomes: nomes(m[2]) }; grupos.push(atual); continue; }
+    const g = esGrupoFuncao(linha);
+    if(g && !esAcharVol(linha)){ atual = { rotulo: linha, funcoes: g, nomes: [] }; grupos.push(atual); continue; }
+    if(atual) atual.nomes.push(...nomes(linha));
+  }
+  return grupos.filter(g => g.nomes.length);
+}
+let esEnq = null;
+function esAbrirEnquete(cultoId){
+  esModal(`${esTopoModal('Escala pela enquete do WhatsApp')}
+    <p class="hint">Cole aqui quem se ofereceu em cada função. Pode ser assim:<br><code>Câmera: Filipe, Eslley, José Carlos</code><br><code>Telão: Nicolly</code><br>ou o nome da função numa linha e os nomes nas linhas de baixo. "Câmera" sem número vale para todas as câmeras. Se tiver mais gente do que vaga, entra quem mais serviu nos últimos 3 meses.</p>
+    <div class="field"><textarea id="esEnqTxt" rows="10" style="width:100%;box-sizing:border-box;font:inherit;padding:10px;border:1px solid var(--border);border-radius:10px;" placeholder="Câmera: ...&#10;Fotografia: ...&#10;Produção de Palco: ..."></textarea></div>
+    <label class="es-chave" style="font-size:14px;color:var(--text);margin-bottom:8px;"><input type="checkbox" id="esEnqCompletar"> Completar as funções que ninguém pegou com o gerador normal</label>
+    <div id="esEnqErro"></div>
+    <div class="modal-botoes"><button class="btn" onclick="esFecharModal()">Cancelar</button><button class="btn primary" onclick="esProcessarEnquete('${cultoId}', this)">Montar escala</button></div>`, true);
+}
+async function esProcessarEnquete(cultoId, btn){
+  const grupos = esLerEnquete(document.getElementById('esEnqTxt').value);
+  if(!grupos.length){ document.getElementById('esEnqErro').innerHTML = '<div class="aviso erro">Não encontrei nenhuma função com nomes. Use o formato "Função: Nome, Nome".</div>'; return; }
+  const completar = document.getElementById('esEnqCompletar').checked;
+  // nomes que nao estao cadastrados: cadastra como voluntario novo com as funcoes da enquete
+  const novos = [];
+  for(const g of grupos) for(const n of g.nomes){ if(!esAcharVol(n)){ const ja = novos.find(x => esNorm(x.nome) === esNorm(n)); if(ja) ja.funcoes = [...new Set(ja.funcoes.concat(g.funcoes))]; else novos.push({ nome: n, funcoes: [...g.funcoes] }); } }
+  let aviso = '';
+  if(novos.length){
+    if(!confirm(`Estes nomes não estão cadastrados e serão cadastrados como voluntários novos:\n\n${novos.map(n => '• ' + n.nome).join('\n')}\n\nContinuar?`)) return;
+    btn.disabled = true;
+    try{ await api('escala_voluntarios', { method:'POST', prefer:'return=minimal', body: novos.map(n => ({ nome: n.nome, funcoes: n.funcoes, frequencia:'semanal', ativo:true })) }); await esCarregar(); }
+    catch(e){ btn.disabled = false; document.getElementById('esEnqErro').innerHTML = `<div class="aviso erro">Não foi possível cadastrar os nomes novos: ${escapar(e.message)}</div>`; return; }
+    aviso = `<div class="aviso info">Cadastrei ${novos.length} voluntário(s) novo(s): ${escapar(novos.map(n => n.nome).join(', '))}. Confira o telefone deles depois na aba Voluntários.</div>`;
+  }
+  const vezes = esVezesRecentes(cultoId);
+  const funs = esFuncoesDoCulto(cultoId);
+  const cand = new Map(funs.map(f => [f.chave, []]));
+  for(const g of grupos) for(const n of g.nomes){ const v = esAcharVol(n); if(!v) continue; g.funcoes.forEach(k => { if(cand.has(k) && !cand.get(k).includes(v.id)) cand.get(k).push(v.id); }); }
+  const ordem = id => (esVol(id) && esVol(id).reserva ? 1e6 : 0) - (vezes.get(id) || 0);
+  const usados = new Set(), escolha = new Map();
+  // primeiro as funcoes com menos voluntarios na enquete, para ninguem ficar sem vaga a toa
+  [...cand.entries()].filter(([, l]) => l.length).sort((a, b) => a[1].length - b[1].length).forEach(([k, l]) => {
+    const livres = l.filter(id => !usados.has(id)).sort((a, b) => ordem(a) - ordem(b) || (esNota(b, k) || 0) - (esNota(a, k) || 0));
+    if(livres[0]){ usados.add(livres[0]); escolha.set(k, livres[0]); }
+  });
+  let prop = funs.map(f => ({ funcao: f.chave, voluntario_id: escolha.get(f.chave) || '' }));
+  if(completar){ const auto = esGerarProposta(cultoId); prop = prop.map(p => { if(p.voluntario_id) return p; const a = auto.find(x => x.funcao === p.funcao && x.voluntario_id && !usados.has(x.voluntario_id)); if(a){ usados.add(a.voluntario_id); return { funcao: p.funcao, voluntario_id: a.voluntario_id }; } return p; }); }
+  const sobrou = [...new Set(grupos.flatMap(g => g.nomes.map(esAcharVol)).filter(v => v && !usados.has(v.id)).map(v => v.nome))];
+  if(sobrou.length) aviso += `<div class="aviso info">Se ofereceram mas ficaram de fora (vagas já preenchidas por quem serve mais): ${escapar(sobrou.join(', '))}.</div>`;
+  esAbrirGerar(cultoId, prop, aviso);
 }
 
 /* ---------- voluntarios ---------- */
@@ -11212,7 +11334,7 @@ function esAtualizarTabelaVols(){
         <td>${ES_FREQ[v.frequencia] || v.frequencia}</td>
         <td>${u ? `${esFmtCurta(u)}<small>há ${esDias(u, hoje)} dias</small>` : '<small>nunca</small>'}</td>
         <td>${m ? esEstrelas(Math.round(m)) + `<small>${m.toFixed(1)}</small>` : '<small>—</small>'}</td>
-        <td><span class="es-st ${v.ativo ? '' : 'off'}">${v.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td><span class="es-st ${v.ativo ? '' : 'off'}">${v.ativo ? 'Ativo' : 'Inativo'}</span>${v.reserva ? '<small>só reserva</small>' : ''}</td>
         <td style="white-space:nowrap;"><button class="es-icone" title="Editar" onclick="esEditarVol('${v.id}')">✏️</button><button class="es-icone perigo" title="Apagar" onclick="esApagarVol('${v.id}')">🗑</button></td></tr>`; }).join('')}
   </tbody></table>`;
 }
@@ -11220,13 +11342,13 @@ let esVolEdit = null;
 function esEditarVol(id){
   const v = id ? esVol(id) : null;
   esVolEdit = { id, nome: v ? v.nome : '', telefone: v ? v.telefone || '' : '', email: v ? v.email || '' : '', frequencia: v ? v.frequencia : 'semanal',
-    funcoes: v ? [...(v.funcoes || [])] : [], ativo: v ? v.ativo : true, aba: 'dados',
+    funcoes: v ? [...(v.funcoes || [])] : [], ativo: v ? v.ativo : true, reserva: !!(v && v.reserva), aba: 'dados',
     qual: Object.fromEntries(esDados.qual.filter(q => v && q.voluntario_id === v.id).map(q => [q.funcao, { nota: q.nota, observacoes: q.observacoes || '' }])) };
   esDesenharVolModal();
 }
 function esLerVolModal(){
   const g = id => document.getElementById(id);
-  if(g('esvNome')){ esVolEdit.nome = g('esvNome').value; esVolEdit.telefone = g('esvTel').value; esVolEdit.email = g('esvEmail').value; esVolEdit.ativo = g('esvAtivo').checked;
+  if(g('esvNome')){ esVolEdit.nome = g('esvNome').value; esVolEdit.telefone = g('esvTel').value; esVolEdit.email = g('esvEmail').value; esVolEdit.ativo = g('esvAtivo').checked; esVolEdit.reserva = g('esvReserva').checked;
     const fr = document.querySelector('input[name=esvFreq]:checked'); if(fr) esVolEdit.frequencia = fr.value;
     esVolEdit.funcoes = [...document.querySelectorAll('.esvFun:checked')].map(x => x.value); }
   document.querySelectorAll('.es-qual textarea').forEach(t => { const q = esVolEdit.qual[t.dataset.fun] || (esVolEdit.qual[t.dataset.fun] = { nota:null, observacoes:'' }); q.observacoes = t.value; });
@@ -11238,7 +11360,8 @@ function esDesenharVolModal(){
       <div class="field"><label for="esvEmail">E-mail</label><input type="text" id="esvEmail" value="${escapar(e.email)}"></div></div>
     <div class="field"><label>Frequência de disponibilidade</label><div style="display:flex;gap:16px;flex-wrap:wrap;">${Object.entries(ES_FREQ).map(([k, n]) => `<label style="display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;"><input type="radio" name="esvFreq" value="${k}" ${e.frequencia === k ? 'checked' : ''}> ${n}</label>`).join('')}</div></div>
     <div class="field"><label>Funções que pode desempenhar</label><div class="es-checks">${esDados.funcoes.map(f => `<label><input type="checkbox" class="esvFun" value="${f.chave}" ${e.funcoes.includes(f.chave) ? 'checked' : ''}> ${escapar(f.nome)}${f.ativa ? '' : ' <small style="color:var(--muted)">(inativa)</small>'}</label>`).join('')}</div></div>
-    <label class="es-chave" style="font-size:14px;color:var(--text);"><input type="checkbox" id="esvAtivo" ${e.ativo ? 'checked' : ''}> Ativo (entra nas escalas)</label>`;
+    <label class="es-chave" style="font-size:14px;color:var(--text);"><input type="checkbox" id="esvAtivo" ${e.ativo ? 'checked' : ''}> Ativo (entra nas escalas)</label>
+    <label class="es-chave" style="font-size:14px;color:var(--text);margin-left:18px;" title="O gerador só coloca esta pessoa quando não tiver mais ninguém para a função"><input type="checkbox" id="esvReserva" ${e.reserva ? 'checked' : ''}> Só como reserva (último caso)</label>`;
   const qual = e.funcoes.length ? e.funcoes.map(k => { const q = e.qual[k] || {}; return `<div class="es-qual"><div class="es-qual-topo"><span>${escapar(esFunNome(k))}</span>
       <span onclick="esClicarEstrela(event,'${k}')">${esEstrelas(q.nota, true)}</span></div>
       <textarea rows="2" data-fun="${k}" placeholder="Observações do gestor (ex.: bom enquadramento, melhorar foco manual)">${escapar(q.observacoes || '')}</textarea></div>`; }).join('')
@@ -11262,7 +11385,7 @@ async function esSalvarVol(btn){
   const e = esVolEdit;
   if(!e.nome.trim()){ document.getElementById('esvErro').innerHTML = '<div class="aviso erro">Escreva o nome. (Está na aba "Dados e disponibilidade".)</div>'; return; }
   btn.disabled = true; btn.textContent = 'Salvando...';
-  const corpo = { nome: e.nome.trim(), telefone: e.telefone.trim() || null, email: e.email.trim() || null, frequencia: e.frequencia, funcoes: e.funcoes, ativo: e.ativo };
+  const corpo = { nome: e.nome.trim(), telefone: e.telefone.trim() || null, email: e.email.trim() || null, frequencia: e.frequencia, funcoes: e.funcoes, ativo: e.ativo, reserva: e.reserva };
   try{
     let id = e.id;
     if(id) await api(`escala_voluntarios?id=eq.${id}`, { method:'PATCH', prefer:'return=minimal', body: corpo });
@@ -11375,11 +11498,13 @@ async function abrirEscalaPublica(data){
   try{ linhas = await apiPublico('rpc/escala_publica', { method:'POST', body:{ p_data: data } }) || []; }
   catch(e){ el.innerHTML = `<div class="aviso erro">Não foi possível carregar a escala: ${escapar(e.message)}</div>`; return; }
   const desenhar = () => {
-    const turnos = ['primeiro_culto', 'segundo_culto'].filter(tu => linhas.some(l => l.turno === tu));
+    const chave = l => l.culto_id || l.turno;
+    const turnos = [...new Set(linhas.map(chave))];
     el.innerHTML = `<h1>Escala de Culto</h1><div class="es-pub-data">📅 ${esFmtData(data)}</div>
       <p class="es-pub-dica">Marque a caixa ao lado do seu nome para confirmar sua presença.</p>
-      ${turnos.length ? turnos.map(tu => { const ls = linhas.filter(l => l.turno === tu);
-        return `<div class="es-pub-culto"><h2>${ES_TURNOS[tu]}<span class="es-tag ok">✓ ${ls.filter(l => l.confirmado).length}/${ls.length} confirmados</span></h2>
+      ${turnos.length ? turnos.map(tu => { const ls = linhas.filter(l => chave(l) === tu), l0 = ls[0];
+        const titulo = esNomeCulto({ turno: l0.turno, nome: l0.culto_nome }) + (l0.horario ? ' · ' + l0.horario : '');
+        return `<div class="es-pub-culto"><h2>${escapar(titulo)}<span class="es-tag ok">✓ ${ls.filter(l => l.confirmado).length}/${ls.length} confirmados</span></h2>
           ${ls.map(l => `<div class="es-pub-p ${l.confirmado ? 'ok' : ''}"><div class="es-cn"><small>${escapar(l.emoji || '')} ${escapar(l.funcao_nome)}</small><b>${escapar(l.voluntario)}</b></div>
             <label><input type="checkbox" ${l.confirmado ? 'checked' : ''} onchange="esPubConfirmar('${l.id}',this)"> ${l.confirmado ? 'Confirmado' : 'Confirmar'}</label></div>`).join('')}</div>`; }).join('')
         : '<div class="vazio">A escala deste dia ainda não foi publicada.</div>'}`;
