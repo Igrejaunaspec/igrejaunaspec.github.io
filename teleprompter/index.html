@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<script>
+/* Sai sozinho depois de 1h30 sem uso (vale para o app e o painel do Médicos em Missão).
+   A hora do último uso fica guardada no navegador, então vale também com a aba fechada. */
+(function(){
+  var LIMITE = 90 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
+  function agora(){ return Date.now(); }
+  function ultimo(){ try{ return +localStorage.getItem(ULT) || 0; }catch(e){ return 0; } }
+  function temSessao(){ try{ return !!localStorage.getItem(CHAVE); }catch(e){ return false; } }
+  function marcar(){ try{ localStorage.setItem(ULT, String(agora())); }catch(e){} }
+  // Contas que nunca saem sozinhas (pedido do Aquila em 17/11/2026: Pr. Silvano).
+  var NUNCA_SAI = ['silvano.barbosa@adventistas.org'];
+  function semLimite(){ try{ var s = JSON.parse(localStorage.getItem(CHAVE) || 'null'); return !!(s && s.email && NUNCA_SAI.indexOf(String(s.email).toLowerCase()) >= 0); }catch(e){ return false; } }
+  function expirou(){ var u = ultimo(); return temSessao() && !semLimite() && u && agora() - u > LIMITE; }
+  // ao abrir a página: se ficou parado mais de 1h30, apaga a sessão antes do app carregar
+  if(expirou()){ try{ localStorage.removeItem(CHAVE); }catch(e){} }
+  if(temSessao() && !ultimo()) marcar();
+  var ultimaMarca = 0;
+  function atividade(){ var t = agora(); if(t - ultimaMarca > 20000){ ultimaMarca = t; marcar(); } }
+  ['pointerdown','keydown','scroll','touchstart','wheel'].forEach(function(ev){
+    window.addEventListener(ev, atividade, { passive:true, capture:true });
+  });
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) verificar(); });
+  function verificar(){
+    if(!expirou()) return;
+    try{ localStorage.removeItem(CHAVE); }catch(e){}
+    try{ sessionStorage.setItem('saiuPorInatividade', '1'); }catch(e){}
+    location.reload();
+  }
+  setInterval(verificar, 30000);
+  // depois de recarregar, avisa na tela de login
+  try{
+    if(sessionStorage.getItem('saiuPorInatividade') === '1'){
+      sessionStorage.removeItem('saiuPorInatividade');
+      window.addEventListener('load', function(){
+        var d = document.createElement('div');
+        d.textContent = 'Você saiu automaticamente depois de 1h30 sem uso. Entre de novo.';
+        d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#1D3A5C;color:#fff;padding:12px 18px;border-radius:12px;font:600 15px system-ui,sans-serif;box-shadow:0 6px 20px #0003;max-width:92vw;text-align:center';
+        document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 8000);
+      });
+    }
+  }catch(e){}
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Teleprompter – Igreja UNASP EC</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#0b0b0c;--fg:#f5f5f2;--muted:#9a9a96;--card:#1a1a1d;--card2:#242428;--acc:#f2c14e;--ok:#4ade80;--bad:#f87171}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--fg);font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;border:0;cursor:pointer;background:var(--card2);border-radius:14px;padding:14px 16px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+button:active{filter:brightness(1.25)}
+button:disabled{opacity:.45;cursor:default}
+.hidden{display:none!important}
+a{color:var(--acc)}
+
+/* ---------- inicio ---------- */
+#inicio,#login{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom));text-align:center}
+#inicio h1,#login h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+#inicio p,#login p{color:var(--muted);max-width:430px;line-height:1.45}
+.escolha{width:100%;max-width:400px;display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.escolha button{padding:22px 20px;font-size:19px;font-weight:650;text-align:left;display:flex;gap:16px;align-items:center;background:var(--card)}
+.escolha small{display:block;font-weight:400;color:var(--muted);font-size:14px;margin-top:4px}
+.ico{font-size:32px;line-height:1}
+.campoSala{width:100%;max-width:400px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.campoSala label,.campoLogin label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.campoSala input,.campoLogin input{width:100%;background:#0f0f11;color:var(--fg);border:1px solid #2c2c31;border-radius:12px;padding:14px;font:22px/1.2 inherit;font-family:inherit;letter-spacing:.15em;text-align:center}
+.campoLogin{width:100%;max-width:400px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.campoLogin input{letter-spacing:0;font-size:17px;text-align:left}
+.erroMsg{color:var(--bad);font-size:14px;min-height:18px}
+.voltar{font-size:14px;color:var(--muted);background:none;text-decoration:underline;padding:6px}
+
+/* ---------- tela (iPad) ---------- */
+#tela{position:fixed;inset:0;overflow:hidden;background:#000}
+#palco{position:absolute;inset:0}
+#palco.espelho{transform:scaleX(-1)}
+#rolo{position:absolute;left:0;right:0;top:0;will-change:transform;padding-top:32vh;padding-bottom:75vh}
+#texto{padding:0 7vw;line-height:1.38;font-weight:600;white-space:pre-wrap;overflow-wrap:break-word;color:#fff}
+#texto .deixa{color:var(--acc);font-weight:500;font-size:.7em}
+#guia{position:absolute;left:0;right:0;top:32vh;height:0;border-top:2px solid rgba(242,193,78,.45);pointer-events:none}
+#guia::before,#guia::after{content:"";position:absolute;top:-11px;border:10px solid transparent}
+#guia::before{left:0;border-left:16px solid var(--acc)}
+#guia::after{right:0;border-right:16px solid var(--acc)}
+#sombraTopo{position:absolute;left:0;right:0;top:0;height:22vh;background:linear-gradient(#000 20%,rgba(0,0,0,0));pointer-events:none}
+#sombraBase{position:absolute;left:0;right:0;bottom:0;height:18vh;background:linear-gradient(rgba(0,0,0,0),#000 85%);pointer-events:none}
+#telaAviso{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;color:var(--muted);font-size:22px;line-height:1.4}
+#telaAviso b{color:var(--fg);font-size:28px}
+#telaAviso .codigo{font-size:64px;font-weight:800;letter-spacing:.15em;color:var(--acc)}
+#telaBarra{position:absolute;top:calc(12px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right));display:flex;gap:8px;align-items:center;transition:opacity .6s}
+#telaBarra.some{opacity:0}
+#telaBarra button{padding:9px 13px;font-size:14px;background:rgba(40,40,44,.85)}
+.pilula{font-size:13px;padding:7px 11px;border-radius:999px;background:rgba(40,40,44,.85);color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+.pilula i{width:9px;height:9px;border-radius:50%;background:var(--bad);display:inline-block}
+.pilula.on i{background:var(--ok)}
+#contagem{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30vh;font-weight:800;color:var(--acc);pointer-events:none;text-shadow:0 0 40px #000}
+
+/* ---------- controle (celular) ---------- */
+#controle{max-width:520px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.topo{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.topo h2{font-size:20px}
+.cartao{background:var(--card);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.rotulo{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+textarea{width:100%;min-height:150px;resize:vertical;background:#0f0f11;color:var(--fg);border:1px solid #2c2c31;border-radius:12px;padding:12px;font:16px/1.45 inherit;font-family:inherit}
+.linha{display:flex;gap:10px;align-items:center}
+.linha>*{flex:1}
+#btnPlay{font-size:24px;font-weight:750;padding:26px;border-radius:20px;background:var(--ok);color:#06240f}
+#btnPlay.pausar{background:var(--acc);color:#2a1d00}
+.passo{display:flex;align-items:center;gap:10px}
+.passo button{flex:0 0 64px;font-size:26px;font-weight:700;padding:10px 0}
+.passo .valor{flex:1;text-align:center;font-size:22px;font-weight:700}
+.passo .valor small{display:block;font-size:12px;color:var(--muted);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--acc);height:34px}
+.nota{font-size:13px;color:var(--muted);line-height:1.4}
+.nota.ok{color:var(--ok)}
+.alterna{display:flex;justify-content:space-between;align-items:center}
+.chave{width:56px;height:32px;border-radius:999px;background:#3a3a40;position:relative;padding:0;flex:0 0 56px}
+.chave::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .2s}
+.chave.on{background:var(--ok)}
+.chave.on::after{left:27px}
+.link{background:none;color:var(--muted);text-decoration:underline;padding:6px;font-size:14px}
+.sala{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sala b{font-size:28px;letter-spacing:.15em;color:var(--acc)}
+.sala button{padding:10px 12px;font-size:14px}
+/* espiar: o texto rolando tambem no celular (opcional) */
+#espiar{position:relative;height:46vh;background:#000;border-radius:14px;overflow:hidden}
+#espiarRolo{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain}
+#espiarRolo::-webkit-scrollbar{display:none}
+#espiarTexto{padding:15vh 16px 32vh;line-height:1.38;font-weight:600;white-space:pre-wrap;overflow-wrap:break-word;color:#fff}
+#espiarTexto .deixa{color:var(--acc);font-weight:500;font-size:.7em}
+#espiarGuia{position:absolute;left:0;right:0;top:15vh;border-top:2px solid rgba(242,193,78,.5);pointer-events:none}
+#espiarDica{position:absolute;left:0;right:0;bottom:0;padding:8px;text-align:center;font-size:12px;color:var(--muted);background:linear-gradient(rgba(0,0,0,0),#000 60%);pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- LOGIN (so o controle precisa) -->
+<section id="login" class="hidden">
+  <h1>Teleprompter</h1>
+  <p>Para usar o celular como controle, entre com o mesmo e-mail e senha do app da igreja.</p>
+  <div class="campoLogin"><label for="inEmail">E-mail</label><input id="inEmail" type="email" autocomplete="username"></div>
+  <div class="campoLogin"><label for="inSenha">Senha</label><input id="inSenha" type="password" autocomplete="current-password"></div>
+  <div class="erroMsg" id="erroLogin"></div>
+  <button id="btnEntrar" style="width:100%;max-width:400px;background:var(--acc);color:#2a1d00;font-weight:700">Entrar</button>
+  <button class="voltar" id="btnVoltarLogin">Voltar</button>
+</section>
+
+<!-- ESCOLHA DO APARELHO -->
+<section id="inicio">
+  <h1>Teleprompter</h1>
+  <p>Abra esta página nos dois aparelhos (<b>igrejaunaspec.com/teleprompter</b>) e use o mesmo <b>código de sala</b> nos dois. Depois escolha o que cada um vai ser.</p>
+  <div class="campoSala"><label for="inSala">Código da sala</label><input id="inSala" inputmode="numeric" maxlength="6" placeholder="ex.: 4821"></div>
+  <div class="escolha">
+    <button id="escolheControle"><span class="ico">📱</span><span>Este é o controle<small>No celular: você escreve o texto e comanda (precisa do login do app)</small></span></button>
+    <button id="escolheTela"><span class="ico">📺</span><span>Esta é a tela<small>No iPad: mostra o texto rolando (não precisa de login)</small></span></button>
+  </div>
+  <div class="erroMsg" id="erroInicio"></div>
+  <a href="/" style="font-size:14px;color:var(--muted)">← Voltar para o app</a>
+</section>
+
+<!-- TELA (iPad) -->
+<section id="tela" class="hidden">
+  <div id="palco"><div id="rolo"><div id="texto"></div></div></div>
+  <div id="sombraTopo"></div><div id="sombraBase"></div>
+  <div id="guia"></div>
+  <div id="telaAviso"><b>Aguardando o texto…</b><span>Sala</span><span class="codigo" id="telaCodigo"></span><span>No celular, abra o controle com este mesmo código e toque em “Enviar para a tela”.</span></div>
+  <div id="contagem" class="hidden"></div>
+  <div id="telaBarra">
+    <span class="pilula" id="telaStatus"><i></i><span>Conectando…</span></span>
+    <button id="btnCheia">Tela cheia</button>
+    <button id="btnTrocaTela">Trocar</button>
+  </div>
+</section>
+
+<!-- CONTROLE (celular) -->
+<section id="controle" class="hidden">
+  <div class="topo">
+    <h2>📱 Controle</h2>
+    <span class="pilula" id="ctrlStatus"><i></i><span>Procurando o iPad…</span></span>
+  </div>
+
+  <div class="cartao">
+    <div class="rotulo">Sala</div>
+    <div class="sala"><b id="ctrlCodigo"></b><span style="flex:1"></span><button id="btnCopiaLink">🔗 Copiar link da tela</button></div>
+    <div class="nota">No iPad, abra <b>igrejaunaspec.com/teleprompter</b>, digite este código e toque em “Esta é a tela”. Ou mande o link para o iPad.</div>
+  </div>
+
+  <button id="btnPlay" disabled>▶ Começar</button>
+
+  <div class="cartao">
+    <div class="alterna"><span>Ver o texto rolando aqui <span class="nota">(opcional; dá para passar com o dedo)</span></span><button class="chave" id="chaveEspiar" aria-label="Ver o texto aqui"></button></div>
+    <div id="espiar" class="hidden"><div id="espiarRolo"><div id="espiarTexto"></div></div><div id="espiarGuia"></div><div id="espiarDica">Arraste o texto com o dedo para passar no iPad</div></div>
+  </div>
+
+  <div class="cartao">
+    <div class="rotulo">Posição no texto</div>
+    <input type="range" id="posicao" min="0" max="1000" value="0">
+    <div class="linha">
+      <button id="btnVolta">⏪ Voltar</button>
+      <button id="btnAvanca">Avançar ⏩</button>
+    </div>
+    <button id="btnInicio">⏮ Voltar ao começo</button>
+  </div>
+
+  <div class="cartao">
+    <div class="rotulo">Velocidade</div>
+    <div class="passo"><button id="velMenos">−</button><div class="valor"><span id="velValor">5</span><small>de 1 a 20</small></div><button id="velMais">+</button></div>
+    <div class="rotulo">Tamanho da letra</div>
+    <div class="passo"><button id="fonteMenos">−</button><div class="valor"><span id="fonteValor">64</span><small>tamanho</small></div><button id="fonteMais">+</button></div>
+    <div class="alterna"><span>Espelhar texto <span class="nota">(para vidro de teleprompter)</span></span><button class="chave" id="chaveEspelho" aria-label="Espelhar"></button></div>
+  </div>
+
+  <div class="cartao">
+    <div class="rotulo">Texto</div>
+    <textarea id="campoTexto" placeholder="Cole ou escreva aqui o texto que vai aparecer no iPad.&#10;&#10;Dica: o que estiver entre [colchetes] aparece em amarelo, como lembrete (ex.: [PAUSA], [OLHAR PARA A CÂMERA])."></textarea>
+    <button id="btnEnviar" style="background:var(--acc);color:#2a1d00;font-weight:700">Enviar para a tela</button>
+    <div class="nota" id="notaEnvio">O texto fica guardado neste celular.</div>
+  </div>
+
+  <div class="linha"><button class="link" id="btnTrocaCtrl">Trocar de aparelho ou de sala</button><a class="link" href="/" style="text-align:right">← App</a></div>
+</section>
+
+<script>
+(function(){
+"use strict";
+/* ======================================================================
+   TELEPROMPTER · celular (controle) comanda o iPad (tela).
+   Os dois conversam por um canal do Supabase Realtime (Broadcast)
+   do projeto do app, chamado "teleprompter-<codigo da sala>".
+   Mensagens: "texto" (pedacos de 700 letras), "estado", "ir", "pular";
+   a tela devolve a posicao/texto/fim pela mensagem "__pres".
+   Controle: precisa do login do app. Tela: so o codigo da sala.
+====================================================================== */
+var SUPABASE_URL = "https://sxzvdnwytbdhycwzbxji.supabase.co";
+var SUPABASE_KEY = "sb_publishable_6rOzgGXVgobnNb-sy4rx9A_SGjR3v0r";
+var CHAVE_SESSAO = "roteiroEditor.sessao";
+
+var $ = function(id){ return document.getElementById(id); };
+function ler(k, d){ try{ var v = localStorage.getItem("tp_"+k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } }
+function guardar(k, v){ try{ localStorage.setItem("tp_"+k, JSON.stringify(v)); }catch(e){} }
+function limita(n, a, b, d){ n = Number(n); if(!isFinite(n)) return d; return Math.min(b, Math.max(a, n)); }
+function espera(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+var papel = null;          // "tela" | "controle"
+var sala = null;           // codigo da sala
+var room = null;
+var conectado = false;
+
+/* ---------- sala no Supabase Realtime (mesma "cara" do room do Claude) ----------
+   Cada aparelho anuncia quem e (papel, posicao...) a cada segundo pela mensagem
+   "__pres"; quem fica 6 s sem anunciar e considerado desconectado. */
+function criarSala(codigo){
+  var cli = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false, autoRefreshToken:false } });
+  var meuId = Math.random().toString(36).slice(2, 10);
+  var nome = "teleprompter-" + codigo;
+  var ch = null, ouvintes = {}, peersCbs = [], conexCbs = [], erroCbs = [];
+  var outros = {}, minhaPres = null, tPres = 0, on = false;
+
+  function avisaPeers(){
+    var agora = Date.now(), peers = [];
+    Object.keys(outros).forEach(function(k){
+      if(agora - outros[k].em > 6000){ delete outros[k]; return; }
+      peers.push({ id:k, sameTab:false, presence: outros[k].p });
+    });
+    peersCbs.forEach(function(f){ try{ f({ peers:peers }); }catch(e){} });
+  }
+  function enviaPres(){
+    if(!ch || !minhaPres || !on) return;
+    tPres = Date.now();
+    ch.send({ type:"broadcast", event:"__pres", payload: Object.assign({ __id: meuId }, minhaPres) }).catch(function(){});
+  }
+  function liga(){
+    var meu = ch = cli.channel(nome, { config:{ broadcast:{ self:false, ack:false } } });
+    ch.on("broadcast", { event:"*" }, function(m){
+      if(m.event === "__pres"){
+        var p = m.payload || {};
+        if(p.__id && p.__id !== meuId){ var novo = !outros[p.__id]; outros[p.__id] = { p:p, em:Date.now() }; avisaPeers(); if(novo) enviaPres(); }
+        return;
+      }
+      (ouvintes[m.event] || []).forEach(function(f){ try{ f({ data: m.payload }); }catch(e){} });
+    });
+    ch.subscribe(function(status){
+      if(meu !== ch) return; // canal antigo (ja trocado na reconexao)
+      on = status === "SUBSCRIBED";
+      conexCbs.forEach(function(f){ try{ f(on); }catch(e){} });
+      if(on) enviaPres();
+      if(status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED"){
+        erroCbs.forEach(function(f){ try{ f(); }catch(e){} });
+        var velho = ch; ch = null;
+        setTimeout(function(){ try{ cli.removeChannel(velho); }catch(e){} liga(); }, 3000);
+      }
+    });
+  }
+  setInterval(function(){ if(Date.now() - tPres > 1000) enviaPres(); avisaPeers(); }, 1000);
+  liga();
+  return {
+    presence: function(obj){ minhaPres = obj; enviaPres(); return Promise.resolve(); },
+    on: function(topico, f){ (ouvintes[topico] = ouvintes[topico] || []).push(f); },
+    emit: function(topico, dados){ if(!ch || !on) return Promise.resolve(); return ch.send({ type:"broadcast", event:topico, payload:dados }); },
+    onPeers: function(f){ peersCbs.push(f); },
+    onConnection: function(f, err){ conexCbs.push(f); if(err) erroCbs.push(err); }
+  };
+}
+
+var ligado = false;
+function ligar(){
+  if(!papel || !sala || ligado) return;
+  ligado = true;
+  if(!window.supabase){ statusTexto(false, "Sem internet"); return; }
+  room = criarSala(sala);
+  room.onConnection(function(c){ conectado = c; atualizaStatus(); }, function(){ conectado = false; atualizaStatus(); });
+  if(papel === "tela") ligarTela(); else ligarControle();
+}
+function statusTexto(on, txt){
+  var el = $(papel === "tela" ? "telaStatus" : "ctrlStatus");
+  if(!el) return;
+  el.classList.toggle("on", !!on);
+  el.lastElementChild.textContent = txt;
+}
+
+/* ---------- login (so para o controle; mesmo login do app) ---------- */
+var sessao = null;
+function guardarSessao(d){
+  sessao = { access_token: d.access_token, refresh_token: d.refresh_token,
+    expira_em: Date.now() + (d.expires_in || 3600) * 1000 - 60000, email: d.user ? d.user.email : (sessao && sessao.email) };
+  try{ localStorage.setItem(CHAVE_SESSAO, JSON.stringify(sessao)); }catch(e){}
+}
+async function token(){
+  if(!sessao) throw new Error("sem sessão");
+  if(Date.now() >= sessao.expira_em){
+    var r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token", { method:"POST",
+      headers:{ "Content-Type":"application/json", apikey: SUPABASE_KEY }, body: JSON.stringify({ refresh_token: sessao.refresh_token }) });
+    if(!r.ok){ try{ localStorage.removeItem(CHAVE_SESSAO); }catch(e){} sessao = null; throw new Error("Sua sessão expirou. Entre de novo."); }
+    guardarSessao(await r.json());
+  }
+  return sessao.access_token;
+}
+async function temLogin(){
+  try{ sessao = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || "null"); }catch(e){ sessao = null; }
+  if(!sessao) return false;
+  try{ await token(); return true; }catch(e){ return false; }
+}
+$("btnEntrar").onclick = async function(){
+  var email = $("inEmail").value.trim(), senha = $("inSenha").value, b = this;
+  if(!email || !senha){ $("erroLogin").textContent = "Preencha e-mail e senha."; return; }
+  b.disabled = true; b.textContent = "Entrando…"; $("erroLogin").textContent = "";
+  try{
+    var r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=password", { method:"POST",
+      headers:{ "Content-Type":"application/json", apikey: SUPABASE_KEY }, body: JSON.stringify({ email: email, password: senha }) });
+    var d = await r.json();
+    if(!r.ok) throw new Error(/invalid login/i.test(d.msg || d.error_description || "") ? "E-mail ou senha incorretos." : (d.msg || d.error_description || "Não consegui entrar."));
+    guardarSessao(d);
+    $("login").classList.add("hidden");
+    mostrar("controle");
+  }catch(e){ $("erroLogin").textContent = e.message; }
+  b.disabled = false; b.textContent = "Entrar";
+};
+$("btnVoltarLogin").onclick = function(){ $("login").classList.add("hidden"); $("inicio").classList.remove("hidden"); };
+
+/* ---------- escolha ---------- */
+function lerCodigo(){
+  var c = String($("inSala").value || "").replace(/\D/g, "").slice(0, 6);
+  return c.length >= 3 ? c : null;
+}
+async function escolher(p){
+  var c = lerCodigo();
+  if(!c && p === "controle"){ c = String(Math.floor(1000 + Math.random() * 9000)); $("inSala").value = c; }
+  if(!c){ $("erroInicio").textContent = "Digite o código da sala que aparece no celular."; return; }
+  $("erroInicio").textContent = "";
+  sala = c; guardar("sala", c);
+  if(p === "controle" && !(await temLogin())){
+    $("inicio").classList.add("hidden"); $("login").classList.remove("hidden"); $("inEmail").focus(); return;
+  }
+  mostrar(p);
+}
+function mostrar(p){
+  papel = p;
+  $("inicio").classList.add("hidden");
+  $("tela").classList.toggle("hidden", p !== "tela");
+  $("controle").classList.toggle("hidden", p !== "controle");
+  guardar("papel", p);
+  var url = location.pathname + "?sala=" + sala + "#" + p;
+  try{ history.replaceState(null, "", url); }catch(e){}
+  if(p === "tela") iniciarTela(); else iniciarControle();
+  ligar();
+}
+function trocar(){ guardar("papel", null); try{ history.replaceState(null, "", location.pathname); }catch(e){} location.reload(); }
+$("escolheControle").onclick = function(){ escolher("controle"); };
+$("escolheTela").onclick = function(){ escolher("tela"); };
+$("btnTrocaTela").onclick = trocar;
+$("btnTrocaCtrl").onclick = trocar;
+
+/* =========================================================
+   TELA (iPad)
+   ========================================================= */
+var est = { play:false, vel:5, fonte:64, espelho:false };
+var y = 0, ultimoT = 0, temTexto = false, textoId = null;
+var buf = { id:null, n:0, partes:[] };
+var temControle = false;
+
+function iniciarTela(){
+  $("telaCodigo").textContent = sala;
+  aplicarEstilo();
+  requestAnimationFrame(quadro);
+  window.addEventListener("resize", function(){ var f = fracao(); setTimeout(function(){ y = f*yMax(); }, 50); });
+  var tmr;
+  function mostraBarra(){ $("telaBarra").classList.remove("some"); clearTimeout(tmr); tmr = setTimeout(function(){ if(temTexto) $("telaBarra").classList.add("some"); }, 4000); }
+  $("tela").addEventListener("pointerdown", mostraBarra);
+  mostraBarra();
+  $("btnCheia").onclick = function(){
+    var el = document.documentElement;
+    try{
+      if(document.fullscreenElement || document.webkitFullscreenElement){
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      } else {
+        var f = el.requestFullscreen || el.webkitRequestFullscreen;
+        if(f){ var p = f.call(el); if(p && p.catch) p.catch(function(){}); }
+      }
+    }catch(e){}
+    manterAcesa();
+  };
+  manterAcesa();
+}
+var trava = null;
+function manterAcesa(){
+  try{ if(navigator.wakeLock && !trava){ navigator.wakeLock.request("screen").then(function(t){ trava = t; t.addEventListener("release", function(){ trava = null; }); }).catch(function(){}); } }catch(e){}
+}
+document.addEventListener("visibilitychange", function(){ if(papel === "tela" && document.visibilityState === "visible") manterAcesa(); });
+
+function yMax(){ return Math.max(0, $("rolo").offsetHeight - window.innerHeight); }
+function fracao(){ var m = yMax(); return m ? y/m : 0; }
+function linhaPx(){ return est.fonte * 1.38; }
+
+function aplicarEstilo(){
+  var f = fracao();
+  $("texto").style.fontSize = est.fonte + "px";
+  $("palco").classList.toggle("espelho", !!est.espelho);
+  y = f * yMax();
+}
+
+function mostrarTexto(s){
+  var alvo = $("texto");
+  alvo.textContent = "";
+  var pedacos = String(s).split(/(\[[^\]\n]{1,80}\])/);
+  for(var i=0;i<pedacos.length;i++){
+    if(!pedacos[i]) continue;
+    if(i % 2 === 1){ var sp = document.createElement("span"); sp.className = "deixa"; sp.textContent = pedacos[i]; alvo.appendChild(sp); }
+    else alvo.appendChild(document.createTextNode(pedacos[i]));
+  }
+  temTexto = String(s).trim().length > 0;
+  $("telaAviso").classList.toggle("hidden", temTexto);
+  y = 0;
+}
+
+var ultPres = 0, presAnterior = "";
+function quadro(t){
+  var dt = ultimoT ? Math.min((t-ultimoT)/1000, 0.1) : 0;
+  ultimoT = t;
+  var m = yMax();
+  if(est.play && temTexto && !contando){ y += est.vel * est.fonte * 0.12 * dt; }
+  if(y > m) y = m;
+  if(y < 0) y = 0;
+  $("rolo").style.transform = "translate3d(0," + (-y) + "px,0)";
+  if(room && t - ultPres > 250){
+    ultPres = t;
+    var pres = { papel:"tela", textoId:textoId, pos: m ? Math.round(y/m*1000)/1000 : 0, fim: temTexto && m > 0 && y >= m - 1 };
+    var chave = JSON.stringify(pres);
+    if(chave !== presAnterior){ presAnterior = chave; room.presence(pres).catch(function(){}); }
+  }
+  requestAnimationFrame(quadro);
+}
+
+var contando = false;
+function contagem(){
+  contando = true;
+  var c = $("contagem"), n = 3;
+  c.classList.remove("hidden"); c.textContent = n;
+  var iv = setInterval(function(){
+    n--;
+    if(n <= 0){ clearInterval(iv); c.classList.add("hidden"); contando = false; }
+    else c.textContent = n;
+  }, 700);
+}
+
+function ligarTela(){
+  room.presence({ papel:"tela", textoId:null, pos:0 }).catch(function(){});
+  room.on("texto", function(m){
+    var d = m.data || {};
+    if(typeof d.id !== "string" || typeof d.s !== "string") return;
+    var n = limita(d.n, 1, 2000, 0), i = limita(d.i, 0, 1999, -1);
+    if(!n || i < 0 || i >= n) return;
+    if(d.id === textoId) return;
+    if(buf.id !== d.id){ buf = { id:d.id, n:n, partes:new Array(n) }; }
+    buf.partes[i] = d.s;
+    for(var k=0;k<buf.n;k++){ if(typeof buf.partes[k] !== "string") return; }
+    textoId = buf.id;
+    mostrarTexto(buf.partes.join(""));
+    aplicarEstilo();
+  });
+  room.on("estado", function(m){
+    var d = m.data || {};
+    var antesPlay = est.play;
+    est.play = !!d.play;
+    est.vel = limita(d.vel, 1, 20, est.vel);
+    est.fonte = limita(d.fonte, 24, 160, est.fonte);
+    est.espelho = !!d.espelho;
+    aplicarEstilo();
+    if(est.play && !antesPlay && d.contagem && fracao() < 0.002) contagem();
+  });
+  room.on("ir", function(m){ var p = limita(m.data && m.data.pos, 0, 1, null); if(p !== null) y = p * yMax(); });
+  room.on("pular", function(m){ var l = limita(m.data && m.data.linhas, -50, 50, 0); y += l * linhaPx(); });
+  room.onPeers(function(ch){
+    temControle = ch.peers.some(function(p){ return !p.sameTab && p.presence && p.presence.papel === "controle"; });
+    atualizaStatus();
+  });
+}
+
+/* =========================================================
+   CONTROLE (celular)
+   ========================================================= */
+var cst = ler("estado", { play:false, vel:5, fonte:64, espelho:false });
+cst.play = false;
+var enviado = ler("enviado", null);
+var tela = null;
+var arrastando = false;
+
+function linkTela(){ return location.origin + location.pathname + "?sala=" + sala + "#tela"; }
+function iniciarControle(){
+  $("ctrlCodigo").textContent = sala;
+  $("btnCopiaLink").onclick = function(){
+    var l = linkTela(), b = this;
+    try{ navigator.clipboard.writeText(l).then(function(){ b.textContent = "✓ Copiado"; setTimeout(function(){ b.textContent = "🔗 Copiar link da tela"; }, 2000); }, function(){ prompt("Copie o link:", l); }); }
+    catch(e){ prompt("Copie o link:", l); }
+  };
+  $("campoTexto").value = ler("rascunho", "");
+  $("campoTexto").addEventListener("input", function(){ guardar("rascunho", this.value); });
+  pintaControle();
+
+  $("btnPlay").onclick = function(){
+    cst.play = !cst.play;
+    var comecoDoTexto = cst.play && tela && (tela.pos || 0) < 0.002;
+    mandaEstado(comecoDoTexto);
+  };
+  $("velMenos").onclick = function(){ cst.vel = limita(cst.vel-1, 1, 20, 5); mandaEstado(); };
+  $("velMais").onclick  = function(){ cst.vel = limita(cst.vel+1, 1, 20, 5); mandaEstado(); };
+  $("fonteMenos").onclick = function(){ cst.fonte = limita(cst.fonte-8, 24, 160, 64); mandaEstado(); };
+  $("fonteMais").onclick  = function(){ cst.fonte = limita(cst.fonte+8, 24, 160, 64); mandaEstado(); };
+  $("chaveEspelho").onclick = function(){ cst.espelho = !cst.espelho; mandaEstado(); };
+  $("btnVolta").onclick  = function(){ emite("pular", { linhas:-3 }); };
+  $("btnAvanca").onclick = function(){ emite("pular", { linhas:3 }); };
+  $("btnInicio").onclick = function(){ cst.play = false; mandaEstado(); emite("ir", { pos:0 }); $("posicao").value = 0; };
+
+  var pos = $("posicao"), ultIr = 0;
+  pos.addEventListener("pointerdown", function(){ arrastando = true; });
+  pos.addEventListener("input", function(){
+    arrastando = true;
+    var agora = Date.now();
+    if(agora - ultIr > 120){ ultIr = agora; emite("ir", { pos: pos.value/1000 }); }
+  });
+  pos.addEventListener("change", function(){ emite("ir", { pos: pos.value/1000 }); setTimeout(function(){ arrastando = false; }, 600); });
+
+  $("btnEnviar").onclick = function(){
+    var s = $("campoTexto").value;
+    if(!s.trim()){ nota("Escreva algum texto primeiro.", false); return; }
+    enviado = { id: "t" + Date.now().toString(36), s: s };
+    guardar("enviado", enviado);
+    cst.play = false; mandaEstado();
+    enviarTexto(true);
+    espiarTexto();
+  };
+  iniciarEspiar();
+}
+
+/* ---------- espiar: o mesmo texto rolando no celular, acompanhando o iPad ----------
+   Segue a posicao que o iPad informa (suavizado). Se a pessoa arrastar com o dedo,
+   pausa a rolagem automatica e o iPad vai junto para o mesmo ponto. */
+var espiarOn = ler("espiar", false), espManual = false, espSoltou = 0, espAlvo = 0, espVel = 0, espUltPos = null, espUltT = 0, espUltIr = 0;
+function espiarTexto(){
+  var alvo = $("espiarTexto"); alvo.textContent = "";
+  var s = enviado ? enviado.s : "";
+  if(!s.trim()){ alvo.textContent = "Envie um texto para a tela para vê-lo aqui."; return; }
+  var pedacos = String(s).split(/(\[[^\]\n]{1,80}\])/);
+  for(var i=0;i<pedacos.length;i++){
+    if(!pedacos[i]) continue;
+    if(i % 2 === 1){ var sp = document.createElement("span"); sp.className = "deixa"; sp.textContent = pedacos[i]; alvo.appendChild(sp); }
+    else alvo.appendChild(document.createTextNode(pedacos[i]));
+  }
+}
+function espiarFonte(){ $("espiarTexto").style.fontSize = Math.round(limita(cst.fonte * 0.42, 15, 44, 26)) + "px"; }
+function espMax(){ var r = $("espiarRolo"); return Math.max(0, r.scrollHeight - r.clientHeight); }
+function iniciarEspiar(){
+  var r = $("espiarRolo");
+  function pinta(){ $("chaveEspiar").classList.toggle("on", !!espiarOn); $("espiar").classList.toggle("hidden", !espiarOn); }
+  $("chaveEspiar").onclick = function(){ espiarOn = !espiarOn; guardar("espiar", espiarOn); pinta(); if(espiarOn){ espiarTexto(); espiarFonte(); r.scrollTop = espAlvo * espMax(); } };
+  pinta(); espiarTexto(); espiarFonte();
+  function pega(){ espManual = true; espSoltou = 0; if(cst.play){ cst.play = false; mandaEstado(); } }
+  function solta(){ espSoltou = Date.now(); }
+  r.addEventListener("touchstart", pega, { passive:true });
+  r.addEventListener("pointerdown", pega);
+  r.addEventListener("wheel", function(){ pega(); solta(); }, { passive:true });
+  r.addEventListener("touchend", solta, { passive:true });
+  r.addEventListener("pointerup", solta);
+  r.addEventListener("scroll", function(){
+    if(!espManual) return;
+    var m = espMax(), agora = Date.now();
+    if(m && agora - espUltIr > 100){ espUltIr = agora; var f = r.scrollTop / m; espAlvo = f; emite("ir", { pos: f }); $("posicao").value = Math.round(f * 1000); }
+  }, { passive:true });
+  (function quadroEsp(){
+    if(espiarOn && !$("controle").classList.contains("hidden")){
+      if(espManual && espSoltou && Date.now() - espSoltou > 1200){ espManual = false; var m0 = espMax(); if(m0) emite("ir", { pos: r.scrollTop / m0 }); }
+      if(!espManual){
+        var alvo = espAlvo;
+        if(cst.play && espUltPos !== null) alvo = Math.min(1, espAlvo + espVel * (Date.now() - espUltT) / 1000);
+        var m = espMax(), y = alvo * m, d = y - r.scrollTop;
+        if(Math.abs(d) > 0.5) r.scrollTop += Math.abs(d) > m * 0.25 ? d : d * 0.2;
+      }
+    }
+    requestAnimationFrame(quadroEsp);
+  })();
+}
+function espiarPosicao(pos){
+  var agora = Date.now();
+  if(espUltPos !== null && agora - espUltT > 50){ var v = (pos - espUltPos) / ((agora - espUltT) / 1000); espVel = cst.play && v > 0 ? v : 0; }
+  espUltPos = pos; espUltT = agora; espAlvo = pos;
+}
+
+function nota(t, ok){ var n = $("notaEnvio"); n.textContent = t; n.classList.toggle("ok", !!ok); }
+function emite(topico, dados){ if(!room) return; room.emit(topico, dados).catch(function(){}); }
+function mandaEstado(contagemInicial){
+  guardar("estado", { vel:cst.vel, fonte:cst.fonte, espelho:cst.espelho });
+  pintaControle();
+  emite("estado", { play:cst.play, vel:cst.vel, fonte:cst.fonte, espelho:cst.espelho, contagem: !!contagemInicial });
+}
+function pintaControle(){
+  var b = $("btnPlay");
+  b.textContent = cst.play ? "⏸ Pausar" : "▶ Começar";
+  b.classList.toggle("pausar", cst.play);
+  $("velValor").textContent = cst.vel;
+  $("fonteValor").textContent = cst.fonte;
+  $("chaveEspelho").classList.toggle("on", !!cst.espelho);
+  if($("espiarTexto")) espiarFonte();
+}
+
+var enviando = false, ultEnvio = 0;
+function enviarTexto(manual){
+  if(!room || !enviado || enviando) return;
+  if(!tela){ if(manual) nota("Texto guardado. Ele vai para o iPad assim que a tela estiver aberta.", false); return; }
+  enviando = true; ultEnvio = Date.now();
+  if(manual) nota("Enviando…", false);
+  var s = enviado.s, id = enviado.id, TAM = 700, n = Math.max(1, Math.ceil(s.length / TAM));
+  (async function(){
+    for(var i=0;i<n;i++){
+      if(!enviado || enviado.id !== id) break;
+      try{ await room.emit("texto", { id:id, i:i, n:n, s:s.slice(i*TAM, (i+1)*TAM) }); }catch(e){}
+      if(n > 1) await espera(60);
+    }
+    enviando = false;
+  })();
+}
+
+function ligarControle(){
+  room.presence({ papel:"controle" }).catch(function(){});
+  room.onPeers(function(ch){
+    var achou = null;
+    ch.peers.forEach(function(p){ if(!p.sameTab && p.presence && p.presence.papel === "tela") achou = p.presence; });
+    var acabouDeChegar = achou && !tela;
+    tela = achou;
+    atualizaStatus();
+    if(!tela) return;
+    if(acabouDeChegar){ mandaEstado(); }
+    if(!arrastando && !espManual && typeof tela.pos === "number") $("posicao").value = Math.round(tela.pos * 1000);
+    if(typeof tela.pos === "number" && !espManual) espiarPosicao(tela.pos);
+    if(tela.fim && cst.play){ cst.play = false; mandaEstado(); }
+    if(enviado){
+      if(tela.textoId === enviado.id) nota("Texto na tela ✓", true);
+      else if(Date.now() - ultEnvio > 3000) enviarTexto(false);
+    }
+  });
+  setInterval(function(){ if(tela) emite("estado", { play:cst.play, vel:cst.vel, fonte:cst.fonte, espelho:cst.espelho }); }, 4000);
+}
+
+/* ---------- status ---------- */
+function atualizaStatus(){
+  if(!room){ statusTexto(false, "Sem conexão"); return; }
+  if(papel === "tela"){
+    if(!conectado) statusTexto(false, "Reconectando…");
+    else statusTexto(temControle, temControle ? "Celular conectado" : "Esperando o celular");
+  } else if(papel === "controle"){
+    var on = conectado && !!tela;
+    if(!conectado) statusTexto(false, "Reconectando…");
+    else statusTexto(on, on ? "iPad conectado" : "Procurando o iPad…");
+    $("btnPlay").disabled = !on;
+  }
+}
+
+/* ---------- partida ---------- */
+(async function(){
+  var q = new URLSearchParams(location.search);
+  var cod = (q.get("sala") || ler("sala", "") || "").replace(/\D/g, "").slice(0, 6);
+  if(cod) $("inSala").value = cod;
+  var h = (location.hash || "").replace("#", "");
+  var inicial = (h === "tela" || h === "controle") ? h : ler("papel", null);
+  if(cod && (inicial === "tela" || inicial === "controle")) await escolher(inicial);
+})();
+})();
+</script>
+</body>
+</html>
