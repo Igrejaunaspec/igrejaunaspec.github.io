@@ -867,6 +867,8 @@
   .aj-campos dt{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;padding-top:2px;} .aj-campos dd{margin:0;white-space:pre-wrap;}
   @media (max-width:700px){.aj-campos{grid-template-columns:1fr;} .aj-campos dd{margin-bottom:6px;} .aj-quem{margin-left:0;}}
   .aj-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+  .aj-guia{margin:2px 0 6px;font-size:12.5px;color:var(--muted);line-height:1.4;}
+  .aj-cont{font-size:12px;color:#c46a12;margin-top:4px;text-align:right;} .aj-cont.ok{color:#15803d;}
   .aj-prints{border:1.5px dashed var(--border);border-radius:10px;padding:10px;transition:background .15s,border-color .15s;}
   .aj-prints.arrastando{background:#eef5ff;border-color:var(--accent);}
   .aj-prints-lista{display:flex;gap:8px;flex-wrap:wrap;}
@@ -10659,16 +10661,26 @@ function abrirNovoAjuste(){
   document.getElementById('modalAjusteCaixa').innerHTML = `
     <div class="evento-modal-topo"><h3>Novo pedido de ajuste</h3>
       <button class="evento-modal-fechar" onclick="document.getElementById('modalAjuste').classList.add('hidden')">✕</button></div>
-    <p class="hint" style="margin:0 0 12px;">Quanto mais detalhes, mais rápido e certo fica. Imagine que quem vai fazer nunca viu o seu dia a dia.</p>
+    <p class="hint" style="margin:0 0 12px;">Escreva como se estivesse explicando para alguém que <b>nunca viu</b> o seu dia a dia. Pedidos curtos demais voltam com perguntas e demoram mais. Cada campo tem um mínimo de texto.</p>
     <div class="field"><label for="ajAba">Em qual aba? *</label><select id="ajAba"><option value="">Escolha...</option>${abas.map(n => `<option>${escapar(n)}</option>`).join('')}</select></div>
-    <div class="field"><label for="ajTitulo">Resuma em uma frase *</label><input type="text" id="ajTitulo" maxlength="140" placeholder="Ex.: Botão para imprimir a agenda da semana"></div>
-    <div class="field"><label for="ajDetalhes">O que você precisa, com detalhes *</label>
-      <textarea id="ajDetalhes" rows="4" maxlength="3000" placeholder="Onde fica, o que deveria aparecer, o que deveria acontecer quando clicar..."></textarea></div>
+    <div class="field"><label for="ajTitulo">Resuma em uma frase *</label><input type="text" id="ajTitulo" maxlength="140" placeholder="Ex.: Eventos com data de início e de fim (vários dias)"></div>
+    <div class="field"><label for="ajHoje">Como funciona hoje? *</label>
+      <div class="aj-guia">Conte passo a passo o que você faz e o que acontece. Se dá erro, o que aparece na tela?</div>
+      <textarea id="ajHoje" rows="4" maxlength="3000" data-min="60" oninput="ajContar(this)" placeholder="Ex.: Abro o Calendário, clico em + Novo evento, marco &quot;Repetir toda semana&quot; até dezembro e salvo. O evento aparece só no primeiro dia; nas outras semanas fica vazio."></textarea>
+      <div class="aj-cont" id="ajHojeCont">Escreva pelo menos 60 letras</div></div>
+    <div class="field"><label for="ajQuer">Como deveria ficar? *</label>
+      <div class="aj-guia">Descreva o resultado que você quer ver: onde fica, o que aparece, o que acontece quando clica ou salva.</div>
+      <textarea id="ajQuer" rows="4" maxlength="3000" data-min="80" oninput="ajContar(this)" placeholder="Ex.: Ao salvar, o evento deveria aparecer em todas as quartas até a data final. Se eu mudar um deles, quero poder escolher entre mudar só aquele ou todos."></textarea>
+      <div class="aj-cont" id="ajQuerCont">Escreva pelo menos 80 letras</div></div>
     <div class="field"><label for="ajMotivo">Por que isso é importante? *</label>
-      <textarea id="ajMotivo" rows="3" maxlength="2000" placeholder="Que problema resolve? Quem usa? Com que frequência?"></textarea></div>
-    <div class="field"><label for="ajExemplo">Dê um exemplo *</label>
-      <textarea id="ajExemplo" rows="3" maxlength="2000" placeholder="Ex.: Toda sexta eu preciso mandar a agenda impressa para o pastor. Hoje eu tiro print e corto. Queria um botão que já gerasse a folha."></textarea></div>
-    <div class="field"><label>Prints da tela (opcional)</label>
+      <div class="aj-guia">Que problema resolve? Quem usa? Com que frequência? O que acontece se não tiver?</div>
+      <textarea id="ajMotivo" rows="3" maxlength="2000" data-min="50" oninput="ajContar(this)" placeholder="Ex.: A secretaria cadastra uns 15 eventos fixos por semestre. Sem isso, cada um precisa ser digitado 20 vezes e é fácil esquecer alguma semana."></textarea>
+      <div class="aj-cont" id="ajMotivoCont">Escreva pelo menos 50 letras</div></div>
+    <div class="field"><label for="ajExemplo">Um exemplo real *</label>
+      <div class="aj-guia">Uma situação de verdade, com nomes, dias e horários.</div>
+      <textarea id="ajExemplo" rows="3" maxlength="2000" data-min="50" oninput="ajContar(this)" placeholder="Ex.: A Capela da Escola Básica é toda quarta, das 7h30 às 8h, de fevereiro a novembro, no templo."></textarea>
+      <div class="aj-cont" id="ajExemploCont">Escreva pelo menos 50 letras</div></div>
+    <div class="field"><label>Prints da tela (recomendado)</label>
       <div class="aj-prints" id="ajPrintsZona"><div class="aj-prints-lista" id="ajPrintsLista"></div>
         <div class="hint" style="margin:6px 0 0;">Clique em <b>+</b>, arraste a imagem para cá ou cole com <b>Ctrl+V</b> (no Mac, <b>Cmd+V</b>). Até ${AJ_MAX_PRINTS} imagens.</div></div></div>
     <div class="campo-2col">
@@ -10681,12 +10693,22 @@ function abrirNovoAjuste(){
   fundo.classList.remove('hidden');
   ajDesenharPrints();
 }
+// contador de letras: mostra quanto falta para o minimo de cada campo
+function ajContar(el){
+  const c = document.getElementById(el.id + 'Cont'); if(!c) return;
+  const falta = +el.dataset.min - el.value.trim().length;
+  c.className = 'aj-cont' + (falta <= 0 ? ' ok' : '');
+  c.textContent = falta <= 0 ? '✓ Ótimo, bem explicado' : `Faltam ${falta} letras`;
+}
 async function enviarAjuste(){
   const v = id => document.getElementById(id).value.trim();
-  const corpo = { aba: v('ajAba'), titulo: v('ajTitulo'), detalhes: v('ajDetalhes'), motivo: v('ajMotivo'), exemplo: v('ajExemplo'),
+  const corpo = { aba: v('ajAba'), titulo: v('ajTitulo'), detalhes: `Como funciona hoje:\n${v('ajHoje')}\n\nComo deveria ficar:\n${v('ajQuer')}`, motivo: v('ajMotivo'), exemplo: v('ajExemplo'),
     urgencia: v('ajUrg') || 'esperar', link: v('ajLink') || null, autor_nome: (perfil && (perfil.nome || perfil.email)) || (sessao && sessao.email) || '' };
-  const falta = !corpo.aba ? 'em qual aba' : !corpo.titulo ? 'o resumo' : corpo.detalhes.length < 15 ? 'o que você precisa (com mais detalhes)' : corpo.motivo.length < 8 ? 'por que é importante' : corpo.exemplo.length < 8 ? 'um exemplo' : '';
-  if(falta){ document.getElementById('ajErro').innerHTML = `<div class="aviso erro">Preencha ${falta}.</div>`; return; }
+  const curtos = [['ajHoje', 'como funciona hoje'], ['ajQuer', 'como deveria ficar'], ['ajMotivo', 'por que é importante'], ['ajExemplo', 'o exemplo real']]
+    .filter(([id]) => { const el = document.getElementById(id); ajContar(el); return el.value.trim().length < +el.dataset.min; }).map(([, n]) => n);
+  const falta = !corpo.aba ? 'Escolha em qual aba.' : corpo.titulo.length < 10 ? 'Escreva o resumo em uma frase.'
+    : curtos.length ? `Conte com mais detalhes: ${curtos.join(', ')}.` : '';
+  if(falta){ document.getElementById('ajErro').innerHTML = `<div class="aviso erro">${falta}</div>`; return; }
   const btn = document.getElementById('ajEnviar'); btn.disabled = true; btn.textContent = 'Enviando...';
   try{
     corpo.prints = [];
