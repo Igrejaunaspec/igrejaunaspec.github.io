@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <script>
-/* Sai sozinho depois de 30 minutos sem uso (vale para o app e o painel do Médicos em Missão).
+/* Sai sozinho depois de 1h30 sem uso (vale para o app e o painel do Médicos em Missão).
    A hora do último uso fica guardada no navegador, então vale também com a aba fechada. */
 (function(){
-  var LIMITE = 30 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
+  var LIMITE = 90 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
   function agora(){ return Date.now(); }
   function ultimo(){ try{ return +localStorage.getItem(ULT) || 0; }catch(e){ return 0; } }
   function temSessao(){ try{ return !!localStorage.getItem(CHAVE); }catch(e){ return false; } }
@@ -15,7 +15,7 @@
   var NUNCA_SAI = ['silvano.barbosa@adventistas.org'];
   function semLimite(){ try{ var s = JSON.parse(localStorage.getItem(CHAVE) || 'null'); return !!(s && s.email && NUNCA_SAI.indexOf(String(s.email).toLowerCase()) >= 0); }catch(e){ return false; } }
   function expirou(){ var u = ultimo(); return temSessao() && !semLimite() && u && agora() - u > LIMITE; }
-  // ao abrir a página: se ficou parado mais de 30 min, apaga a sessão antes do app carregar
+  // ao abrir a página: se ficou parado mais de 1h30, apaga a sessão antes do app carregar
   if(expirou()){ try{ localStorage.removeItem(CHAVE); }catch(e){} }
   if(temSessao() && !ultimo()) marcar();
   var ultimaMarca = 0;
@@ -37,7 +37,7 @@
       sessionStorage.removeItem('saiuPorInatividade');
       window.addEventListener('load', function(){
         var d = document.createElement('div');
-        d.textContent = 'Você saiu automaticamente depois de 30 minutos sem uso. Entre de novo.';
+        d.textContent = 'Você saiu automaticamente depois de 1h30 sem uso. Entre de novo.';
         d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#1D3A5C;color:#fff;padding:12px 18px;border-radius:12px;font:600 15px system-ui,sans-serif;box-shadow:0 6px 20px #0003;max-width:92vw;text-align:center';
         document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 8000);
       });
@@ -10522,7 +10522,7 @@ const TUTORIAIS = [
     'Clique no nome de uma área no menu azul para abri-la.',
     'A setinha <b>‹</b> recolhe o menu e deixa só os ícones; passe o mouse em cima para ver os nomes.',
     'Clique na setinha <b>›</b> para abrir o menu de novo.',
-    'Para sair, clique em <b>Sair</b>. Depois de 30 minutos sem uso, o app sai sozinho.' ] },
+    'Para sair, clique em <b>Sair</b>. Depois de 1h30 sem uso, o app sai sozinho.' ] },
   { id:'calendario', titulo:'Calendário', mostrar: p => p.admin || p.acesso_calendario || p.acesso_calendario_ver, passos:[
     'Os eventos agendados aparecem com a cor do tipo de evento. O dia de hoje fica em dourado.',
     'Clique num evento para ver data, horário, local e responsável.',
@@ -11066,7 +11066,7 @@ const PASSOS_TOUR = [
   { alvo:['#abasTopo [data-culto="agendamentos"]', '#navCelular [data-nav="agendamentos"]'], titulo:'Agendamentos', texto:'Os pedidos de uso da igreja chegam aqui. Você muda o status e manda a confirmação pelo WhatsApp.' },
   { alvo:['#abasTopo [data-culto="sabado"]', '#abasTopo [data-culto="sexta"]', '#navCelular [data-nav="roteiros"]', '#navCelular [data-nav="sabado"]', '#navCelular [data-nav="sexta"]'], titulo:'Roteiros do culto', texto:'Monte e edite o roteiro do culto. Tudo é salvo sozinho.' },
   { alvo:['#btnRecolherMenu'], titulo:'Recolher o menu', texto:'Clique nesta setinha para esconder o menu e ganhar espaço. Passe o mouse em cima para ver os nomes.' },
-  { alvo:['.conta-lateral', '#navCelular [data-nav="mais"]'], titulo:'Sua conta', texto:'Aqui aparece a sua conta e o botão de <b>Sair</b>. O app também sai sozinho depois de 30 minutos parado.' },
+  { alvo:['.conta-lateral', '#navCelular [data-nav="mais"]'], titulo:'Sua conta', texto:'Aqui aparece a sua conta e o botão de <b>Sair</b>. O app também sai sozinho depois de 1h30 parado.' },
   { titulo:'Pronto! 🎉', texto:'Quando você abrir cada área pela primeira vez, eu mostro as dicas de dentro dela. Para rever, abra <b>Como usar</b> no menu.' },
 ];
 /* dicas de dentro de cada aba (aparecem na primeira vez que a aba é aberta) */
