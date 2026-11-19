@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <script>
-/* Sai sozinho depois de 30 minutos sem uso (vale para o app e o painel do Médicos em Missão).
+/* Sai sozinho depois de 1h30 sem uso (vale para o app e o painel do Médicos em Missão).
    A hora do último uso fica guardada no navegador, então vale também com a aba fechada. */
 (function(){
-  var LIMITE = 30 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
+  var LIMITE = 90 * 60 * 1000, CHAVE = 'roteiroEditor.sessao', ULT = 'roteiroEditor.ultimoUso';
   function agora(){ return Date.now(); }
   function ultimo(){ try{ return +localStorage.getItem(ULT) || 0; }catch(e){ return 0; } }
   function temSessao(){ try{ return !!localStorage.getItem(CHAVE); }catch(e){ return false; } }
@@ -15,7 +15,7 @@
   var NUNCA_SAI = ['silvano.barbosa@adventistas.org'];
   function semLimite(){ try{ var s = JSON.parse(localStorage.getItem(CHAVE) || 'null'); return !!(s && s.email && NUNCA_SAI.indexOf(String(s.email).toLowerCase()) >= 0); }catch(e){ return false; } }
   function expirou(){ var u = ultimo(); return temSessao() && !semLimite() && u && agora() - u > LIMITE; }
-  // ao abrir a página: se ficou parado mais de 30 min, apaga a sessão antes do app carregar
+  // ao abrir a página: se ficou parado mais de 1h30, apaga a sessão antes do app carregar
   if(expirou()){ try{ localStorage.removeItem(CHAVE); }catch(e){} }
   if(temSessao() && !ultimo()) marcar();
   var ultimaMarca = 0;
@@ -37,7 +37,7 @@
       sessionStorage.removeItem('saiuPorInatividade');
       window.addEventListener('load', function(){
         var d = document.createElement('div');
-        d.textContent = 'Você saiu automaticamente depois de 30 minutos sem uso. Entre de novo.';
+        d.textContent = 'Você saiu automaticamente depois de 1h30 sem uso. Entre de novo.';
         d.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#1D3A5C;color:#fff;padding:12px 18px;border-radius:12px;font:600 15px system-ui,sans-serif;box-shadow:0 6px 20px #0003;max-width:92vw;text-align:center';
         document.body.appendChild(d); setTimeout(function(){ d.remove(); }, 8000);
       });
