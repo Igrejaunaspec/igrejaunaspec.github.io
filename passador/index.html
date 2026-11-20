@@ -198,7 +198,7 @@ function desenhar(){
   const bola = document.getElementById('bola'), txt = document.getElementById('txtStatus');
   if(!dados){ txt.textContent = 'O Mac Igreja ainda não se conectou.'; bola.style.background = 'var(--warn)'; return; }
   const seg = dados.visto_em ? Math.round((new Date(dados.agora) - new Date(dados.visto_em)) / 1000) : null;
-  const online = seg !== null && seg < 12;
+  const online = seg !== null && seg < 45; // sem ninguem olhando, o Mac avisa a cada 30 s
   bola.style.background = online ? 'var(--ok)' : 'var(--warn)';
   txt.textContent = online ? `Mac Igreja online` :
     (seg === null ? 'O Mac Igreja ainda não se conectou.' : `Mac Igreja offline (visto há ${seg < 120 ? seg + ' s' : Math.round(seg / 60) + ' min'})`);
