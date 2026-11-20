@@ -103,15 +103,9 @@ h1{font-size:20px;margin:0 0 4px;color:var(--brand)}
     <button class="sbtn" onclick="sair()">Sair</button>
   </div>
   <h1>Passador e TV de retorno</h1>
-  <div class="status"><span class="bola" id="bola"></span><span id="txtStatus">Carregando…</span></div>
-  <p class="ex">Toque num computador para passar o passador e a TV de retorno para ele</p>
-  <div id="lista"></div>
-  <div class="grid">
-    <div class="cx"><p class="l">Passador</p><p class="v" id="vP">-</p></div>
-    <div class="cx"><p class="l">TV de retorno</p><p class="v" id="vT">-</p></div>
-  </div>
-  <div id="erro"></div>
-  <p class="dica">O computador precisa estar ligado, no Wi-Fi da igreja e com o app "Passador da igreja" aberto para aparecer aqui. A TV pisca 1–3 s na troca.</p>
+  <div class="aviso">Para não gastar o limite do banco de dados, o Passador e a TV de retorno agora são trocados <b>só dentro da igreja</b>, pela página do próprio Mac Igreja.</div>
+  <p class="dica"><b>No Mac Igreja:</b> abra <b>http://localhost:8092</b> (não pede PIN).</p>
+  <p class="dica"><b>No celular ou em outro computador:</b> conecte no Wi-Fi da igreja e abra o endereço do Mac Igreja com <b>:8092</b> no final (ex.: http://192.168.x.x:8092). Ela pede o PIN do Passador.</p>
 </div>
 
 <script>
@@ -183,8 +177,6 @@ async function iniciar(){
   }catch(e){ mostrar('telaLogin'); return; }
   if(!perfil || !(perfil.admin || perfil.acesso_passador)){ mostrar('telaSemAcesso'); return; }
   mostrar('telaApp');
-  await carregar();
-  clearInterval(timer); timer = setInterval(carregar, 2000);
 }
 
 async function carregar(){
