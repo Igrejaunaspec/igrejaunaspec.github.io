@@ -252,6 +252,7 @@ a{color:inherit}
     </div>
     <div class="txPassos" id="txPassos" hidden></div>
     <div class="prog" id="txProg" hidden></div>
+    <div class="txPassos" id="txVideo" hidden></div>
   </div>
 </section>
 
@@ -310,21 +311,28 @@ const TUT={
   ['No Painel do canal, clique no botão Transmitir ao vivo (o ícone de antena, ao lado da seta de enviar).','/manual/img/live/3-transmitir-ao-vivo.jpg',''],
   ['Na tela que abre, fique em Gerenciar. A live do dia aparece na lista Gerenciar transmissões. Clique nela para abrir.','/manual/img/live/4-gerenciar-live.jpg','Confira a data e o título: tem que ser a live do culto de hoje.'],
   ['Na tela da live, confira em cima se a Chave está em Igreja UNASP. Quando a imagem chegar, clique em Transmitir ao vivo, no canto de cima à direita.','/manual/img/live/5-chave-e-transmitir.jpg','O botão Transmitir ao vivo fica cinza até a imagem chegar do Castr. Se a chave estiver diferente, clique nela e escolha Igreja UNASP.']
- ],v:''}
+ ],v:'/manual/video/live.mp4'},
+ castr:{t:'Passo a passo: Castr',p:[
+  ['No Chrome, entre em castr.com. No menu da esquerda, clique em Livestream. Procure o cartão UNASP - EC e clique no nome ou em Manage (aparece ao passar o mouse na imagem).','/manual/img/castr/1-abrir.jpg','Não clique em Disable: ele desliga a transmissão. Se pedir login, chame o responsável pela mídia.'],
+  ['Abre a tela do UNASP - EC. Nela você confere três coisas: a imagem que chegou (à direita), para onde a live vai (Destinations) e os números (em cima).','/manual/img/castr/2-tela.jpg',''],
+  ['Imagem que chegou: aparece à direita. Escrito Waiting for stream quer dizer que nada chegou ainda. Aperte o ON AIR da Web Presenter e espere a imagem do culto aparecer aqui.','/manual/img/castr/3-imagem.jpg',''],
+  ['Para onde vai: em Destinations ficam os canais do YouTube que recebem a live: Adventista Brasil, IGREJA e UNASP. A chave verde ao lado de cada um quer dizer que aquele canal está recebendo.','/manual/img/castr/4-destinos.jpg',''],
+  ['Números da live: Bandwidth é a internet, Viewers é quantas pessoas assistem e Bitrate é a qualidade que está chegando. Com a live parada aparecem tracinhos.','/manual/img/castr/5-numeros.jpg','']
+ ],v:'/manual/video/castr.mp4'}
 };
 const TX=[
- {id:'extreme',nome:'ATEM Extreme ISO',img:'/manual/img/atem-extreme-iso.jpg',onde:'Fica do lado esquerdo da sala. Liga depois da Web Presenter (passo 6 da aba Culto).',zonas:[
+ {id:'extreme',nome:'ATEM Extreme ISO',v:'/manual/video/atem-extreme-iso.mp4',img:'/manual/img/atem-extreme-iso.jpg',onde:'Fica do lado esquerdo da sala. Liga depois da Web Presenter (passo 6 da aba Culto).',zonas:[
   ['Câmeras (botões 1 a 8)','Cada botão é uma entrada: uma câmera ou um computador. O botão aceso em vermelho é a imagem que está no ar.',[5,77,58,12]],
   ['CUT, AUTO e FTB','CUT troca na hora para a imagem escolhida. AUTO troca com uma passagem suave. FTB escurece tudo; use só no fim.',[73,77,23,12]],
   ['Gravar e transmitir','REC grava. ON AIR, em STREAM, mostra se a transmissão está saindo.',[87,21,8,14]],
   ['Som','Liga, desliga e regula o volume dos microfones e de cada entrada.',[5,21,22,14]]
  ]},
- {id:'webpresenter',nome:'Web Presenter',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',aviso:'Aperte o botão ON AIR para mandar a imagem para o Castr.',prog:{t:'Programa da Web Presenter no computador',img:'/manual/img/web-presenter-live-stream.svg',itens:['Platform: precisa estar em Castr, que é para onde a imagem vai.','ON AIR: faz o mesmo que o botão ON AIR da frente do aparelho. OFF para o envio.'],obs:'Tudo fica na aba Live Stream do programa.'},zonas:[
+ {id:'webpresenter',nome:'Web Presenter',v:'/manual/video/web-presenter.mp4',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',aviso:'Aperte o botão ON AIR para mandar a imagem para o Castr.',prog:{t:'Programa da Web Presenter no computador',img:'/manual/img/web-presenter-live-stream.svg',itens:['Platform: precisa estar em Castr, que é para onde a imagem vai.','ON AIR: faz o mesmo que o botão ON AIR da frente do aparelho. OFF para o envio.'],obs:'Tudo fica na aba Live Stream do programa.'},zonas:[
   ['Botão ON AIR','Começa e para o envio da imagem para o Castr. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
   ['Tela','Mostra se está no ar (ON AIR), há quanto tempo, a velocidade da internet e se o sinal está OK, com a imagem e o som chegando.',[46,14,33,72]],
   ['MENU, SET e LOCK','Botões de configuração do aparelho.',[31.5,14,9.5,78]]
  ]},
- {id:'castr',nome:'Castr',img:'/manual/img/castr-unasp-ec.jpg',onde:'O Castr recebe a imagem da Web Presenter e manda ao mesmo tempo para os canais do YouTube. Abra em castr.com, no Chrome.',aviso:'Abra sempre o UNASP - EC. Não clique em Disable: ele desliga a transmissão.',zonas:[
+ {id:'castr',nome:'Castr',passos:'castr',img:'/manual/img/castr-unasp-ec.jpg',onde:'O Castr recebe a imagem da Web Presenter e manda ao mesmo tempo para os canais do YouTube. Abra em castr.com, no Chrome.',aviso:'Abra sempre o UNASP - EC. Não clique em Disable: ele desliga a transmissão.',zonas:[
   ['Imagem que chegou','Mostra a imagem que está chegando da Web Presenter. Escrito Waiting for stream: ainda não chegou nada. Aperte o ON AIR da Web Presenter.',[70.8,4,28.6,41]],
   ['Para onde vai (Destinations)','Os canais do YouTube que recebem a live: Adventista Brasil, IGREJA e UNASP. Chave verde: aquele canal está recebendo.',[1.6,53,66.8,46]],
   ['Números da live','Bandwidth, Viewers e Bitrate mostram a internet e quantas pessoas assistem. Com a live parada, aparecem tracinhos.',[0.4,13.4,69.4,15.2]]
@@ -338,12 +346,13 @@ const TX=[
 let txAba=-1,txZona=-1;
 function desenharTx2(){
  $('txAbas').innerHTML=TX.map((t,i)=>'<button class="aba" role="tab" type="button" data-i="'+i+'" aria-selected="'+(i===txAba)+'">'+esc(t.nome)+'</button>').join('');
- const pn=document.querySelector('.txPainel'),ps=$('txPassos');pn.hidden=txAba<0;ps.hidden=true;if(txAba<0){$('txProg').hidden=true;return;}const a=TX[txAba];
- if(a.passos){const t=TUT[a.passos];pn.hidden=true;$('txProg').hidden=true;ps.innerHTML=(a.aviso?'<p class="aviso">'+esc(a.aviso)+'</p>':'')+'<ol class="tutLista">'+t.p.map((x,i)=>'<li><span class="n">'+(i+1)+'</span><div><p>'+esc(x[0])+'</p>'+(x[1]?'<img src="'+esc(x[1])+'" alt="Figura '+(i+1)+'" loading="lazy">':'')+(x[2]?'<p class="obs">'+esc(x[2])+'</p>':'')+'</div></li>').join('')+'</ol>';ps.hidden=false;return;}
+ const pn=document.querySelector('.txPainel'),ps=$('txPassos'),tv=$('txVideo');pn.hidden=txAba<0;ps.hidden=true;tv.hidden=true;if(txAba<0){$('txProg').hidden=true;return;}const a=TX[txAba];
+ if(a.passos){const t=TUT[a.passos];pn.hidden=true;$('txProg').hidden=true;ps.innerHTML=(a.aviso?'<p class="aviso">'+esc(a.aviso)+'</p>':'')+'<ol class="tutLista">'+t.p.map((x,i)=>'<li><span class="n">'+(i+1)+'</span><div><p>'+esc(x[0])+'</p>'+(x[1]?'<img src="'+esc(x[1])+'" alt="Figura '+(i+1)+'" loading="lazy">':'')+(x[2]?'<p class="obs">'+esc(x[2])+'</p>':'')+'</div></li>').join('')+'</ol>';ps.innerHTML+=t.v?'<div class="tutVideo"><h3>Vídeo</h3><video controls playsinline preload="metadata" style="width:100%;border-radius:10px" src="'+esc(t.v)+'"></video></div>':'';ps.hidden=false;return;}
  $('txFoto').innerHTML='<img src="'+esc(a.img)+'" alt="'+esc(a.nome)+'">'+a.zonas.map((z,i)=>'<button type="button" class="zona'+(i===txZona?' on':'')+'" data-z="'+i+'" aria-label="'+esc(z[0])+'" style="left:'+z[2][0]+'%;top:'+z[2][1]+'%;width:'+z[2][2]+'%;height:'+z[2][3]+'%"><b>'+(i+1)+'</b></button>').join('');
  $('txOnde').textContent=a.onde;
  {const v=$('txAviso');v.textContent=a.aviso||'';v.hidden=!a.aviso;}
  {const g=$('txProg');if(a.prog){g.innerHTML='<h3>'+esc(a.prog.t)+'</h3><div class="progGrid"><img src="'+esc(a.prog.img)+'" alt="Tela do programa"><div><ol>'+a.prog.itens.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="note">'+esc(a.prog.obs)+'</p></div></div>';g.hidden=false;}else{g.hidden=true;g.innerHTML='';}}
+ if(a.v){tv.innerHTML='<h3>Vídeo</h3><video controls playsinline preload="metadata" style="width:100%;border-radius:10px;margin-top:10px" src="'+esc(a.v)+'"></video>';tv.hidden=false;}
  $('txZonas').innerHTML=a.zonas.map((z,i)=>'<button type="button" class="zItem'+(i===txZona?' on':'')+'" data-z="'+i+'"><span class="n">'+(i+1)+'</span><span><b>'+esc(z[0])+'</b><span class="t">'+esc(z[1])+'</span></span></button>').join('');
 }
 const KEY='manualSala.culto2';
