@@ -303,7 +303,8 @@ const TUT={
   ['No computador transmissão, abra o Chrome e entre em youtube.com. No canto de cima, à direita, clique na foto do canal (o logo da igreja).','/manual/img/live/1-foto-canal.jpg',''],
   ['No menu que abre, clique em YouTube Studio.','/manual/img/live/2-youtube-studio.jpg','Confira se a conta é IGREJA UNASP EC (aparece no topo do menu).'],
   ['No Painel do canal, clique no botão Transmitir ao vivo (o ícone de antena, ao lado da seta de enviar).','/manual/img/live/3-transmitir-ao-vivo.jpg',''],
-  ['Na tela que abre, fique em Gerenciar. A live do dia aparece na lista Gerenciar transmissões. Clique nela para abrir.','/manual/img/live/4-gerenciar.jpg','No print não aparece nenhuma live porque ainda não havia transmissão programada. No dia do culto, ela aparece nessa lista.']
+  ['Na tela que abre, fique em Gerenciar. A live do dia aparece na lista Gerenciar transmissões. Clique nela para abrir.','/manual/img/live/4-gerenciar-live.jpg','Confira a data e o título: tem que ser a live do culto de hoje.'],
+  ['Na tela da live, confira em cima se a Chave está em Igreja UNASP. Quando a imagem chegar, clique em Transmitir ao vivo, no canto de cima à direita.','/manual/img/live/5-chave-e-transmitir.jpg','O botão Transmitir ao vivo fica cinza até a imagem chegar do Castr. Se a chave estiver diferente, clique nela e escolha Igreja UNASP.']
  ],v:''}
 };
 const TX=[
@@ -322,7 +323,12 @@ const TX=[
   ['Imagem que chegou','Mostra a imagem que está chegando da Web Presenter. Escrito Waiting for stream: ainda não chegou nada. Aperte o ON AIR da Web Presenter.',[70.8,4,28.6,41]],
   ['Para onde vai (Destinations)','Os canais do YouTube que recebem a live: Adventista Brasil, IGREJA e UNASP. Chave verde: aquele canal está recebendo.',[1.6,53,66.8,46]],
   ['Números da live','Bandwidth, Viewers e Bitrate mostram a internet e quantas pessoas assistem. Com a live parada, aparecem tracinhos.',[0.4,13.4,69.4,15.2]]
- ],prog:{t:'Como abrir o UNASP - EC no Castr',img:'/manual/img/castr-abrir.jpg',itens:['Em castr.com, no menu da esquerda, clique em Livestream.','Procure o cartão UNASP - EC.','Clique no nome ou em Manage (aparece ao passar o mouse na imagem).'],obs:'Se pedir login, chame o responsável pela mídia.'}}
+ ],prog:{t:'Como abrir o UNASP - EC no Castr',img:'/manual/img/castr-abrir.jpg',itens:['Em castr.com, no menu da esquerda, clique em Livestream.','Procure o cartão UNASP - EC.','Clique no nome ou em Manage (aparece ao passar o mouse na imagem).'],obs:'Se pedir login, chame o responsável pela mídia.'}},
+ {id:'youtube',nome:'YouTube Studio',img:'/manual/img/yt-sala-controle.jpg',onde:'É a tela da live do dia no YouTube Studio, aberta no computador transmissão. O caminho até ela está no passo 9 da aba Culto (botão Passo a passo).',aviso:'A chave tem que estar em Igreja UNASP.',zonas:[
+  ['Prévia da live','Mostra a imagem que chegou do Castr. Escrito Não há dados: nada chegou ainda; confira a Web Presenter e o Castr.',[8,16.5,44,79]],
+  ['Chave','É aqui que se escolhe por onde a imagem entra. Precisa estar em Igreja UNASP. Se estiver diferente, clique e escolha Igreja UNASP.',[33.4,16,14,10]],
+  ['Transmitir ao vivo','Começa a live para o público. Fica cinza até a imagem chegar. A live nunca começa sozinha: alguém precisa clicar aqui.',[86.2,1,9.8,10]]
+ ]}
 ];
 let txAba=-1,txZona=-1;
 function desenharTx2(){
