@@ -10395,6 +10395,42 @@ document.addEventListener('keydown', ev => {
   if(ev.shiftKey) refazer(); else desfazer();
 });
 
+/* ---------- modo demonstração (?demo): o app inteiro com dados inventados (ver demo.js) ---------- */
+async function iniciarDemo(){
+  try{
+    await new Promise((ok, erro) => {
+      const sc = document.createElement('script'); sc.src = '/demo.js?v=1';
+      sc.onload = ok; sc.onerror = () => erro(new Error('Não consegui abrir a demonstração. Recarregue a página.'));
+      document.head.appendChild(sc);
+    });
+  }catch(e){ document.body.innerHTML = '<p style="padding:40px;font-family:sans-serif;">' + escapar(e.message) + '</p>'; return; }
+  window.DEMO.instalar(SUPABASE_URL, SUPABASE_KEY);
+  sessao = { access_token:'demo', refresh_token:null, expira_em: Date.now() + 365 * 864e5, email:'visitante@exemplo.com' };
+  perfil = window.DEMO.perfil;
+  carregarRealtime = () => Promise.reject(new Error('demonstração'));
+  sair = () => { location.href = '/'; };
+  abrirVotacao = function(){
+    cultoAtual = 'votacao'; marcarAba('votacao'); mostrarPagina('votacao');
+    const f = document.getElementById('quadroVotacao');
+    f.removeAttribute('src');
+    f.srcdoc = '<div style="font-family:sans-serif;padding:40px;color:#555;line-height:1.5"><h2 style="margin:0 0 8px">Comissão de Nomeações</h2>Aqui fica o painel da votação da Comissão (perguntas, votos pelo celular e o resultado na TV).<br>Essa parte abre um sistema à parte e não entra na demonstração.</div>';
+  };
+  const faixa = document.createElement('div');
+  faixa.id = 'faixaDemo';
+  faixa.textContent = 'Demonstração: os nomes e dados são de exemplo e nada é salvo de verdade.';
+  faixa.style.cssText = 'position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:9000;background:#1b2a4a;color:#fff;font:600 12.5px/1.3 inherit;font-family:inherit;padding:7px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none;max-width:92vw;text-align:center;opacity:.92';
+  document.body.appendChild(faixa);
+  document.getElementById('telaLogin').classList.add('hidden');
+  document.getElementById('telaApp').classList.remove('hidden');
+  document.getElementById('meuEmail').textContent = 'Demonstração';
+  montarAbas();
+  // partes que abrem em página separada (com o banco de verdade) ficam de fora
+  const fora = { passador:'Passador', teleprompter:'Teleprompter', medicos:'Médicos em Missão' };
+  Object.keys(fora).forEach(c => document.querySelectorAll(`[data-culto="${c}"]`).forEach(b => {
+    b.onclick = ev => { ev && ev.preventDefault && ev.preventDefault(); toast(fora[c] + ' abre numa página separada e não entra na demonstração.'); };
+  }));
+}
+
 (async function iniciar(){
   if(SUPABASE_URL.indexOf('__') === 0){
     document.body.innerHTML =
@@ -10407,6 +10443,11 @@ document.addEventListener('keydown', ev => {
   if(verificarLinkRecuperacaoSenha()) return;
 
   const params = new URLSearchParams(location.search);
+  if(params.has('demo')){
+    if(document.readyState === 'loading') await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once:true }));
+    await iniciarDemo();
+    return;
+  }
   const rCurto = params.get('r');
   const verId = params.get('ver'); // formato antigo (links já compartilhados antes), mantido funcionando
   if(rCurto || verId){
