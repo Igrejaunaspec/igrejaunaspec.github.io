@@ -123,6 +123,8 @@ a{color:inherit}
 .zItem span.t{display:none;color:#cfd4da;font-size:15px;margin-top:4px}
 .zItem.on span.t{display:block}
 @media(max-width:820px){.txPainel{grid-template-columns:1fr}}
+.aFig{display:block;width:100%;max-width:1060px;margin-top:22px;border-radius:14px;border:1px solid var(--line);background:#fff}
+.aFig[hidden]{display:none}
 .mini{display:block;margin-top:8px;width:100%;max-width:260px;border-radius:8px;background:#fff}
 .now .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .now .btn{background:#2a2e35;border-color:#454b54;color:#eef0f2}
@@ -260,6 +262,7 @@ a{color:inherit}
   <div class="wrap">
     <h2 id="aTit"></h2>
     <p class="lead" id="aLead"></p>
+    <img class="aFig" id="aFig" alt="" hidden>
     <div class="grid2">
       <div class="card"><h3>O que já está no manual</h3><ul id="aKnown" style="margin-top:10px"></ul></div>
       <div class="card"><h3>Falta preencher</h3><ul class="todo" id="aTodo" style="margin-top:10px"></ul></div>
@@ -299,7 +302,7 @@ const PASSOS=[
 ];
 const AREAS={
  transmissao:{t:'Transmissão',l:'Como a imagem e o som do culto chegam ao YouTube: as ATEMs, a Web Presenter, o computador transmissão e a live.',k:['ATEM Mini Pro: fica na frente do Mac Nicolly (computador de 3 telas).','ATEM Extreme ISO: fica do lado esquerdo da sala; a Web Presenter fica atrás dela e é ligada antes.','Computador transmissão (fundo da sala, canto esquerdo): nele ficam abertos a live do dia no Chrome e o programa da ATEM.','A live sai pelo canal IGREJA UNASP EC, sempre com a chave de transmissão Igreja UNASP.'],f:['Para que serve cada ATEM e como elas se ligam','Como trocar de câmera e montar a imagem','Como iniciar e encerrar a live','O que fazer se a live cair']},
- led:{t:'Computador do LED',l:'O computador do LED é o Mac Nicolly, o computador de 3 telas na frente da sala. É ele que manda a imagem para o telão, pelo ProPresenter.',k:['Computador: Mac Nicolly (3 telas). Login: mac nicolly · Senha: 1127.','Programa: ProPresenter.','O Mac Nicolly tem 2 cabos de rede: um para a internet e outro para a TV de retorno e o passador de slides.','O telão liga pelos disjuntores à direita de quem entra na sala.','Depois dos disjuntores, liga o rack da frente com as processadoras do telão.','A Nycolle Laubaca manda pelo WhatsApp os ajustes do ProPresenter antes do culto.'],f:['O que abrir e conferir no ProPresenter antes do culto','Como passar os slides e as letras','Para que serve cada uma das 3 telas','Como desligar no fim do culto']},
+ led:{t:'Computador do LED',fig:'/manual/img/ligacoes-mac-nicolly.svg',l:'O computador do LED é o Mac Nicolly, o computador de 3 telas na frente da sala. É ele que manda a imagem para o telão, pelo ProPresenter.',k:['Computador: Mac Nicolly (3 telas). Login: mac nicolly · Senha: 1127.','Programa: ProPresenter.','O Mac Nicolly tem 2 cabos de rede: um para a internet e outro para a TV de retorno e o passador de slides.','HDMI 1 vai para a tela principal, que controla tudo. HDMI 2 vai para um splitter, que manda a imagem para as processadoras do telão, para a ATEM Extreme ISO e para a tela da direita. HDMI 3 vai para a tela da esquerda, e a mesma imagem vai para a TV de retorno.','O telão liga pelos disjuntores à direita de quem entra na sala.','Depois dos disjuntores, liga o rack da frente com as processadoras do telão.','A Nycolle Laubaca manda pelo WhatsApp os ajustes do ProPresenter antes do culto.'],f:['O que abrir e conferir no ProPresenter antes do culto','Como passar os slides e as letras','Como desligar no fim do culto']},
  retorno:{t:'TV de retorno',l:'A TV que mostra no palco os slides e as letras para quem está à frente.',k:['A TV de retorno e o passador de slides chegam pelo segundo cabo de rede do Mac Nicolly (o outro cabo é o da internet).','Quem passa os slides e o que vai para a TV de retorno é escolhido na página do Passador, no Mac Igreja.','No Mac Igreja: abrir http://localhost:8092 (não pede PIN).','No celular ou em outro computador: Wi-Fi da igreja, endereço do Mac Igreja com :8092 no final, e o PIN do Passador.','Antes do culto: testar se o sinal chega na TV e se o passador muda os slides.'],f:['Endereço do Mac Igreja na rede','Onde fica anotado o PIN do Passador','O que fazer se a TV não recebe sinal']},
  audio:{t:'Áudio',l:'A mesa de som e os intercoms da equipe.',k:['A mesa de som é a DM3. Sem ela ligada, o som do Mac Nicolly não sai.','Intercoms ficam em cima do computador, com as baterias, e são entregues aos voluntários quando chegam.'],f:['Quais canais da DM3 são de quê','Qual saída vai para a live','Como carregar e trocar as baterias dos intercoms','Como desligar a DM3 no fim']},
  iluminacao:{t:'Iluminação',l:'As luzes do palco, a cena padrão e a luz de serviço.',k:['As luzes são ligadas lá embaixo, junto com as câmeras.','No computador das luzes (em cima), acender e deixar na cena padrão.','A luz de serviço de cima do palco é desligada na sala dos disjuntores da luz de serviço.'],f:['Nome do programa das luzes e onde fica a cena padrão','Outras cenas usadas no culto','Como desligar tudo no fim']}
@@ -415,7 +418,7 @@ function rota(){
  $('back').style.display=h==='inicio'?'none':'inline-flex';
  if(h==='culto'){$('v-culto').classList.add('on');desenharTx();}
  else if(h==='transmissao'){txAba=-1;txZona=-1;$('v-tx').classList.add('on');desenharTx2();}
- else if(AREAS[h]){const a=AREAS[h];$('aTit').textContent=a.t;$('aLead').textContent=a.l;$('aKnown').innerHTML=a.k.map(x=>'<li>'+esc(x)+'</li>').join('');$('aTodo').innerHTML=a.f.map(x=>'<li>'+esc(x)+'</li>').join('');$('v-area').classList.add('on');}
+ else if(AREAS[h]){const a=AREAS[h];$('aTit').textContent=a.t;$('aLead').textContent=a.l;{const f=$('aFig');if(a.fig){f.src=a.fig;f.alt='Desenho: '+a.t;f.hidden=false;}else{f.hidden=true;f.removeAttribute('src');}}$('aKnown').innerHTML=a.k.map(x=>'<li>'+esc(x)+'</li>').join('');$('aTodo').innerHTML=a.f.map(x=>'<li>'+esc(x)+'</li>').join('');$('v-area').classList.add('on');}
  else $('v-inicio').classList.add('on');
  window.scrollTo(0,0);
 }

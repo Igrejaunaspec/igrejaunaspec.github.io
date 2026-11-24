@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 700" font-family="Inter,Arial,sans-serif">
+<rect width="1060" height="700" fill="#ffffff"/>
+<defs><marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2b6cd6"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1f9d57"/></marker></defs>
+<text x="30" y="40" fill="#121417" font-size="22" font-weight="800">Ligações do Mac Nicolly</text>
+<text x="30" y="64" fill="#555c66" font-size="14">3 cabos HDMI (azul) e 2 cabos de rede (verde)</text>
+<rect x="30" y="90" width="190" height="560" rx="14" fill="#1f242b"/>
+<text x="125" y="130" text-anchor="middle" fill="#ffffff" font-size="19" font-weight="800">Mac Nicolly</text>
+<text x="125" y="152" text-anchor="middle" fill="#cfd4da" font-size="13">computador de 3 telas</text>
+<text x="125" y="170" text-anchor="middle" fill="#cfd4da" font-size="13">ProPresenter</text>
+<rect x="150" y="192" width="62" height="26" rx="6" fill="#2b6cd6"/><text x="181" y="210" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">HDMI 1</text>
+<rect x="150" y="277" width="62" height="26" rx="6" fill="#2b6cd6"/><text x="181" y="295" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">HDMI 2</text>
+<rect x="150" y="437" width="62" height="26" rx="6" fill="#2b6cd6"/><text x="181" y="455" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">HDMI 3</text>
+<rect x="150" y="547" width="62" height="26" rx="6" fill="#1f9d57"/><text x="181" y="565" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">Rede 1</text>
+<rect x="150" y="607" width="62" height="26" rx="6" fill="#1f9d57"/><text x="181" y="625" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">Rede 2</text>
+<rect x="300" y="177" width="240" height="56" rx="10" fill="#fff6dc" stroke="#f5b301" stroke-width="2"/>
+<text x="314" y="201" fill="#121417" font-size="15" font-weight="700">Tela principal</text>
+<text x="314" y="220" fill="#555c66" font-size="12.5">controla tudo</text>
+<path d="M212 205H298" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="300" y="262" width="240" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="314" y="286" fill="#121417" font-size="15" font-weight="700">Splitter</text>
+<text x="314" y="305" fill="#555c66" font-size="12.5">divide a imagem em 3</text>
+<path d="M212 290H298" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="640" y="182" width="230" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="654" y="206" fill="#121417" font-size="15" font-weight="700">Processadoras</text>
+<text x="654" y="225" fill="#555c66" font-size="12.5">no rack da frente</text>
+<path d="M540 290H580V210H638" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="640" y="262" width="230" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="654" y="286" fill="#121417" font-size="15" font-weight="700">ATEM Extreme ISO</text>
+<text x="654" y="305" fill="#555c66" font-size="12.5">para a transmissão</text>
+<path d="M540 290H580V290H638" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="640" y="342" width="230" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="654" y="366" fill="#121417" font-size="15" font-weight="700">Tela da direita</text>
+<text x="654" y="385" fill="#555c66" font-size="12.5">ver o que está acontecendo</text>
+<path d="M540 290H580V370H638" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="920" y="182" width="120" height="56" rx="10" fill="#fff6dc" stroke="#f5b301" stroke-width="2"/>
+<text x="934" y="215.0" fill="#121417" font-size="15" font-weight="700">Telão LED</text>
+<path d="M870 210H918" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="300" y="422" width="240" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="314" y="455.0" fill="#121417" font-size="15" font-weight="700">Tela da esquerda</text>
+<path d="M212 450H298" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="640" y="422" width="230" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="654" y="446" fill="#121417" font-size="15" font-weight="700">TV de retorno</text>
+<text x="654" y="465" fill="#555c66" font-size="12.5">mesma imagem da esquerda</text>
+<path d="M540 450H638" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ab)"/>
+<rect x="300" y="532" width="240" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="314" y="565.0" fill="#121417" font-size="15" font-weight="700">Internet</text>
+<path d="M212 560H298" fill="none" stroke="#1f9d57" stroke-width="3" marker-end="url(#ag)"/>
+<rect x="300" y="592" width="240" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="314" y="616" fill="#121417" font-size="15" font-weight="700">TV de retorno e passador</text>
+<text x="314" y="635" fill="#555c66" font-size="12.5">de slides</text>
+<path d="M212 620H298" fill="none" stroke="#1f9d57" stroke-width="3" marker-end="url(#ag)"/>
+</svg>
