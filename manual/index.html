@@ -74,6 +74,20 @@ a{color:inherit}
 .fotoLado{display:none}
 .foto[hidden],.fotoLado[hidden],img[hidden]{display:none!important}
 @media(min-width:901px){.now.comfoto{grid-template-columns:auto minmax(0,1fr) minmax(0,46%)}.now.comfoto .foto{display:none}.now.comfoto .fotoLado:not([hidden]){display:block;width:100%;align-self:center;border-radius:12px;background:#fff}}
+.now .btn.passo{background:#fff;border-color:#fff;color:#121417}
+.btn[hidden]{display:none}
+.tut{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;padding:0 max(5vw,16px) 48px}
+.tut[hidden]{display:none}
+.tutTop{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 0;border-bottom:1px solid var(--line);max-width:900px;margin:0 auto}
+.tutTop h2{font-size:clamp(22px,3vw,30px)}
+.tutLista{list-style:none;margin:24px auto 0;padding:0;max-width:900px;display:grid;gap:28px}
+.tutLista li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px}
+.tutLista .n{width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font:800 18px Archivo,sans-serif}
+.tutLista p{font-size:17px;margin-bottom:12px}
+.tutLista img{display:block;max-width:100%;max-height:420px;border-radius:10px;border:1px solid var(--line)}
+.tutLista .obs{font-size:14.5px;color:var(--soft);margin-top:8px}
+.tutVideo{max-width:900px;margin:36px auto 0;background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:20px}
+.tutVideo h3{margin-bottom:6px}
 .mini{display:block;margin-top:8px;width:100%;max-width:260px;border-radius:8px;background:#fff}
 .now .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .now .btn{background:#2a2e35;border-color:#454b54;color:#eef0f2}
@@ -173,6 +187,7 @@ a{color:inherit}
         <div class="acts">
           <button class="btn" id="prev" type="button">← Anterior</button>
           <button class="btn ok" id="done" type="button">Feito, próximo passo</button>
+          <button class="btn passo" id="tutBtn" type="button" hidden>Passo a passo</button>
         </div>
       </div>
       <img class="fotoLado" id="nFoto2" alt="" hidden>
@@ -195,6 +210,11 @@ a{color:inherit}
   </div>
 </section>
 </main>
+<div class="tut" id="tut" hidden role="dialog" aria-modal="true" aria-labelledby="tutTit">
+  <div class="tutTop"><h2 id="tutTit"></h2><button class="btn" id="tutFechar" type="button">Fechar</button></div>
+  <ol class="tutLista" id="tutLista"></ol>
+  <div class="tutVideo" id="tutVideo"></div>
+</div>
 
 <script>
 {
@@ -208,7 +228,7 @@ const PASSOS=[
  [0,'ATEM Extreme ISO','Ligar a ATEM Extreme ISO.','Lado esquerdo da sala','','','/manual/img/atem-extreme-iso.jpg'],
  [0,'TVs','Ligar as TVs.',''],
  [0,'Computador transmissão','','Fundo da sala, canto esquerdo','Senha: pedir ao responsável'],
- [0,'Live e ATEM','No computador transmissão, abrir o Chrome com a live do dia e abrir o programa da ATEM.','Computador transmissão'],
+ [0,'Live e ATEM','No computador transmissão, abrir o Chrome com a live do dia e abrir o programa da ATEM.','Computador transmissão','','','','live'],
  [1,'ProPresenter','De volta ao Mac Nicolly: abrir o ProPresenter.','Mac Nicolly'],
  [1,'Mesa de som DM3','Ligar a DM3.','','Sem a DM3 ligada, o som não sai'],
  [1,'Câmeras e luzes','Ligar todas as câmeras e as luzes.','Lá embaixo'],
@@ -225,6 +245,14 @@ const AREAS={
  retorno:{t:'TV de retorno',l:'A TV que mostra no palco os slides e as letras para quem está à frente.',k:['Quem passa os slides e o que vai para a TV de retorno é escolhido na página do Passador, no Mac Igreja.','No Mac Igreja: abrir http://localhost:8092 (não pede PIN).','No celular ou em outro computador: Wi-Fi da igreja, endereço do Mac Igreja com :8092 no final, e o PIN do Passador.','Antes do culto: testar se o sinal chega na TV e se o passador muda os slides.'],f:['Endereço do Mac Igreja na rede','Onde fica anotado o PIN do Passador','O que fazer se a TV não recebe sinal']},
  audio:{t:'Áudio',l:'A mesa de som e os intercoms da equipe.',k:['A mesa de som é a DM3. Sem ela ligada, o som do Mac Nicolly não sai.','Intercoms ficam em cima do computador, com as baterias, e são entregues aos voluntários quando chegam.'],f:['Quais canais da DM3 são de quê','Qual saída vai para a live','Como carregar e trocar as baterias dos intercoms','Como desligar a DM3 no fim']},
  iluminacao:{t:'Iluminação',l:'As luzes do palco, a cena padrão e a luz de serviço.',k:['As luzes são ligadas lá embaixo, junto com as câmeras.','No computador das luzes (em cima), acender e deixar na cena padrão.','A luz de serviço de cima do palco é desligada na sala dos disjuntores da luz de serviço.'],f:['Nome do programa das luzes e onde fica a cena padrão','Outras cenas usadas no culto','Como desligar tudo no fim']}
+};
+const TUT={
+ live:{t:'Passo a passo: abrir a live',p:[
+  ['No computador transmissão, abra o Chrome e entre em youtube.com. No canto de cima, à direita, clique na foto do canal (o logo da igreja).','/manual/img/live/1-foto-canal.jpg',''],
+  ['No menu que abre, clique em YouTube Studio.','/manual/img/live/2-youtube-studio.jpg','Confira se a conta é IGREJA UNASP EC (aparece no topo do menu).'],
+  ['No Painel do canal, clique no botão Transmitir ao vivo (o ícone de antena, ao lado da seta de enviar).','/manual/img/live/3-transmitir-ao-vivo.jpg',''],
+  ['Na tela que abre, fique em Gerenciar. A live do dia aparece na lista Gerenciar transmissões. Clique nela para abrir.','/manual/img/live/4-gerenciar.jpg','No print não aparece nenhuma live porque ainda não havia transmissão programada. No dia do culto, ela aparece nessa lista.']
+ ],v:''}
 };
 const KEY='manualSala.culto2';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -247,6 +275,7 @@ function desenharTx(){
   $('now').classList.toggle('comfoto',!!p[6]);
   $('nWhere').innerHTML=(p[5]?'<span class="chip">'+esc(p[5])+'</span>':'')+(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
  }
+ $('tutBtn').hidden=todos||!p[7];
  $('done').textContent=todos?'Recomeçar':(feitos.has(atual)?'Próximo passo':'Feito, próximo passo');
  $('prev').disabled=atual===0&&!todos;
  $('bar').innerHTML=PASSOS.map((_,i)=>'<i class="'+(feitos.has(i)?'d':(i===atual&&!todos?'c':''))+'"></i>').join('');
@@ -265,6 +294,14 @@ $('done').onclick=()=>{
 };
 $('prev').onclick=()=>{if(feitos.size===PASSOS.length){feitos.delete(PASSOS.length-1);atual=PASSOS.length-1;}else if(atual>0)atual--;salvar();desenharTx();};
 $('blocks').onclick=e=>{const b=e.target.closest('.step');if(!b)return;const i=+b.dataset.i;if(feitos.has(i))feitos.delete(i);else feitos.add(i);atual=i;salvar();desenharTx();};
+function abrirTut(k){const t=TUT[k];if(!t)return;$('tutTit').textContent=t.t;
+ $('tutLista').innerHTML=t.p.map((x,i)=>'<li><span class="n">'+(i+1)+'</span><div><p>'+esc(x[0])+'</p>'+(x[1]?'<img src="'+esc(x[1])+'" alt="Figura '+(i+1)+'" loading="lazy">':'')+(x[2]?'<p class="obs">'+esc(x[2])+'</p>':'')+'</div></li>').join('');
+ $('tutVideo').innerHTML=t.v?'<h3>Vídeo</h3><video controls playsinline preload="metadata" style="width:100%;border-radius:10px" src="'+esc(t.v)+'"></video>':'<h3>Vídeo</h3><p class="obs">O vídeo mostrando tudo isso entra aqui em breve.</p>';
+ $('tut').hidden=false;document.body.style.overflow='hidden';$('tut').scrollTop=0;$('tutFechar').focus();}
+function fecharTut(){$('tut').hidden=true;document.body.style.overflow='';}
+$('tutBtn').onclick=()=>abrirTut(PASSOS[atual][7]);
+$('tutFechar').onclick=fecharTut;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tut').hidden)fecharTut();});
 $('reset').onclick=()=>{feitos.clear();atual=0;salvar();desenharTx();};
 
 function rota(){
