@@ -90,6 +90,7 @@ a{color:inherit}
 .tutVideo h3{margin-bottom:6px}
 .itens{margin:10px 0 0;padding-left:22px;font-size:16px;max-width:60ch}.itens li{margin:4px 0}.itens[hidden]{display:none}
 .now.comfoto .fotoLado{max-height:640px;object-fit:contain;background:transparent!important}
+.txPainel[hidden]{display:none}
 .abas{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 .aba{font:600 15px Inter,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
 .aba[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -226,7 +227,7 @@ a{color:inherit}
     <h2>Transmissão</h2>
     <p class="lead">Como a imagem e o som do culto chegam ao YouTube. Escolha um aparelho abaixo.</p>
     <div class="abas" id="txAbas" role="tablist"></div>
-    <div class="txPainel">
+    <div class="txPainel" hidden>
       <div class="aparelho">
         <div class="fotoZonas" id="txFoto"></div>
         <p class="note" id="txOnde"></p>
@@ -301,12 +302,17 @@ const TX=[
   ['CUT, AUTO e FTB','CUT troca na hora para a imagem escolhida. AUTO troca com uma passagem suave. FTB escurece tudo; use só no fim.',[73,77,23,12]],
   ['Gravar e transmitir','REC grava. ON AIR, em STREAM, mostra se a transmissão está saindo.',[87,21,8,14]],
   ['Som','Liga, desliga e regula o volume dos microfones e de cada entrada.',[5,21,22,14]]
+ ]},
+ {id:'webpresenter',nome:'Web Presenter',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',zonas:[
+  ['Botão ON AIR','Começa e para o envio da imagem para a internet. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
+  ['Tela','Mostra se está no ar (ON AIR), há quanto tempo, a velocidade da internet e se o sinal está OK, com a imagem e o som chegando.',[46,14,33,72]],
+  ['MENU, SET e LOCK','Botões de configuração do aparelho.',[31.5,14,9.5,78]]
  ]}
 ];
-let txAba=0,txZona=-1;
+let txAba=-1,txZona=-1;
 function desenharTx2(){
- const a=TX[txAba];
  $('txAbas').innerHTML=TX.map((t,i)=>'<button class="aba" role="tab" type="button" data-i="'+i+'" aria-selected="'+(i===txAba)+'">'+esc(t.nome)+'</button>').join('');
+ const pn=document.querySelector('.txPainel');pn.hidden=txAba<0;if(txAba<0)return;const a=TX[txAba];
  $('txFoto').innerHTML='<img src="'+esc(a.img)+'" alt="'+esc(a.nome)+'">'+a.zonas.map((z,i)=>'<button type="button" class="zona'+(i===txZona?' on':'')+'" data-z="'+i+'" aria-label="'+esc(z[0])+'" style="left:'+z[2][0]+'%;top:'+z[2][1]+'%;width:'+z[2][2]+'%;height:'+z[2][3]+'%"><b>'+(i+1)+'</b></button>').join('');
  $('txOnde').textContent=a.onde;
  $('txZonas').innerHTML=a.zonas.map((z,i)=>'<button type="button" class="zItem'+(i===txZona?' on':'')+'" data-z="'+i+'"><span class="n">'+(i+1)+'</span><span><b>'+esc(z[0])+'</b><span class="t">'+esc(z[1])+'</span></span></button>').join('');
@@ -360,7 +366,7 @@ function fecharTut(){$('tut').hidden=true;document.body.style.overflow='';}
 $('tutBtn').onclick=()=>abrirTut(PASSOS[atual][7]);
 $('tutFechar').onclick=fecharTut;
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tut').hidden)fecharTut();});
-$('txAbas').onclick=e=>{const b=e.target.closest('.aba');if(!b)return;txAba=+b.dataset.i;txZona=-1;desenharTx2();};
+$('txAbas').onclick=e=>{const b=e.target.closest('.aba');if(!b)return;const i=+b.dataset.i;txAba=txAba===i?-1:i;txZona=-1;desenharTx2();};
 $('txFoto').onclick=e=>{const b=e.target.closest('.zona');if(!b)return;const z=+b.dataset.z;txZona=txZona===z?-1:z;desenharTx2();};
 $('txZonas').onclick=e=>{const b=e.target.closest('.zItem');if(!b)return;const z=+b.dataset.z;txZona=txZona===z?-1:z;desenharTx2();};
 $('reset').onclick=()=>{feitos.clear();atual=0;salvar();desenharTx();};
@@ -370,7 +376,7 @@ function rota(){
  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
  $('back').style.display=h==='inicio'?'none':'inline-flex';
  if(h==='culto'){$('v-culto').classList.add('on');desenharTx();}
- else if(h==='transmissao'){$('v-tx').classList.add('on');desenharTx2();}
+ else if(h==='transmissao'){txAba=-1;txZona=-1;$('v-tx').classList.add('on');desenharTx2();}
  else if(AREAS[h]){const a=AREAS[h];$('aTit').textContent=a.t;$('aLead').textContent=a.l;$('aKnown').innerHTML=a.k.map(x=>'<li>'+esc(x)+'</li>').join('');$('aTodo').innerHTML=a.f.map(x=>'<li>'+esc(x)+'</li>').join('');$('v-area').classList.add('on');}
  else $('v-inicio').classList.add('on');
  window.scrollTo(0,0);
