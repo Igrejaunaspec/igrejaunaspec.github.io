@@ -88,6 +88,8 @@ a{color:inherit}
 .tutLista .obs{font-size:14.5px;color:var(--soft);margin-top:8px}
 .tutVideo{max-width:900px;margin:36px auto 0;background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:20px}
 .tutVideo h3{margin-bottom:6px}
+.itens{margin:10px 0 0;padding-left:22px;font-size:16px;max-width:60ch}.itens li{margin:4px 0}.itens[hidden]{display:none}
+.now.comfoto .fotoLado{max-height:640px;object-fit:contain;background:transparent!important}
 .mini{display:block;margin-top:8px;width:100%;max-width:260px;border-radius:8px;background:#fff}
 .now .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .now .btn{background:#2a2e35;border-color:#454b54;color:#eef0f2}
@@ -182,6 +184,7 @@ a{color:inherit}
         <div class="blk" id="nBlk"></div>
         <h3 id="nTit"></h3>
         <p class="txt" id="nTxt"></p>
+        <ol class="itens" id="nItens" hidden></ol>
         <div class="where" id="nWhere"></div>
         <img class="foto" id="nFoto" alt="" hidden>
         <div class="acts">
@@ -230,7 +233,7 @@ const PASSOS=[
  [0,'Computador transmissão','','Fundo da sala, canto esquerdo','Senha: pedir ao responsável'],
  [0,'Live e ATEM','No computador transmissão, abrir o Chrome com a live do dia e abrir o programa da ATEM.','Computador transmissão','','','','live'],
  [1,'ProPresenter','De volta ao Mac Nicolly: abrir o ProPresenter.','Mac Nicolly'],
- [1,'Mesa de som DM3','Ligar a DM3.','','Sem a DM3 ligada, o som não sai'],
+ [1,'Mesa de som DM3','Ligar a DM3 e conferir os dois pontos marcados no desenho:','','Sem a DM3 ligada, o som não sai','','/manual/img/dm3.svg','',['ST DM7 (L e R, faders 5 e 6): botão ON aceso e fader levantado. Eles recebem o som que vem da DM7.','Stereo: fader vermelho no 0 e botão ON aceso.']],
  [1,'Câmeras e luzes','Ligar todas as câmeras e as luzes.','Lá embaixo'],
  [1,'Computador das luzes','Acender as luzes e deixar na cena padrão.','De volta em cima'],
  [1,'Luz de serviço','Desligar a luz de serviço que fica em cima do palco.','Sala dos disjuntores da luz de serviço'],
@@ -267,10 +270,11 @@ function desenharTx(){
  $('tally').textContent=todos?'NO AR':String(atual+1);
  if(todos){
   $('nBlk').textContent='Tudo pronto';$('nTit').textContent='Pode iniciar a live';
-  $('nTxt').textContent='Todos os passos foram feitos. Bom culto!';$('nWhere').innerHTML='';$('nFoto').hidden=true;$('nFoto2').hidden=true;$('now').classList.remove('comfoto');
+  $('nTxt').textContent='Todos os passos foram feitos. Bom culto!';$('nItens').hidden=true;$('nWhere').innerHTML='';$('nFoto').hidden=true;$('nFoto2').hidden=true;$('now').classList.remove('comfoto');
  }else{
   $('nBlk').textContent='Passo '+(atual+1)+' de '+PASSOS.length+' · '+BLOCOS[p[0]];
   $('nTit').textContent=p[1];$('nTxt').textContent=p[2];
+  const it=$('nItens');if(p[8]){it.innerHTML=p[8].map(x=>'<li>'+esc(x)+'</li>').join('');it.hidden=false;}else{it.hidden=true;it.innerHTML='';}
   for(const f of [$('nFoto'),$('nFoto2')]){if(p[6]){f.src=p[6];f.alt='Foto: '+p[1];f.hidden=false;}else{f.hidden=true;f.removeAttribute('src');}}
   $('now').classList.toggle('comfoto',!!p[6]);
   $('nWhere').innerHTML=(p[5]?'<span class="chip">'+esc(p[5])+'</span>':'')+(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
@@ -284,7 +288,7 @@ function desenharTx(){
   const its=PASSOS.map((p,i)=>[p,i]).filter(([p])=>p[0]===bi);
   const ok=its.filter(([,i])=>feitos.has(i)).length;
   return '<div class="card"><div class="ch"><h3>'+(bi+1)+'. '+esc(b)+'</h3><small>'+ok+' de '+its.length+'</small></div>'+
-   its.map(([p,i])=>'<button type="button" class="step'+(feitos.has(i)?' d':'')+(i===atual&&!todos?' c':'')+'" data-i="'+i+'"><span class="bx">'+(feitos.has(i)?'✓':i+1)+'</span><span><b>'+esc(p[1])+'</b><span>'+esc(p[2])+'</span>'+(p[6]?'<img class="mini" src="'+esc(p[6])+'" alt="Foto: '+esc(p[1])+'" loading="lazy">':'')+'</span></button>').join('')+'</div>';
+   its.map(([p,i])=>'<button type="button" class="step'+(feitos.has(i)?' d':'')+(i===atual&&!todos?' c':'')+'" data-i="'+i+'"><span class="bx">'+(feitos.has(i)?'✓':i+1)+'</span><span><b>'+esc(p[1])+'</b><span>'+esc(p[2])+(p[8]?' '+p[8].map((x,k)=>(k+1)+'. '+esc(x)).join(' '):'')+'</span>'+(p[6]?'<img class="mini" src="'+esc(p[6])+'" alt="Foto: '+esc(p[1])+'" loading="lazy">':'')+'</span></button>').join('')+'</div>';
  }).join('');
 }
 $('done').onclick=()=>{
