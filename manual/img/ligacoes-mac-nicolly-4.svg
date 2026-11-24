@@ -44,7 +44,7 @@
 <text x="314" y="565.0" fill="#121417" font-size="15" font-weight="700">Internet</text>
 <path d="M212 560H298" fill="none" stroke="#1f9d57" stroke-width="3" marker-end="url(#ag)"/>
 <rect x="300" y="592" width="240" height="56" rx="10" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
-<text x="314" y="616" fill="#121417" font-size="15" font-weight="700">Computador da frente</text>
+<text x="314" y="616" fill="#121417" font-size="15" font-weight="700">PC Linux da frente</text>
 <text x="314" y="635" fill="#555c66" font-size="12.5">recebe pela rede · passador</text>
 <path d="M212 620H298" fill="none" stroke="#1f9d57" stroke-width="3" marker-end="url(#ag)"/>
 <rect x="150" y="677" width="62" height="26" rx="6" fill="#d9730d"/><text x="181" y="695" text-anchor="middle" fill="#fff" font-size="12.5" font-weight="700">USB</text>
