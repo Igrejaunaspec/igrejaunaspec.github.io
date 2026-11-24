@@ -195,14 +195,14 @@ const BLOCOS=['Ligar os equipamentos','Som, câmeras e luzes','Conferir e testar
 const PASSOS=[
  [0,'Telão','Ligar os disjuntores do telão.','À direita de quem entra na sala'],
  [0,'Rack da frente','Ligar o rack com as processadoras do telão.','Na frente da sala'],
- [0,'Computador M4','Ligar o computador de 3 telas e entrar na conta.','Na frente da sala','Senha: pedir ao responsável'],
- [0,'ATEM Mini Pro','Ligar a ATEM Mini Pro.','Na frente do M4'],
+ [0,'Mac Nicolly','Computador de 3 telas: ligar e entrar na conta.','Na frente da sala','','Login: mac nicolly · Senha: 1127'],
+ [0,'ATEM Mini Pro','Ligar a ATEM Mini Pro.','Na frente do Mac Nicolly'],
  [0,'Web Presenter','Ligar a Web Presenter.','Atrás da ATEM Extreme ISO','Ligue antes da Extreme ISO'],
  [0,'ATEM Extreme ISO','Ligar a ATEM Extreme ISO.','Lado esquerdo da sala'],
  [0,'TVs','Ligar as TVs.',''],
  [0,'Computador M2','Ligar e entrar na conta.','Fundo da sala, canto esquerdo','Senha: pedir ao responsável'],
  [0,'Live e ATEM no M2','No M2, abrir o Chrome com a live do dia e abrir o programa da ATEM.','Computador M2'],
- [1,'ProPresenter e música','De volta ao M4: abrir o ProPresenter e o navegador, e colocar uma música de fundo.','Computador M4'],
+ [1,'ProPresenter e música','De volta ao Mac Nicolly: abrir o ProPresenter e o navegador, e colocar uma música de fundo.','Mac Nicolly'],
  [1,'Mesa de som DM3','Ligar a DM3.','','Sem a DM3 ligada, a música não sai'],
  [1,'Canal da mídia','Na DM3, subir um pouco o canal da mídia e deixar a música tocando.','Mesa DM3'],
  [1,'Câmeras e luzes','Ligar todas as câmeras e as luzes.','Lá embaixo'],
@@ -214,10 +214,10 @@ const PASSOS=[
  [2,'Intercoms','Deixar os intercoms em cima do computador, com as baterias.','']
 ];
 const AREAS={
- transmissao:{t:'Transmissão',l:'Como a imagem e o som do culto chegam ao YouTube: as ATEMs, a Web Presenter, o computador M2 e a live.',k:['ATEM Mini Pro: fica na frente do computador M4.','ATEM Extreme ISO: fica do lado esquerdo da sala; a Web Presenter fica atrás dela e é ligada antes.','Computador M2 (fundo da sala, canto esquerdo): nele ficam abertos a live do dia no Chrome e o programa da ATEM.','A live sai pelo canal IGREJA UNASP EC, sempre com a chave de transmissão Igreja UNASP.'],f:['Para que serve cada ATEM e como elas se ligam','Como trocar de câmera e montar a imagem','Como iniciar e encerrar a live','O que fazer se a live cair']},
+ transmissao:{t:'Transmissão',l:'Como a imagem e o som do culto chegam ao YouTube: as ATEMs, a Web Presenter, o computador M2 e a live.',k:['ATEM Mini Pro: fica na frente do Mac Nicolly (computador de 3 telas).','ATEM Extreme ISO: fica do lado esquerdo da sala; a Web Presenter fica atrás dela e é ligada antes.','Computador M2 (fundo da sala, canto esquerdo): nele ficam abertos a live do dia no Chrome e o programa da ATEM.','A live sai pelo canal IGREJA UNASP EC, sempre com a chave de transmissão Igreja UNASP.'],f:['Para que serve cada ATEM e como elas se ligam','Como trocar de câmera e montar a imagem','Como iniciar e encerrar a live','O que fazer se a live cair']},
  led:{t:'Computador do LED',l:'Tudo sobre o telão de LED e o computador que manda imagem para ele.',k:['O telão liga pelos disjuntores à direita de quem entra na sala.','Depois dos disjuntores, liga o rack da frente com as processadoras do telão.'],f:['Qual é o computador do LED e onde ele fica','Que programa ele usa e como trocar o que aparece no telão','Como desligar no fim do culto']},
  retorno:{t:'TV de retorno',l:'A TV que mostra no palco os slides e as letras para quem está à frente.',k:['Quem passa os slides e o que vai para a TV de retorno é escolhido na página do Passador, no Mac Igreja.','No Mac Igreja: abrir http://localhost:8092 (não pede PIN).','No celular ou em outro computador: Wi-Fi da igreja, endereço do Mac Igreja com :8092 no final, e o PIN do Passador.','Antes do culto: testar se o sinal chega na TV e se o passador muda os slides.'],f:['Endereço do Mac Igreja na rede','Onde fica anotado o PIN do Passador','O que fazer se a TV não recebe sinal']},
- audio:{t:'Áudio',l:'A mesa de som, a música ambiente e os intercoms da equipe.',k:['A mesa de som é a DM3. Sem ela ligada, a música do M4 não sai.','Antes do culto, subir um pouco o canal da mídia e deixar uma música tocando.','Intercoms ficam em cima do computador, com as baterias, e são entregues aos voluntários quando chegam.'],f:['Quais canais da DM3 são de quê','Qual saída vai para a live','Como carregar e trocar as baterias dos intercoms','Como desligar a DM3 no fim']},
+ audio:{t:'Áudio',l:'A mesa de som, a música ambiente e os intercoms da equipe.',k:['A mesa de som é a DM3. Sem ela ligada, a música do Mac Nicolly não sai.','Antes do culto, subir um pouco o canal da mídia e deixar uma música tocando.','Intercoms ficam em cima do computador, com as baterias, e são entregues aos voluntários quando chegam.'],f:['Quais canais da DM3 são de quê','Qual saída vai para a live','Como carregar e trocar as baterias dos intercoms','Como desligar a DM3 no fim']},
  iluminacao:{t:'Iluminação',l:'As luzes do palco, a cena padrão e a luz de serviço.',k:['As luzes são ligadas lá embaixo, junto com as câmeras.','No computador das luzes (em cima), acender e deixar na cena padrão.','A luz de serviço de cima do palco é desligada na sala dos disjuntores da luz de serviço.'],f:['Nome do programa das luzes e onde fica a cena padrão','Outras cenas usadas no culto','Como desligar tudo no fim']}
 };
 const KEY='manualSala.culto';
@@ -237,7 +237,7 @@ function desenharTx(){
  }else{
   $('nBlk').textContent='Passo '+(atual+1)+' de '+PASSOS.length+' · '+BLOCOS[p[0]];
   $('nTit').textContent=p[1];$('nTxt').textContent=p[2];
-  $('nWhere').innerHTML=(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
+  $('nWhere').innerHTML=(p[5]?'<span class="chip">'+esc(p[5])+'</span>':'')+(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
  }
  $('done').textContent=todos?'Recomeçar':(feitos.has(atual)?'Próximo passo':'Feito, próximo passo');
  $('prev').disabled=atual===0&&!todos;
