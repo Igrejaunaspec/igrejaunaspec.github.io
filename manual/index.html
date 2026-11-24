@@ -71,6 +71,8 @@ a{color:inherit}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#2f343b;font-size:13.5px;color:#eef0f2}
 .chip.warn{background:#4a2321;color:#ffd2cf}
 .foto{display:block;margin-top:16px;width:100%;max-width:520px;border-radius:12px;background:#fff}
+.fotoLado{display:none}
+@media(min-width:901px){.now.comfoto{grid-template-columns:auto minmax(0,1fr) minmax(0,46%)}.now.comfoto .foto{display:none}.now.comfoto .fotoLado:not([hidden]){display:block;width:100%;align-self:center;border-radius:12px;background:#fff}}
 .mini{display:block;margin-top:8px;width:100%;max-width:260px;border-radius:8px;background:#fff}
 .now .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .now .btn{background:#2a2e35;border-color:#454b54;color:#eef0f2}
@@ -172,6 +174,7 @@ a{color:inherit}
           <button class="btn ok" id="done" type="button">Feito, próximo passo</button>
         </div>
       </div>
+      <img class="fotoLado" id="nFoto2" alt="" hidden>
       <div class="bar" id="bar" aria-hidden="true"></div>
       <div class="cnt"><span id="cnt"></span><span>Os passos ficam marcados neste aparelho.</span></div>
     </div>
@@ -236,11 +239,12 @@ function desenharTx(){
  $('tally').textContent=todos?'NO AR':String(atual+1);
  if(todos){
   $('nBlk').textContent='Tudo pronto';$('nTit').textContent='Pode iniciar a live';
-  $('nTxt').textContent='Todos os passos foram feitos. Bom culto!';$('nWhere').innerHTML='';$('nFoto').hidden=true;
+  $('nTxt').textContent='Todos os passos foram feitos. Bom culto!';$('nWhere').innerHTML='';$('nFoto').hidden=true;$('nFoto2').hidden=true;$('now').classList.remove('comfoto');
  }else{
   $('nBlk').textContent='Passo '+(atual+1)+' de '+PASSOS.length+' · '+BLOCOS[p[0]];
   $('nTit').textContent=p[1];$('nTxt').textContent=p[2];
-  const f=$('nFoto');if(p[6]){f.src=p[6];f.alt='Foto: '+p[1];f.hidden=false;}else{f.hidden=true;f.removeAttribute('src');}
+  for(const f of [$('nFoto'),$('nFoto2')]){if(p[6]){f.src=p[6];f.alt='Foto: '+p[1];f.hidden=false;}else{f.hidden=true;f.removeAttribute('src');}}
+  $('now').classList.toggle('comfoto',!!p[6]);
   $('nWhere').innerHTML=(p[5]?'<span class="chip">'+esc(p[5])+'</span>':'')+(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
  }
  $('done').textContent=todos?'Recomeçar':(feitos.has(atual)?'Próximo passo':'Feito, próximo passo');
