@@ -91,6 +91,8 @@ a{color:inherit}
 .itens{margin:10px 0 0;padding-left:22px;font-size:16px;max-width:60ch}.itens li{margin:4px 0}.itens[hidden]{display:none}
 .now.comfoto .fotoLado{max-height:640px;object-fit:contain;background:transparent!important}
 .txPainel[hidden]{display:none}
+.aviso{margin-top:14px;background:var(--red);color:#fff;font-weight:700;font-size:16px;border-radius:10px;padding:12px 14px}
+.aviso[hidden]{display:none}
 .abas{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
 .aba{font:600 15px Inter,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
 .aba[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -230,6 +232,7 @@ a{color:inherit}
     <div class="txPainel" hidden>
       <div class="aparelho">
         <div class="fotoZonas" id="txFoto"></div>
+        <p class="aviso" id="txAviso" hidden></p>
         <p class="note" id="txOnde"></p>
       </div>
       <div class="zonas">
@@ -303,8 +306,8 @@ const TX=[
   ['Gravar e transmitir','REC grava. ON AIR, em STREAM, mostra se a transmissão está saindo.',[87,21,8,14]],
   ['Som','Liga, desliga e regula o volume dos microfones e de cada entrada.',[5,21,22,14]]
  ]},
- {id:'webpresenter',nome:'Web Presenter',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',zonas:[
-  ['Botão ON AIR','Começa e para o envio da imagem para a internet. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
+ {id:'webpresenter',nome:'Web Presenter',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',aviso:'Aperte o botão ON AIR para mandar a imagem para o Castr.',zonas:[
+  ['Botão ON AIR','Começa e para o envio da imagem para o Castr. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
   ['Tela','Mostra se está no ar (ON AIR), há quanto tempo, a velocidade da internet e se o sinal está OK, com a imagem e o som chegando.',[46,14,33,72]],
   ['MENU, SET e LOCK','Botões de configuração do aparelho.',[31.5,14,9.5,78]]
  ]}
@@ -315,6 +318,7 @@ function desenharTx2(){
  const pn=document.querySelector('.txPainel');pn.hidden=txAba<0;if(txAba<0)return;const a=TX[txAba];
  $('txFoto').innerHTML='<img src="'+esc(a.img)+'" alt="'+esc(a.nome)+'">'+a.zonas.map((z,i)=>'<button type="button" class="zona'+(i===txZona?' on':'')+'" data-z="'+i+'" aria-label="'+esc(z[0])+'" style="left:'+z[2][0]+'%;top:'+z[2][1]+'%;width:'+z[2][2]+'%;height:'+z[2][3]+'%"><b>'+(i+1)+'</b></button>').join('');
  $('txOnde').textContent=a.onde;
+ {const v=$('txAviso');v.textContent=a.aviso||'';v.hidden=!a.aviso;}
  $('txZonas').innerHTML=a.zonas.map((z,i)=>'<button type="button" class="zItem'+(i===txZona?' on':'')+'" data-z="'+i+'"><span class="n">'+(i+1)+'</span><span><b>'+esc(z[0])+'</b><span class="t">'+esc(z[1])+'</span></span></button>').join('');
 }
 const KEY='manualSala.culto2';
