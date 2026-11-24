@@ -392,13 +392,16 @@ const TUT={
   ['Visibilidade: escolha Público (ou Não listado/Privado se pedirem). Em Agendar, coloque a data e o horário do culto. Confira tudo e clique em Ok para criar.','/manual/img/criar/9-agendar.jpg','Só clique em Ok quando estiver tudo certo: é ele que cria a live.'],
   ['Abra a live criada e confira em cima: a Chave tem que estar em Igreja UNASP. Se estiver diferente, clique e escolha Igreja UNASP.','/manual/img/tela/yt5.jpg','Nunca deixe a live começar sozinha: no dia, quem começa é a pessoa, clicando em Transmitir ao vivo.']
  ],v:'/manual/video/criar-live-1.mp4'},
- criarclaude:{t:'Passo a passo: criar a live pelo Claude',p:[
-  ['A igreja tem um conector próprio do YouTube no Claude, que cria as lives e coloca a thumb sozinho, seguindo as regras do canal. As lives são pedidas no projeto Arte Tamb, no app do Claude.','/manual/img/criar/0-claude.jpg','O conector só funciona na conta do Claude da igreja que tem ele ligado.'],
-  ['1. Abra o app do Claude no Mac, entre no projeto Arte Tamb e comece uma conversa nova (ou continue a do culto).','',''],
-  ['2. Peça a live dizendo: qual culto, data, horário, tema e pregador. Exemplo: Cria a live do 2º culto de sábado 28/11 às 11h, tema A Travessia, Pr. Jimmy Cardoso. A thumb está no arquivo THUMB 28.11 JIMMY 2 CULTO.','',''],
-  ['3. O Claude cria com o título no padrão, a chave Igreja UNASP, a thumb certa (azul no 1º culto, cinza no 2º) e nunca com início automático.','',''],
-  ['4. Para trocar a thumb depois, é só pedir na mesma conversa, por exemplo muda a tamb pfv. Ele usa a versão nova do arquivo.','',''],
-  ['5. Confira no YouTube Studio (aba Abrir a live, passo 4) se a live apareceu com o título, a data e a thumb certos.','/manual/img/tela/yt4.jpg','Para apagar uma live, o Claude sempre pede confirmação antes.']
+ criarclaude:{t:'Passo a passo: criar a thumb e a live pelo Claude',p:[
+  ['Tudo é feito em uma conversa do app do Claude, no projeto Arte Tamb (conversa Photoshop edits request). Primeiro o Claude faz a thumb no Photoshop, depois cria a live no YouTube.','/manual/img/criar/0-claude.jpg','O conector do YouTube só funciona na conta do Claude da igreja que tem ele ligado.'],
+  ['1. Abra o app do Claude no computador, entre no projeto Arte Tamb e abra a conversa Photoshop edits request (ou comece uma nova dentro do projeto).','',''],
+  ['PARTE 1 · CRIAR A THUMB. 2. Mande só três coisas: o título (tema da mensagem), a foto do pastor (anexe a imagem) e o dia e o culto da transmissão. Exemplo: Tema A Travessia, Pr. Jimmy Cardoso, sábado 28/11, 1º culto. (Junto vai a foto.)','',''],
+  ['3. O Claude abre o Photoshop sozinho no computador, abre o modelo certo (THUMB - PRIMEIRO CULTO, azul, para as 8h; THUMB - SEGUNDO CULTO, cinza, para as 11h) e troca o título, o nome e a foto do pastor.','','Enquanto ele mexe no Photoshop, não use o computador: deixe ele trabalhar até terminar.'],
+  ['4. Ele mostra a thumb pronta para você aprovar. Se quiser mudar algo, é só pedir (por exemplo: aumenta o nome do pastor). Quando estiver certo, ele exporta o arquivo, por exemplo THUMB 28.11 JIMMY 1 CULTO.jpg.','',''],
+  ['PARTE 2 · CRIAR A LIVE. 5. Depois que a thumb foi exportada, peça na mesma conversa: agora cria a live. Ele já sabe o culto, a data, o tema e o pregador.','',''],
+  ['6. O Claude cria a live com o título no padrão (ex.: 1º Culto | A Travessia | Pr. Jimmy Cardoso), a chave Igreja UNASP, a thumb que acabou de exportar e nunca com início automático.','',''],
+  ['7. Se mudar a thumb depois, edite ou peça a mudança e mande: muda a tamb pfv. Ele coloca a versão nova do arquivo na live.','',''],
+  ['8. Confira no YouTube Studio (subaba Abrir a live) se a live apareceu com o título, a data e a thumb certos.','/manual/img/tela/yt4.jpg','Para apagar uma live, o Claude sempre pede confirmação antes.']
  ],v:''},
  propresenter2:{t:'Passo a passo: ProPresenter, editores e menus',p:[
   ['Para criar algo novo, clique no + ao lado de Biblioteca: Nova biblioteca, Nova apresentação, Playlist nova ou Nova pasta de playlists.','/manual/img/pp/19-novo-biblioteca.jpg',''],
@@ -442,7 +445,7 @@ const TX=[
   ['Para onde vai (Destinations)','Os canais do YouTube que recebem a live: Adventista Brasil, IGREJA e UNASP. Chave verde: aquele canal está recebendo.',[1.6,53,66.8,46]],
   ['Números da live','Bandwidth, Viewers e Bitrate mostram a internet e quantas pessoas assistem. Com a live parada, aparecem tracinhos.',[0.4,13.4,69.4,15.2]]
  ],prog:{t:'Como abrir o UNASP - EC no Castr',img:'/manual/img/castr-abrir.jpg',itens:['Em castr.com, no menu da esquerda, clique em Livestream.','Procure o cartão UNASP - EC.','Clique no nome ou em Manage (aparece ao passar o mouse na imagem).'],obs:'Se pedir login, chame o responsável pela mídia.'}},
- {id:'youtube',nome:'YouTube',passos:'live',sub:[{nome:'Abrir a live',passos:'live'},{nome:'Criar live pelo Claude',passos:'criarclaude'},{nome:'Criar live no YouTube Studio',passos:'criarmanual'}],img:'/manual/img/yt-sala-controle.jpg',onde:'É a tela da live do dia no YouTube Studio, aberta no computador transmissão. O caminho até ela está no passo 9 da aba Culto (botão Passo a passo).',aviso:'A chave tem que estar em Igreja UNASP.',zonas:[
+ {id:'youtube',nome:'YouTube',passos:'live',sub:[{nome:'Abrir a live',passos:'live'},{nome:'Criar thumb e live pelo Claude',passos:'criarclaude'},{nome:'Criar live no YouTube Studio',passos:'criarmanual'}],img:'/manual/img/yt-sala-controle.jpg',onde:'É a tela da live do dia no YouTube Studio, aberta no computador transmissão. O caminho até ela está no passo 9 da aba Culto (botão Passo a passo).',aviso:'A chave tem que estar em Igreja UNASP.',zonas:[
   ['Prévia da live','Mostra a imagem que chegou do Castr. Escrito Não há dados: nada chegou ainda; confira a Web Presenter e o Castr.',[8,16.5,44,79]],
   ['Chave','É aqui que se escolhe por onde a imagem entra. Precisa estar em Igreja UNASP. Se estiver diferente, clique e escolha Igreja UNASP.',[33.4,16,14,10]],
   ['Transmitir ao vivo','Começa a live para o público. Fica cinza até a imagem chegar. A live nunca começa sozinha: alguém precisa clicar aqui.',[86.2,1,9.8,10]]
