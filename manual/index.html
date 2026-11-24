@@ -72,6 +72,7 @@ a{color:inherit}
 .chip.warn{background:#4a2321;color:#ffd2cf}
 .foto{display:block;margin-top:16px;width:100%;max-width:520px;border-radius:12px;background:#fff}
 .fotoLado{display:none}
+.foto[hidden],.fotoLado[hidden],img[hidden]{display:none!important}
 @media(min-width:901px){.now.comfoto{grid-template-columns:auto minmax(0,1fr) minmax(0,46%)}.now.comfoto .foto{display:none}.now.comfoto .fotoLado:not([hidden]){display:block;width:100%;align-self:center;border-radius:12px;background:#fff}}
 .mini{display:block;margin-top:8px;width:100%;max-width:260px;border-radius:8px;background:#fff}
 .now .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
@@ -202,8 +203,8 @@ const PASSOS=[
  [0,'Telão','Ligar os disjuntores do telão.','À direita de quem entra na sala'],
  [0,'Rack da frente','Ligar o rack com as processadoras do telão.','Na frente da sala'],
  [0,'Mac Nicolly','Computador de 3 telas: ligar e entrar na conta.','Na frente da sala','','Login: mac nicolly · Senha: 1127'],
- [0,'ATEM Mini Pro','Ligar a ATEM Mini Pro.','Na frente do Mac Nicolly','','','img/atem-mini-pro.jpg'],
- [0,'Web Presenter','Ligar a Web Presenter.','Atrás da ATEM Extreme ISO','Ligue antes da Extreme ISO','','img/web-presenter.jpg'],
+ [0,'ATEM Mini Pro','Ligar a ATEM Mini Pro.','Na frente do Mac Nicolly','','','/manual/img/atem-mini-pro.jpg'],
+ [0,'Web Presenter','Ligar a Web Presenter.','Atrás da ATEM Extreme ISO','Ligue antes da Extreme ISO','','/manual/img/web-presenter.jpg'],
  [0,'ATEM Extreme ISO','Ligar a ATEM Extreme ISO.','Lado esquerdo da sala'],
  [0,'TVs','Ligar as TVs.',''],
  [0,'Computador M2','Ligar e entrar na conta.','Fundo da sala, canto esquerdo','Senha: pedir ao responsável'],
