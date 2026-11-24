@@ -237,7 +237,7 @@ function desenharTx(){
  }else{
   $('nBlk').textContent='Passo '+(atual+1)+' de '+PASSOS.length+' · '+BLOCOS[p[0]];
   $('nTit').textContent=p[1];$('nTxt').textContent=p[2];
-  $('nWhere').innerHTML=(p[3]?'<span class="chip">Onde: '+esc(p[3])+'</span>':'')+(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
+  $('nWhere').innerHTML=(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
  }
  $('done').textContent=todos?'Recomeçar':(feitos.has(atual)?'Próximo passo':'Feito, próximo passo');
  $('prev').disabled=atual===0&&!todos;
