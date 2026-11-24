@@ -70,6 +70,8 @@ a{color:inherit}
 .now .where{margin-top:10px;font-size:14px;color:#cfd4da;display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#2f343b;font-size:13.5px;color:#eef0f2}
 .chip.warn{background:#4a2321;color:#ffd2cf}
+.foto{display:block;margin-top:16px;width:100%;max-width:520px;border-radius:12px;background:#fff}
+.mini{display:block;margin-top:8px;width:100%;max-width:260px;border-radius:8px;background:#fff}
 .now .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 .now .btn{background:#2a2e35;border-color:#454b54;color:#eef0f2}
 .now .btn.ok{background:var(--green);border-color:var(--green)}
@@ -164,6 +166,7 @@ a{color:inherit}
         <h3 id="nTit"></h3>
         <p class="txt" id="nTxt"></p>
         <div class="where" id="nWhere"></div>
+        <img class="foto" id="nFoto" alt="" hidden>
         <div class="acts">
           <button class="btn" id="prev" type="button">← Anterior</button>
           <button class="btn ok" id="done" type="button">Feito, próximo passo</button>
@@ -196,7 +199,7 @@ const PASSOS=[
  [0,'Telão','Ligar os disjuntores do telão.','À direita de quem entra na sala'],
  [0,'Rack da frente','Ligar o rack com as processadoras do telão.','Na frente da sala'],
  [0,'Mac Nicolly','Computador de 3 telas: ligar e entrar na conta.','Na frente da sala','','Login: mac nicolly · Senha: 1127'],
- [0,'ATEM Mini Pro','Ligar a ATEM Mini Pro.','Na frente do Mac Nicolly'],
+ [0,'ATEM Mini Pro','Ligar a ATEM Mini Pro.','Na frente do Mac Nicolly','','','img/atem-mini-pro.jpg'],
  [0,'Web Presenter','Ligar a Web Presenter.','Atrás da ATEM Extreme ISO','Ligue antes da Extreme ISO'],
  [0,'ATEM Extreme ISO','Ligar a ATEM Extreme ISO.','Lado esquerdo da sala'],
  [0,'TVs','Ligar as TVs.',''],
@@ -233,10 +236,11 @@ function desenharTx(){
  $('tally').textContent=todos?'NO AR':String(atual+1);
  if(todos){
   $('nBlk').textContent='Tudo pronto';$('nTit').textContent='Pode iniciar a live';
-  $('nTxt').textContent='Todos os passos foram feitos. Bom culto!';$('nWhere').innerHTML='';
+  $('nTxt').textContent='Todos os passos foram feitos. Bom culto!';$('nWhere').innerHTML='';$('nFoto').hidden=true;
  }else{
   $('nBlk').textContent='Passo '+(atual+1)+' de '+PASSOS.length+' · '+BLOCOS[p[0]];
   $('nTit').textContent=p[1];$('nTxt').textContent=p[2];
+  const f=$('nFoto');if(p[6]){f.src=p[6];f.alt='Foto: '+p[1];f.hidden=false;}else{f.hidden=true;f.removeAttribute('src');}
   $('nWhere').innerHTML=(p[5]?'<span class="chip">'+esc(p[5])+'</span>':'')+(p[4]?'<span class="chip warn">'+esc(p[4])+'</span>':'');
  }
  $('done').textContent=todos?'Recomeçar':(feitos.has(atual)?'Próximo passo':'Feito, próximo passo');
@@ -247,7 +251,7 @@ function desenharTx(){
   const its=PASSOS.map((p,i)=>[p,i]).filter(([p])=>p[0]===bi);
   const ok=its.filter(([,i])=>feitos.has(i)).length;
   return '<div class="card"><div class="ch"><h3>'+(bi+1)+'. '+esc(b)+'</h3><small>'+ok+' de '+its.length+'</small></div>'+
-   its.map(([p,i])=>'<button type="button" class="step'+(feitos.has(i)?' d':'')+(i===atual&&!todos?' c':'')+'" data-i="'+i+'"><span class="bx">'+(feitos.has(i)?'✓':i+1)+'</span><span><b>'+esc(p[1])+'</b><span>'+esc(p[2])+'</span></span></button>').join('')+'</div>';
+   its.map(([p,i])=>'<button type="button" class="step'+(feitos.has(i)?' d':'')+(i===atual&&!todos?' c':'')+'" data-i="'+i+'"><span class="bx">'+(feitos.has(i)?'✓':i+1)+'</span><span><b>'+esc(p[1])+'</b><span>'+esc(p[2])+'</span>'+(p[6]?'<img class="mini" src="'+esc(p[6])+'" alt="Foto: '+esc(p[1])+'" loading="lazy">':'')+'</span></button>').join('')+'</div>';
  }).join('');
 }
 $('done').onclick=()=>{
