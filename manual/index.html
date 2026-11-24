@@ -94,7 +94,7 @@ a{color:inherit}
 .prog{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,2.5vw,28px)}
 .prog[hidden]{display:none}
 .progGrid{margin-top:14px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:center}
-.progGrid img{width:100%;border-radius:10px;border:1px solid var(--line)}
+.progGrid img{width:100%;max-height:440px;object-fit:contain;border-radius:10px;border:1px solid var(--line)}
 .progGrid ol{margin:0;padding-left:22px;font-size:16px}.progGrid li{margin:6px 0}
 @media(max-width:820px){.progGrid{grid-template-columns:1fr}}
 .aviso{margin-top:14px;background:var(--red);color:#fff;font-weight:700;font-size:16px;border-radius:10px;padding:12px 14px}
@@ -317,7 +317,12 @@ const TX=[
   ['Botão ON AIR','Começa e para o envio da imagem para o Castr. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
   ['Tela','Mostra se está no ar (ON AIR), há quanto tempo, a velocidade da internet e se o sinal está OK, com a imagem e o som chegando.',[46,14,33,72]],
   ['MENU, SET e LOCK','Botões de configuração do aparelho.',[31.5,14,9.5,78]]
- ]}
+ ]},
+ {id:'castr',nome:'Castr',img:'/manual/img/castr-unasp-ec.jpg',onde:'O Castr recebe a imagem da Web Presenter e manda ao mesmo tempo para os canais do YouTube. Abra em castr.com, no Chrome.',aviso:'Abra sempre o UNASP - EC. Não clique em Disable: ele desliga a transmissão.',zonas:[
+  ['Imagem que chegou','Mostra a imagem que está chegando da Web Presenter. Escrito Waiting for stream: ainda não chegou nada. Aperte o ON AIR da Web Presenter.',[70.8,4,28.6,41]],
+  ['Para onde vai (Destinations)','Os canais do YouTube que recebem a live: Adventista Brasil, IGREJA e UNASP. Chave verde: aquele canal está recebendo.',[1.6,53,66.8,46]],
+  ['Números da live','Bandwidth, Viewers e Bitrate mostram a internet e quantas pessoas assistem. Com a live parada, aparecem tracinhos.',[0.4,13.4,69.4,15.2]]
+ ],prog:{t:'Como abrir o UNASP - EC no Castr',img:'/manual/img/castr-abrir.jpg',itens:['Em castr.com, no menu da esquerda, clique em Livestream.','Procure o cartão UNASP - EC.','Clique no nome ou em Manage (aparece ao passar o mouse na imagem).'],obs:'Se pedir login, chame o responsável pela mídia.'}}
 ];
 let txAba=-1,txZona=-1;
 function desenharTx2(){
