@@ -380,6 +380,26 @@ const TUT={
   ['3. Conexão com o Companion: o endereço (Host/IP) e a porta do Companion. Hoje está em 192.168.132.3, porta 8000, formato Novo. Testar conexão confere se está falando; o selo lá em cima mostra o resultado.','/manual/img/roteiro/9-conexao.jpg','Só mude com o responsável pela mídia.'],
   ['Backup da configuração: Exportar guarda os macros e a conexão num arquivo; Importar traz de volta. Faça um backup antes de mexer.','/manual/img/roteiro/10-backup.jpg','']
  ],v:'/manual/video/roteiro-1.mp4'},
+ criarmanual:{t:'Passo a passo: criar a live no YouTube Studio',p:[
+  ['No YouTube Studio, em Transmitir ao vivo › Gerenciar, clique em Programar transmissão (canto direito).','/manual/img/criar/1-programar.jpg',''],
+  ['Clique em Criar nova. (Reutilizar configurações copia uma live antiga; use só se for igual.)','/manual/img/criar/2-criar-nova.jpg',''],
+  ['Detalhes › Título: siga o padrão. Sexta 20h: Culto de Sexta | tema | pregador. Sábado 8h: 1º Culto | tema | pregador. Sábado 11h: 2º Culto | tema | pregador. Eventos: Musical | nome. Use Pr. só se for pastor. A descrição já vem pronta: não precisa mexer.','/manual/img/criar/3-titulo.jpg',''],
+  ['Desça até Miniatura: clique em Fazer upload de miniatura e escolha a thumb do culto (azul no 1º culto, cinza no 2º). Em Playlists, escolha a playlist do culto.','/manual/img/criar/4-miniatura.jpg','A thumb vai sempre junto com a live.'],
+  ['Em Como você quer transmitir ao vivo?, deixe Software de codificação (é a Web Presenter que manda a imagem, pelo Castr).','/manual/img/criar/5-software.jpg',''],
+  ['Público: marque Não é conteúdo para crianças. Depois clique em Avançar.','/manual/img/criar/6-criancas.jpg',''],
+  ['Monetização: deixe como está e clique em Avançar.','/manual/img/criar/7-monetizacao.jpg',''],
+  ['Personalização: deixe o Chat ao vivo ligado e clique em Avançar.','/manual/img/criar/8-chat.jpg',''],
+  ['Visibilidade: escolha Público (ou Não listado/Privado se pedirem). Em Agendar, coloque a data e o horário do culto. Confira tudo e clique em Ok para criar.','/manual/img/criar/9-agendar.jpg','Só clique em Ok quando estiver tudo certo: é ele que cria a live.'],
+  ['Abra a live criada e confira em cima: a Chave tem que estar em Igreja UNASP. Se estiver diferente, clique e escolha Igreja UNASP.','/manual/img/tela/yt5.jpg','Nunca deixe a live começar sozinha: no dia, quem começa é a pessoa, clicando em Transmitir ao vivo.']
+ ],v:'/manual/video/criar-live-1.mp4'},
+ criarclaude:{t:'Passo a passo: criar a live pelo Claude',p:[
+  ['A igreja tem um conector próprio do YouTube no Claude, que cria as lives e coloca a thumb sozinho, seguindo as regras do canal. As lives são pedidas no projeto Arte Tamb, no app do Claude.','/manual/img/criar/0-claude.jpg','O conector só funciona na conta do Claude da igreja que tem ele ligado.'],
+  ['1. Abra o app do Claude no Mac, entre no projeto Arte Tamb e comece uma conversa nova (ou continue a do culto).','',''],
+  ['2. Peça a live dizendo: qual culto, data, horário, tema e pregador. Exemplo: Cria a live do 2º culto de sábado 28/11 às 11h, tema A Travessia, Pr. Jimmy Cardoso. A thumb está no arquivo THUMB 28.11 JIMMY 2 CULTO.','',''],
+  ['3. O Claude cria com o título no padrão, a chave Igreja UNASP, a thumb certa (azul no 1º culto, cinza no 2º) e nunca com início automático.','',''],
+  ['4. Para trocar a thumb depois, é só pedir na mesma conversa, por exemplo muda a tamb pfv. Ele usa a versão nova do arquivo.','',''],
+  ['5. Confira no YouTube Studio (aba Abrir a live, passo 4) se a live apareceu com o título, a data e a thumb certos.','/manual/img/tela/yt4.jpg','Para apagar uma live, o Claude sempre pede confirmação antes.']
+ ],v:''},
  propresenter2:{t:'Passo a passo: ProPresenter, editores e menus',p:[
   ['Para criar algo novo, clique no + ao lado de Biblioteca: Nova biblioteca, Nova apresentação, Playlist nova ou Nova pasta de playlists.','/manual/img/pp/19-novo-biblioteca.jpg',''],
   ['O + ao lado da lista de itens cria uma Nova apresentação direto na playlist (atalho Cmd+N).','/manual/img/pp/20-nova.jpg',''],
@@ -422,17 +442,17 @@ const TX=[
   ['Para onde vai (Destinations)','Os canais do YouTube que recebem a live: Adventista Brasil, IGREJA e UNASP. Chave verde: aquele canal está recebendo.',[1.6,53,66.8,46]],
   ['Números da live','Bandwidth, Viewers e Bitrate mostram a internet e quantas pessoas assistem. Com a live parada, aparecem tracinhos.',[0.4,13.4,69.4,15.2]]
  ],prog:{t:'Como abrir o UNASP - EC no Castr',img:'/manual/img/castr-abrir.jpg',itens:['Em castr.com, no menu da esquerda, clique em Livestream.','Procure o cartão UNASP - EC.','Clique no nome ou em Manage (aparece ao passar o mouse na imagem).'],obs:'Se pedir login, chame o responsável pela mídia.'}},
- {id:'youtube',nome:'YouTube',passos:'live',img:'/manual/img/yt-sala-controle.jpg',onde:'É a tela da live do dia no YouTube Studio, aberta no computador transmissão. O caminho até ela está no passo 9 da aba Culto (botão Passo a passo).',aviso:'A chave tem que estar em Igreja UNASP.',zonas:[
+ {id:'youtube',nome:'YouTube',passos:'live',sub:[{nome:'Abrir a live',passos:'live'},{nome:'Criar live pelo Claude',passos:'criarclaude'},{nome:'Criar live no YouTube Studio',passos:'criarmanual'}],img:'/manual/img/yt-sala-controle.jpg',onde:'É a tela da live do dia no YouTube Studio, aberta no computador transmissão. O caminho até ela está no passo 9 da aba Culto (botão Passo a passo).',aviso:'A chave tem que estar em Igreja UNASP.',zonas:[
   ['Prévia da live','Mostra a imagem que chegou do Castr. Escrito Não há dados: nada chegou ainda; confira a Web Presenter e o Castr.',[8,16.5,44,79]],
   ['Chave','É aqui que se escolhe por onde a imagem entra. Precisa estar em Igreja UNASP. Se estiver diferente, clique e escolha Igreja UNASP.',[33.4,16,14,10]],
   ['Transmitir ao vivo','Começa a live para o público. Fica cinza até a imagem chegar. A live nunca começa sozinha: alguém precisa clicar aqui.',[86.2,1,9.8,10]]
  ]}
 ];
-let txAba=-1,txZona=-1;
+let txAba=-1,txZona=-1,txSub=0;
 function desenharTx2(){
  $('txAbas').innerHTML=TX.map((t,i)=>'<button class="aba" role="tab" type="button" data-i="'+i+'" aria-selected="'+(i===txAba)+'">'+esc(t.nome)+'</button>').join('');
  const pn=document.querySelector('.txPainel'),ps=$('txPassos'),tv=$('txVideo');pn.hidden=txAba<0;ps.hidden=true;tv.hidden=true;if(txAba<0){$('txProg').hidden=true;return;}const a=TX[txAba];
- if(a.passos){const t=TUT[a.passos];pn.hidden=true;$('txProg').hidden=true;ps.innerHTML=(a.aviso?'<p class="aviso">'+esc(a.aviso)+'</p>':'')+'<ol class="tutLista">'+t.p.map((x,i)=>'<li><span class="n">'+(i+1)+'</span><div><p>'+esc(x[0])+'</p>'+(x[1]?'<img src="'+esc(x[1])+'" alt="Figura '+(i+1)+'" loading="lazy">':'')+(x[2]?'<p class="obs">'+esc(x[2])+'</p>':'')+'</div></li>').join('')+'</ol>';ps.innerHTML+=t.v?'<div class="tutVideo"><h3>Vídeo</h3><video controls playsinline preload="metadata" style="width:100%;border-radius:10px" src="'+esc(t.v)+'"></video></div>':'';ps.hidden=false;return;}
+ if(a.passos){const sb=a.sub?(a.sub[txSub]||a.sub[0]):null;const t=TUT[sb?sb.passos:a.passos];pn.hidden=true;$('txProg').hidden=true;ps.innerHTML=(a.sub?'<div class="abas" id="txSubAbas" style="margin:0 0 16px">'+a.sub.map((x,i)=>'<button class="aba" type="button" data-s="'+i+'" aria-selected="'+(i===txSub)+'">'+esc(x.nome)+'</button>').join('')+'</div>':'')+'<h3 style="margin-bottom:10px">'+esc(t.t)+'</h3>'+(a.aviso?'<p class="aviso">'+esc(a.aviso)+'</p>':'')+'<ol class="tutLista">'+t.p.map((x,i)=>'<li><span class="n">'+(i+1)+'</span><div><p>'+esc(x[0])+'</p>'+(x[1]?'<img src="'+esc(x[1])+'" alt="Figura '+(i+1)+'" loading="lazy">':'')+(x[2]?'<p class="obs">'+esc(x[2])+'</p>':'')+'</div></li>').join('')+'</ol>';ps.innerHTML+=t.v?'<div class="tutVideo"><h3>Vídeo</h3><video controls playsinline preload="metadata" style="width:100%;border-radius:10px" src="'+esc(t.v)+'"></video></div>':'';ps.hidden=false;return;}
  $('txFoto').innerHTML='<img src="'+esc(a.img)+'" alt="'+esc(a.nome)+'">'+a.zonas.map((z,i)=>'<button type="button" class="zona'+(i===txZona?' on':'')+'" data-z="'+i+'" aria-label="'+esc(z[0])+'" style="left:'+z[2][0]+'%;top:'+z[2][1]+'%;width:'+z[2][2]+'%;height:'+z[2][3]+'%"><b>'+(i+1)+'</b></button>').join('');
  $('txOnde').textContent=a.onde;
  {const v=$('txAviso');v.textContent=a.aviso||'';v.hidden=!a.aviso;}
@@ -500,7 +520,8 @@ function fecharTut(){$('tut').hidden=true;document.body.style.overflow='';}
 $('tutBtn').onclick=()=>abrirTut(PASSOS[atual][7]);
 $('tutFechar').onclick=fecharTut;
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tut').hidden)fecharTut();});
-$('txAbas').onclick=e=>{const b=e.target.closest('.aba');if(!b)return;const i=+b.dataset.i;txAba=txAba===i?-1:i;txZona=-1;desenharTx2();};
+$('txPassos').onclick=e=>{const b=e.target.closest('#txSubAbas .aba');if(!b)return;txSub=+b.dataset.s;desenharTx2();};
+$('txAbas').onclick=e=>{const b=e.target.closest('.aba');if(!b)return;const i=+b.dataset.i;txAba=txAba===i?-1:i;txSub=0;txZona=-1;desenharTx2();};
 $('txFoto').onclick=e=>{const b=e.target.closest('.zona');if(!b)return;const z=+b.dataset.z;txZona=txZona===z?-1:z;desenharTx2();};
 $('txZonas').onclick=e=>{const b=e.target.closest('.zItem');if(!b)return;const z=+b.dataset.z;txZona=txZona===z?-1:z;desenharTx2();};
 $('aAbas').onclick=e=>{const b=e.target.closest('.aba');if(!b)return;const i=+b.dataset.i;areaAba=areaAba===i?-1:i;desenharAbasArea();};
