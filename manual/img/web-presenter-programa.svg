@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 640" font-family="Inter,Arial,sans-serif">
+<rect width="760" height="640" fill="#ffffff"/>
+<rect x="40" y="20" width="680" height="580" rx="6" fill="#f4f4f4" stroke="#c9c9c9"/>
+<rect x="40" y="20" width="680" height="80" rx="6" fill="#1f1f1f"/><rect x="40" y="90" width="680" height="10" fill="#1f1f1f"/>
+<text x="66" y="58" fill="#f39a1e" font-size="24" font-weight="600">Blackmagic Web Presenter</text>
+<text x="66" y="84" fill="#cfcfcf" font-size="14">Web Presenter</text>
+<text x="80" y="138" fill="#222" font-size="15" font-weight="600">Live Stream</text>
+<rect x="74" y="148" width="98" height="3" fill="#f39a1e"/>
+<text x="210" y="138" fill="#555" font-size="15" font-weight="400">Audio</text>
+<text x="340" y="138" fill="#555" font-size="15" font-weight="400">Setup</text>
+<line x1="66" y1="151" x2="694" y2="151" stroke="#d6d6d6"/>
+<text x="66" y="186" fill="#222" font-size="15" font-weight="700">Video Output</text>
+<text x="250" y="220" text-anchor="end" fill="#333" font-size="14">Stream Standard:</text>
+<rect x="262" y="200" width="300" height="30" rx="3" fill="#ffffff" stroke="#c6c6c6"/>
+<text x="272" y="220" fill="#222" font-size="14">1080p30</text>
+<path d="M542 212l6 7 6-7z" fill="#666"/>
+<line x1="66" y1="250" x2="694" y2="250" stroke="#d6d6d6"/>
+<text x="66" y="282" fill="#222" font-size="15" font-weight="700">Live Stream</text>
+<text x="250" y="316" text-anchor="end" fill="#333" font-size="14">Platform:</text>
+<rect x="262" y="296" width="300" height="30" rx="3" fill="#ffffff" stroke="#c6c6c6"/>
+<text x="272" y="316" fill="#222" font-size="14">Castr</text>
+<path d="M542 308l6 7 6-7z" fill="#666"/>
+<text x="250" y="360" text-anchor="end" fill="#333" font-size="14">Server:</text>
+<rect x="262" y="340" width="300" height="30" rx="3" fill="#ffffff" stroke="#c6c6c6"/>
+<text x="272" y="360" fill="#222" font-size="14">Primary</text>
+<path d="M542 352l6 7 6-7z" fill="#666"/>
+<text x="250" y="404" text-anchor="end" fill="#333" font-size="14">Key:</text>
+<rect x="262" y="384" width="300" height="44" rx="3" fill="#ffffff" stroke="#c6c6c6"/>
+<text x="272" y="404" fill="#222" font-size="14">••••••••••••••••••</text>
+<text x="250" y="462" text-anchor="end" fill="#333" font-size="14">Passphrase:</text>
+<rect x="262" y="442" width="300" height="44" rx="3" fill="#ececec" stroke="#c6c6c6"/>
+<text x="272" y="462" fill="#888" font-size="14"></text>
+<text x="250" y="520" text-anchor="end" fill="#333" font-size="14">Quality:</text>
+<rect x="262" y="500" width="300" height="30" rx="3" fill="#ffffff" stroke="#c6c6c6"/>
+<text x="272" y="520" fill="#222" font-size="14">Streaming High</text>
+<path d="M542 512l6 7 6-7z" fill="#666"/>
+<rect x="262" y="546" width="90" height="30" rx="3" fill="#e9e9e9" stroke="#bdbdbd"/><text x="307" y="566" text-anchor="middle" fill="#444" font-size="13">OFF</text>
+<rect x="364" y="546" width="90" height="30" rx="3" fill="#e9e9e9" stroke="#bdbdbd"/><text x="409" y="566" text-anchor="middle" fill="#444" font-size="13">ON AIR</text>
+<rect x="254" y="288" width="316" height="46" rx="8" fill="none" stroke="#e5322d" stroke-width="4"/>
+<circle cx="592" cy="311" r="15" fill="#e5322d"/><text x="592" y="317" text-anchor="middle" fill="#fff" font-size="15" font-weight="800">1</text>
+<rect x="356" y="538" width="106" height="46" rx="8" fill="none" stroke="#e5322d" stroke-width="4"/>
+<circle cx="484" cy="561" r="15" fill="#e5322d"/><text x="484" y="567" text-anchor="middle" fill="#fff" font-size="15" font-weight="800">2</text>
+<text x="380" y="626" text-anchor="middle" fill="#555c66" font-size="13">Desenho simplificado do programa da Web Presenter, aba Live Stream</text>
+</svg>
