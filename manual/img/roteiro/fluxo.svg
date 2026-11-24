@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 520" font-family="Inter,Arial,sans-serif"><rect width="1060" height="520" fill="#fff"/>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2b6cd6"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#1f9d57"/></marker></defs>
+<text x="30" y="40" fill="#121417" font-size="22" font-weight="800">Como o Roteiro ao Vivo comanda o ProPresenter</text>
+<text x="30" y="64" fill="#555c66" font-size="14">Verde: de onde vem o roteiro · Azul: os comandos durante o culto</text>
+<rect x="30" y="100" width="260" height="110" rx="12" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="46" y="128" fill="#121417" font-size="16" font-weight="800">Planilha do roteiro</text>
+<text x="46" y="150" fill="#555c66" font-size="13">arquivo .xlsx</text>
+<text x="46" y="169" fill="#555c66" font-size="13">cada aba = um culto</text>
+<rect x="30" y="240" width="260" height="110" rx="12" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="46" y="268" fill="#121417" font-size="16" font-weight="800">Editor de roteiro (nuvem)</text>
+<text x="46" y="290" fill="#555c66" font-size="13">editor-roteiro.pages.dev</text>
+<text x="46" y="309" fill="#555c66" font-size="13">botão Baixar roteiro da nuvem</text>
+<rect x="380" y="150" width="290" height="150" rx="12" fill="#fff6dc" stroke="#f5b301" stroke-width="2"/>
+<text x="396" y="178" fill="#121417" font-size="16" font-weight="800">Roteiro ao Vivo</text>
+<text x="396" y="200" fill="#555c66" font-size="13">roteirosabado.local:8080</text>
+<text x="396" y="219" fill="#555c66" font-size="13">roda no Mac Nicolly</text>
+<text x="396" y="238" fill="#555c66" font-size="13">guarda os roteiros e</text>
+<text x="396" y="257" fill="#555c66" font-size="13">os macros de cada momento</text>
+<rect x="760" y="150" width="270" height="150" rx="12" fill="#f4f5f6" stroke="#c9ced6" stroke-width="1.2"/>
+<text x="776" y="178" fill="#121417" font-size="16" font-weight="800">Companion</text>
+<text x="776" y="200" fill="#555c66" font-size="13">endereço 192.168.132.3</text>
+<text x="776" y="219" fill="#555c66" font-size="13">porta 8000</text>
+<text x="776" y="238" fill="#555c66" font-size="13">aperta os botões</text>
+<text x="776" y="257" fill="#555c66" font-size="13">que comandam o ProPresenter</text>
+<rect x="760" y="370" width="270" height="120" rx="12" fill="#fff6dc" stroke="#f5b301" stroke-width="2"/>
+<text x="776" y="398" fill="#121417" font-size="16" font-weight="800">ProPresenter</text>
+<text x="776" y="420" fill="#555c66" font-size="13">no Mac Nicolly</text>
+<text x="776" y="439" fill="#555c66" font-size="13">troca a tela de palco</text>
+<text x="776" y="458" fill="#555c66" font-size="13">e ajusta o timer</text>
+<path d="M290 155H335V200H378" fill="none" stroke="#1f9d57" stroke-width="3" marker-end="url(#ag)"/>
+<path d="M290 295H335V250H378" fill="none" stroke="#1f9d57" stroke-width="3" marker-end="url(#ag)"/>
+<path d="M670 225H758" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ar)"/>
+<text x="714" y="214" text-anchor="middle" fill="#2b6cd6" font-size="12.5" font-weight="700">pela rede</text>
+<path d="M895 300V368" fill="none" stroke="#2b6cd6" stroke-width="3" marker-end="url(#ar)"/>
+<text x="905" y="340" fill="#2b6cd6" font-size="12.5" font-weight="700">aciona</text>
+<rect x="380" y="370" width="345" height="120" rx="12" fill="#eef4ff" stroke="#2b6cd6" stroke-width="1.2"/>
+<text x="396" y="398" fill="#121417" font-size="15" font-weight="800">Ao tocar numa linha ou em DISPARAR</text>
+<text x="396" y="422" fill="#555c66" font-size="13">1. lê o Momento e o Tempo da linha</text>
+<text x="396" y="440" fill="#555c66" font-size="13">2. pede ao Companion o botão certo</text>
+<text x="396" y="458" fill="#555c66" font-size="13">3. o ProPresenter troca a tela de palco</text>
+<text x="396" y="476" fill="#555c66" font-size="13">   e acerta o timer do momento</text>
+</svg>
