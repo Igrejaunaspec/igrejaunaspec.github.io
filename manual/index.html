@@ -91,6 +91,12 @@ a{color:inherit}
 .itens{margin:10px 0 0;padding-left:22px;font-size:16px;max-width:60ch}.itens li{margin:4px 0}.itens[hidden]{display:none}
 .now.comfoto .fotoLado{max-height:640px;object-fit:contain;background:transparent!important}
 .txPainel[hidden]{display:none}
+.prog{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:clamp(16px,2.5vw,28px)}
+.prog[hidden]{display:none}
+.progGrid{margin-top:14px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:center}
+.progGrid img{width:100%;border-radius:10px;border:1px solid var(--line)}
+.progGrid ol{margin:0;padding-left:22px;font-size:16px}.progGrid li{margin:6px 0}
+@media(max-width:820px){.progGrid{grid-template-columns:1fr}}
 .aviso{margin-top:14px;background:var(--red);color:#fff;font-weight:700;font-size:16px;border-radius:10px;padding:12px 14px}
 .aviso[hidden]{display:none}
 .abas{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
@@ -240,6 +246,7 @@ a{color:inherit}
         <div id="txZonas"></div>
       </div>
     </div>
+    <div class="prog" id="txProg" hidden></div>
   </div>
 </section>
 
@@ -306,7 +313,7 @@ const TX=[
   ['Gravar e transmitir','REC grava. ON AIR, em STREAM, mostra se a transmissão está saindo.',[87,21,8,14]],
   ['Som','Liga, desliga e regula o volume dos microfones e de cada entrada.',[5,21,22,14]]
  ]},
- {id:'webpresenter',nome:'Web Presenter',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',aviso:'Aperte o botão ON AIR para mandar a imagem para o Castr.',zonas:[
+ {id:'webpresenter',nome:'Web Presenter',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',aviso:'Aperte o botão ON AIR para mandar a imagem para o Castr.',prog:{t:'Programa no computador: Blackmagic Web Presenter Setup',img:'/manual/img/web-presenter-programa.svg',itens:['Platform: precisa estar em Castr, que é para onde a imagem vai.','Key: é a chave do Castr. Já fica salva; não precisa mexer.'],obs:'Na aba Live Stream ficam os dados da transmissão. Se mudar algo, clique em Save.'},zonas:[
   ['Botão ON AIR','Começa e para o envio da imagem para o Castr. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
   ['Tela','Mostra se está no ar (ON AIR), há quanto tempo, a velocidade da internet e se o sinal está OK, com a imagem e o som chegando.',[46,14,33,72]],
   ['MENU, SET e LOCK','Botões de configuração do aparelho.',[31.5,14,9.5,78]]
@@ -315,10 +322,11 @@ const TX=[
 let txAba=-1,txZona=-1;
 function desenharTx2(){
  $('txAbas').innerHTML=TX.map((t,i)=>'<button class="aba" role="tab" type="button" data-i="'+i+'" aria-selected="'+(i===txAba)+'">'+esc(t.nome)+'</button>').join('');
- const pn=document.querySelector('.txPainel');pn.hidden=txAba<0;if(txAba<0)return;const a=TX[txAba];
+ const pn=document.querySelector('.txPainel');pn.hidden=txAba<0;if(txAba<0){$('txProg').hidden=true;return;}const a=TX[txAba];
  $('txFoto').innerHTML='<img src="'+esc(a.img)+'" alt="'+esc(a.nome)+'">'+a.zonas.map((z,i)=>'<button type="button" class="zona'+(i===txZona?' on':'')+'" data-z="'+i+'" aria-label="'+esc(z[0])+'" style="left:'+z[2][0]+'%;top:'+z[2][1]+'%;width:'+z[2][2]+'%;height:'+z[2][3]+'%"><b>'+(i+1)+'</b></button>').join('');
  $('txOnde').textContent=a.onde;
  {const v=$('txAviso');v.textContent=a.aviso||'';v.hidden=!a.aviso;}
+ {const g=$('txProg');if(a.prog){g.innerHTML='<h3>'+esc(a.prog.t)+'</h3><div class="progGrid"><img src="'+esc(a.prog.img)+'" alt="Tela do programa"><div><ol>'+a.prog.itens.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol><p class="note">'+esc(a.prog.obs)+'</p></div></div>';g.hidden=false;}else{g.hidden=true;g.innerHTML='';}}
  $('txZonas').innerHTML=a.zonas.map((z,i)=>'<button type="button" class="zItem'+(i===txZona?' on':'')+'" data-z="'+i+'"><span class="n">'+(i+1)+'</span><span><b>'+esc(z[0])+'</b><span class="t">'+esc(z[1])+'</span></span></button>').join('');
 }
 const KEY='manualSala.culto2';
