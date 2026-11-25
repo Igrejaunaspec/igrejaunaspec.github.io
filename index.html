@@ -159,6 +159,19 @@
   .badge.sexta{background:#e0edff;color:#1d4ed8;}
   .badge.sabado{background:#fdf0d8;color:#92600a;}
   .badge.rascunho{background:#f0f1f4;color:var(--muted);}
+  /* ---------- compras do mercado livre ---------- */
+  .cmp-resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px;}
+  .cmp-metrica{background:var(--panel2);border-radius:10px;padding:10px 14px;}
+  .cmp-metrica span{display:block;color:var(--muted);font-size:12.5px;}
+  .cmp-metrica b{font-size:20px;font-weight:650;}
+  .cmp-data{min-width:44px;color:var(--muted);font-size:13px;}
+  .cmp-valor{min-width:92px;text-align:right;font-weight:600;white-space:nowrap;}
+  .cmp-nota{display:flex;gap:6px;align-items:center;justify-content:flex-end;min-width:150px;flex-wrap:wrap;}
+  .cmp-pill{font-size:12px;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+  .cmp-pill.amarelo{background:#fdf0d8;color:#92600a;}
+  .cmp-pill.cinza{background:#f0f1f4;color:var(--muted);}
+  .btn.cmp-ok{background:#e3f4e8;color:#1e6b34;border-color:#bfe3c9;}
+  @media (max-width:640px){ .cmp-item{flex-wrap:wrap;} .cmp-nota{width:100%;justify-content:flex-start;min-width:0;} }
 
   /* ---------- pastas na lista de roteiros ---------- */
   .form-nova-pasta{display:flex;gap:8px;align-items:center;}
@@ -1921,6 +1934,30 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       <div id="listaYoutube"></div>
     </div>
 
+    <!-- ---------- Compras do Mercado Livre ---------- -->
+    <div id="paginaCompras" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <h2>Compras do Mercado Livre</h2>
+            <p class="hint" style="margin:4px 0 0;">
+              As compras entram sozinhas pelos e-mails do Mercado Livre. A nota fiscal aparece quando o vendedor emitir;
+              se não vier, use <b>Anexar nota</b>.
+            </p>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button class="btn small" onclick="navegarCompras(-1)" title="Mês anterior">‹</button>
+            <b id="cmpTitulo" style="min-width:130px;text-align:center;"></b>
+            <button class="btn small" onclick="navegarCompras(1)" title="Próximo mês">›</button>
+          </div>
+          <button class="btn" onclick="carregarCompras()">↻ Atualizar</button>
+        </div>
+        <div id="cmpResumo" class="cmp-resumo"></div>
+      </div>
+      <div id="cmpLista"></div>
+      <input type="file" id="cmpArquivo" accept="application/pdf,.pdf,.xml,image/*" class="hidden" onchange="enviarNotaCompra(this)">
+    </div>
+
     <!-- ---------- Agenda: lista de edicoes ---------- -->
     <div id="paginaAgendaLista" class="hidden">
       <div class="subabas" id="subabasArtes" role="tablist">
@@ -2010,6 +2047,27 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 </div>
 
 <!-- ---------- modal: gerenciar roteiros liberados para um visualizador ---------- -->
+<div id="modalCompra" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalCompra()">
+  <div class="modal-caixa">
+    <h3>Editar compra</h3>
+    <div class="field"><label for="cmpProduto">Produto</label><input type="text" id="cmpProduto"></div>
+    <div class="field"><label for="cmpVendedor">Loja / vendedor</label><input type="text" id="cmpVendedor"></div>
+    <div style="display:flex;gap:10px;">
+      <div class="field" style="flex:1;"><label for="cmpData">Data da compra</label><input type="date" id="cmpData"></div>
+      <div class="field" style="flex:1;"><label for="cmpValor">Valor (R$)</label><input type="text" id="cmpValor" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+    <div class="field"><label for="cmpObs">Observação</label><input type="text" id="cmpObs" placeholder="Para que foi comprado, quem pediu..."></div>
+    <label class="chk" style="margin:4px 0 10px;"><input type="checkbox" id="cmpSemNota"> Esta compra não tem nota fiscal (o vendedor não emite)</label>
+    <div id="cmpEmailOrig" class="hint"></div>
+    <div class="modal-botoes">
+      <button class="btn danger" id="cmpBtnApagar" onclick="apagarCompra()">Apagar</button>
+      <span style="flex:1"></span>
+      <button class="btn" onclick="fecharModalCompra()">Cancelar</button>
+      <button class="btn primary" onclick="salvarCompra()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div id="modalVisualizador" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalVisualizador()">
   <div class="modal-caixa">
     <h3>Roteiros liberados</h3>
@@ -3203,7 +3261,7 @@ async function api(caminho, opcoes){
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
 const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
   calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Artes', medicos:'Médicos em Missão',
-  youtube:'YouTube', passador:'Passador', sorteio:'Sorteio de quartetos', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
+  youtube:'YouTube', compras:'Compras', passador:'Passador', sorteio:'Sorteio de quartetos', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
 function nomeAbaAtividade(caminho){
   if(/^formulario_schema/.test(caminho || '')){
@@ -4743,7 +4801,7 @@ const GRUPOS_MENU = [
   ['Início', ['inicio', 'ajustes']],
   ['Culto', ['sexta', 'sabado', 'homiletico', 'escala', 'teleprompter']],
   ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'minhaagenda', 'agenda']],
-  ['Comunidade', ['medicos', 'youtube', 'passador', 'sorteio']],
+  ['Comunidade', ['medicos', 'youtube', 'compras', 'passador', 'sorteio']],
   ['Acessos', ['pessoas', 'visualizadores', 'visitantes', 'votacao', 'compartilhar']],
 ];
 
@@ -4763,6 +4821,7 @@ const ICONES_MENU_SVG = {
   sorteio:'<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>',
   medicos:'<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>',
   youtube:'<rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>',
+  compras:'<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/>',
   pessoas:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
   visualizadores:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   votacao:'<path d="M4 13h16v7H4z"/><path d="M8 13V5h8v8"/><path d="m10 9 1.5 1.5L14 8"/>',
@@ -5681,6 +5740,17 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
+  // Compras do Mercado Livre (entram sozinhas pelos e-mails; notas fiscais).
+  // So aparece pra quem tem acesso liberado (aba Pessoas) ou e admin.
+  if(perfil.admin || perfil.acesso_compras){
+    const b = document.createElement('button');
+    b.textContent = 'Compras';
+    b.title = 'Compras do Mercado Livre e notas fiscais';
+    b.onclick = () => abrirCompras();
+    b.dataset.culto = 'compras';
+    abas.appendChild(b);
+  }
+
   // Passador: escolhe qual computador controla o passador de slides e a TV de retorno (página separada, mesmo login)
   if(perfil.admin || perfil.acesso_passador){
     const b = document.createElement('button');
@@ -5813,7 +5883,7 @@ function montarAbas(){
 
   // Abas com pagina propria dentro do app. Usado pra decidir a tela inicial
   // de quem nao tem nenhum culto/agenda liberado.
-  const temPaginaExtra = perfil.admin || perfil.acesso_escala || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_calendario_ver || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria || perfil.acesso_agenda_pessoal;
+  const temPaginaExtra = perfil.admin || perfil.acesso_escala || perfil.acesso_agendamentos || perfil.acesso_calendario || perfil.acesso_calendario_ver || perfil.acesso_youtube || perfil.acesso_homiletico || perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria || perfil.acesso_agenda_pessoal || perfil.acesso_compras;
 
   if(permitidos.length === 0 && !podeEditarAgenda() && !temPaginaExtra){
     // Sem acesso de edicao a nenhum culto, agenda, ou aba extra: pode ser (a)
@@ -5838,6 +5908,7 @@ function montarAbas(){
   else if(perfil.acesso_pastoral || perfil.acesso_pastoral_secretaria) abrirAgendaPastoral();
   else if(perfil.acesso_agenda_pessoal) abrirMinhaAgenda();
   else if(perfil.acesso_escala) abrirEscala();
+  else if(perfil.acesso_compras) abrirCompras();
 }
 
 
@@ -6458,6 +6529,7 @@ function mostrarPaginaSemEfeito(qual){
   document.getElementById('paginaAgendaLista').classList.toggle('hidden',    qual !== 'agendaLista');
   document.getElementById('paginaAgendaEditor').classList.toggle('hidden',   qual !== 'agendaEditor');
   document.getElementById('paginaYoutube').classList.toggle('hidden',       qual !== 'youtube');
+  document.getElementById('paginaCompras').classList.toggle('hidden',       qual !== 'compras');
   document.getElementById('paginaAgendamentos').classList.toggle('hidden', qual !== 'agendamentos');
   document.getElementById('paginaCalendario').classList.toggle('hidden',   qual !== 'calendario');
   document.getElementById('paginaHomiletico').classList.toggle('hidden',   qual !== 'homiletico');
@@ -7362,6 +7434,158 @@ async function videosDoCanal(forcar){
 function linkYoutube(id){ return 'https://www.youtube.com/watch?v=' + id; }
 function dataLocalISO(d){ // "AAAA-MM-DD" no fuso do aparelho
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* =====================================================================
+   COMPRAS DO MERCADO LIVRE
+   Tabela "compras_ml": cada compra entra sozinha. O robo do Power Automate
+   (Outlook da Maria Aline) encaminha os e-mails do Mercado Livre para
+   midia@igrejaunaspec.com; um script do Google nessa conta manda cada
+   e-mail para a funcao "compras-ml-receber", que cria a compra e guarda a
+   nota (PDF/XML) no armazenamento "compras-notas". Quando a nota nao vem
+   por e-mail, a pessoa anexa aqui. Acesso: admin ou "Compras" (Pessoas).
+===================================================================== */
+const CMP_BUCKET = 'compras-notas';
+let cmpMes = (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
+let cmpItens = [], cmpEditando = null, cmpAnexarEm = null;
+
+async function abrirCompras(){
+  cultoAtual = 'compras';
+  marcarAba('compras');
+  mostrarPagina('compras');
+  await carregarCompras();
+}
+function navegarCompras(n){ cmpMes.setMonth(cmpMes.getMonth() + n); carregarCompras(); }
+function cmpReais(v){ return v == null || v === '' ? '—' : Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' }); }
+
+async function carregarCompras(){
+  const el = document.getElementById('cmpLista');
+  document.getElementById('cmpTitulo').textContent =
+    cmpMes.toLocaleDateString('pt-BR', { month:'long', year:'numeric' }).replace(/^./, c => c.toUpperCase());
+  const ini = new Date(cmpMes), fim = new Date(cmpMes.getFullYear(), cmpMes.getMonth() + 1, 1);
+  const pedido = ini.getTime();
+  el.innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
+  try{
+    const linhas = await api(`compras_ml?select=*&data_compra=gte.${ini.toISOString()}&data_compra=lt.${fim.toISOString()}&order=data_compra.desc`);
+    if(cmpMes.getTime() !== pedido) return;
+    cmpItens = linhas || [];
+    desenharCompras();
+  }catch(e){
+    el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`;
+  }
+}
+
+function desenharCompras(){
+  const el = document.getElementById('cmpLista');
+  const reais = cmpItens.filter(c => !c.teste);
+  const total = reais.reduce((s, c) => s + (Number(c.valor) || 0), 0);
+  const pendentes = reais.filter(c => !c.nota_path && !c.sem_nota).length;
+  document.getElementById('cmpResumo').innerHTML = `
+    <div class="cmp-metrica"><span>Total do mês</span><b>${cmpReais(total)}</b></div>
+    <div class="cmp-metrica"><span>Compras</span><b>${reais.length}</b></div>
+    <div class="cmp-metrica"><span>Notas pendentes</span><b>${pendentes}</b></div>`;
+  if(!cmpItens.length){
+    el.innerHTML = `<div class="card"><div class="vazio">Nenhuma compra neste mês.<br>
+      Assim que chegar um e-mail de compra do Mercado Livre, ela aparece aqui (o app confere de hora em hora).</div></div>`;
+    return;
+  }
+  el.innerHTML = cmpItens.map((c, i) => {
+    const data = c.data_compra ? new Date(c.data_compra).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) : '—';
+    let nota;
+    if(c.nota_path) nota = `<button class="btn small cmp-ok" onclick="event.stopPropagation();verNotaCompra(${i})">📄 Ver nota</button>`;
+    else if(c.sem_nota) nota = `<span class="cmp-pill cinza">Sem nota</span>`;
+    else nota = `<span class="cmp-pill amarelo">Aguardando nota</span>
+      <button class="btn small" onclick="event.stopPropagation();anexarNotaCompra(${i})">Anexar nota</button>`;
+    return `<div class="lista-item cmp-item" onclick="abrirModalCompra(${i})" style="cursor:pointer;">
+      <div class="cmp-data">${data}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="nome" style="overflow:hidden;text-overflow:ellipsis;">${escapar(c.produto || '(sem descrição)')} ${c.teste ? '<span class="badge rascunho">TESTE</span>' : ''}</div>
+        <div class="meta">${escapar(c.vendedor || 'Loja não identificada')}${c.pedido ? ' · Pedido ' + escapar(c.pedido) : ''}${c.observacao ? ' · ' + escapar(c.observacao) : ''}</div>
+      </div>
+      <div class="cmp-valor">${cmpReais(c.valor)}</div>
+      <div class="cmp-nota">${nota}</div>
+    </div>`;
+  }).join('');
+}
+
+async function verNotaCompra(i){
+  const c = cmpItens[i];
+  const aba = window.open('', '_blank');
+  try{
+    const r = await ajStorage('object/sign/' + CMP_BUCKET + '/' + c.nota_path, { headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ expiresIn: 600 }) });
+    const url = SUPABASE_URL + '/storage/v1' + r.signedURL;
+    if(aba) aba.location = url; else window.open(url, '_blank');
+  }catch(e){ if(aba) aba.close(); toast(e.message, 'erro'); }
+}
+
+function anexarNotaCompra(i){
+  cmpAnexarEm = cmpItens[i];
+  const inp = document.getElementById('cmpArquivo');
+  inp.value = '';
+  inp.click();
+}
+async function enviarNotaCompra(inp){
+  const arq = inp.files && inp.files[0], c = cmpAnexarEm;
+  if(!arq || !c) return;
+  if(arq.size > 10 * 1024 * 1024){ toast('Arquivo maior que 10 MB.', 'erro'); return; }
+  const caminho = `${c.id}/${Date.now()}-${arq.name.replace(/[^\w.\-]+/g, '_')}`;
+  toast('Enviando a nota...');
+  try{
+    await ajStorage('object/' + CMP_BUCKET + '/' + caminho, { headers:{ 'Content-Type': arq.type || 'application/octet-stream', 'x-upsert':'true' }, body: arq });
+    await api(`compras_ml?id=eq.${c.id}`, { method:'PATCH', body:{ nota_path: caminho, nota_nome: arq.name, nota_origem:'manual', sem_nota:false, atualizado_em: new Date().toISOString() } });
+    toast('Nota anexada.', 'ok');
+    carregarCompras();
+  }catch(e){ toast(e.message, 'erro'); }
+}
+
+async function abrirModalCompra(i){
+  const c = cmpEditando = cmpItens[i];
+  document.getElementById('cmpProduto').value = c.produto || '';
+  document.getElementById('cmpVendedor').value = c.vendedor || '';
+  document.getElementById('cmpData').value = c.data_compra ? dataLocalISO(new Date(c.data_compra)) : '';
+  document.getElementById('cmpValor').value = c.valor == null ? '' : Number(c.valor).toFixed(2).replace('.', ',');
+  document.getElementById('cmpObs').value = c.observacao || '';
+  document.getElementById('cmpSemNota').checked = !!c.sem_nota;
+  const orig = document.getElementById('cmpEmailOrig');
+  orig.textContent = '';
+  document.getElementById('modalCompra').classList.remove('hidden');
+  try{
+    const ems = await api(`compras_ml_emails?select=assunto,tipo,recebido_em&compra_id=eq.${c.id}&order=recebido_em.asc`);
+    if(ems && ems.length && cmpEditando === c)
+      orig.innerHTML = 'E-mails desta compra:<br>' + ems.map(e => '• ' + escapar(e.assunto || '') + (e.recebido_em ? ' (' + new Date(e.recebido_em).toLocaleDateString('pt-BR') + ')' : '')).join('<br>');
+  }catch(e){}
+}
+function fecharModalCompra(){ document.getElementById('modalCompra').classList.add('hidden'); cmpEditando = null; }
+
+async function salvarCompra(){
+  const c = cmpEditando; if(!c) return;
+  const vTxt = document.getElementById('cmpValor').value.trim();
+  const valor = vTxt ? Number(vTxt.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')) : null;
+  if(vTxt && isNaN(valor)){ toast('Valor inválido. Use por exemplo 129,90.', 'erro'); return; }
+  const d = document.getElementById('cmpData').value;
+  try{
+    await api(`compras_ml?id=eq.${c.id}`, { method:'PATCH', body:{
+      produto: document.getElementById('cmpProduto').value.trim() || null,
+      vendedor: document.getElementById('cmpVendedor').value.trim() || null,
+      observacao: document.getElementById('cmpObs').value.trim() || null,
+      data_compra: d ? new Date(d + 'T12:00:00').toISOString() : c.data_compra,
+      valor, sem_nota: document.getElementById('cmpSemNota').checked,
+      atualizado_em: new Date().toISOString()
+    }});
+    toast('Compra salva.', 'ok');
+    fecharModalCompra();
+    carregarCompras();
+  }catch(e){ toast(e.message, 'erro'); }
+}
+async function apagarCompra(){
+  const c = cmpEditando; if(!c) return;
+  if(!confirm(`Apagar a compra "${c.produto || ''}"? Isso não pode ser desfeito.`)) return;
+  try{
+    await api(`compras_ml?id=eq.${c.id}`, { method:'DELETE', prefer:'return=minimal' });
+    toast('Compra apagada.', 'ok');
+    fecharModalCompra();
+    carregarCompras();
+  }catch(e){ toast(e.message, 'erro'); }
 }
 
 async function abrirYoutubeLista(){
@@ -9558,7 +9782,7 @@ function desenharPessoas(pessoas){
       <div class="pessoa2-grade">
         ${chk('acesso_sexta','Sexta')}${chk('acesso_sabado','Sábado')}${chk('acesso_agenda','Agenda')}${chk('acesso_agendamentos','Agendamentos')}${chk('acesso_calendario','Calendário')}
         ${chk('acesso_calendario_ver','Calendário (só ver)','Vê o calendário, mas não cria, edita nem apaga eventos')}${chk('acesso_escala','Escala')}${chk('acesso_youtube','YouTube')}${chk('acesso_homiletico','Homilético')}${chk('acesso_pastoral','Pastor (agenda)','Agenda Pastoral completa, com as anotações privadas')}
-        ${chk('acesso_pastoral_secretaria','Secretária (agenda)','Agenda Pastoral sem as anotações')}${chk('acesso_agenda_pessoal','Agenda pessoal','Agenda pessoal: só a própria pessoa e os administradores veem (administradores já têm a sua)')}${chk('acesso_medicos','Médicos em Missão','Painel do Médicos em Missão (inscrições com CPF, endereço e saúde)')}${chk('acesso_passador','Passador','Escolhe qual computador controla o passador de slides e a TV de retorno')}${chk('acesso_comissao','Comissão','Controla a votação da Comissão de Nomeações e a tela da TV')}${chk('ver_homiletico_calendario','Pregações no Calendário','Mostra as pregações confirmadas no Calendário')}
+        ${chk('acesso_pastoral_secretaria','Secretária (agenda)','Agenda Pastoral sem as anotações')}${chk('acesso_agenda_pessoal','Agenda pessoal','Agenda pessoal: só a própria pessoa e os administradores veem (administradores já têm a sua)')}${chk('acesso_medicos','Médicos em Missão','Painel do Médicos em Missão (inscrições com CPF, endereço e saúde)')}${chk('acesso_passador','Passador','Escolhe qual computador controla o passador de slides e a TV de retorno')}${chk('acesso_compras','Compras','Compras do Mercado Livre e notas fiscais')}${chk('acesso_comissao','Comissão','Controla a votação da Comissão de Nomeações e a tela da TV')}${chk('ver_homiletico_calendario','Pregações no Calendário','Mostra as pregações confirmadas no Calendário')}
       </div>
       <div class="pessoa2-setores">
         <span>Vê na agenda:</span>
