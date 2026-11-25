@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pedido de compra · Igreja Adventista UNASP EC</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1D3A5C">
+<link rel="icon" href="/icon-192.png">
+<style>
+  :root{--azul:#1D3A5C;--fundo:#F2F4F7;--borda:#DDE1E8;--texto:#1f2937;--suave:#5B6879;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--fundo);color:var(--texto);font-size:14.5px}
+  .topo{background:var(--azul);color:#fff;padding:16px 22px}
+  .topo b{font-size:16px;display:block}.topo span{opacity:.75;font-size:12.5px}
+  .wrap{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+  .card{background:#fff;border:1px solid var(--borda);border-radius:14px;padding:18px;margin-bottom:14px}
+  h1{font-size:19px;margin:0 0 4px}h2{font-size:15.5px;margin:0 0 4px}
+  .dica{color:var(--suave);font-size:13px;margin:0}
+  label{display:block;font-size:11px;font-weight:700;color:var(--suave);text-transform:uppercase;margin:12px 0 5px}
+  input,textarea{width:100%;font:inherit;border:1px solid var(--borda);border-radius:8px;padding:9px 10px;background:#fff;color:var(--texto)}
+  input:focus,textarea:focus{outline:2px solid #4A7BB5;border-color:transparent}
+  textarea{resize:vertical;min-height:60px}
+  .grade{display:grid;grid-template-columns:2fr 1.3fr 1.2fr;gap:0 12px}
+  .btn{font:inherit;font-weight:600;font-size:13.5px;border:1px solid var(--borda);background:#fff;border-radius:9px;padding:9px 14px;cursor:pointer;color:var(--texto)}
+  .btn.p{background:var(--azul);color:#fff;border-color:var(--azul);font-weight:700}
+  .btn.s{padding:5px 10px;font-size:12.5px}
+  .btn:disabled{opacity:.6;cursor:default}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th{font-size:11px;color:var(--suave);text-align:left;padding:8px 6px;background:#F7F8FA;border-bottom:1px solid var(--borda);text-transform:uppercase}
+  td{padding:6px;vertical-align:top;border-bottom:1px solid #eef0f4}
+  td input{padding:7px 8px}
+  .c-q{width:120px}.c-v{width:120px}.c-x{width:40px;text-align:center}
+  .rot{display:none}
+  .total{display:flex;justify-content:flex-end;gap:12px;font-weight:700;font-size:16px;margin-top:12px}
+  .aviso{background:#fdecea;color:#a12;border-radius:8px;padding:10px 12px;font-size:13.5px;margin-top:12px}
+  .ok{background:#e8f5ec;color:#1b6b38}
+  .hidden{display:none!important}
+  .linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .esp{flex:1}
+  /* acompanhamento */
+  .passos{display:flex;gap:6px;margin:16px 0 6px;flex-wrap:wrap}
+  .passo{flex:1;min-width:110px;text-align:center;font-size:12.5px;color:var(--suave);padding:10px 6px;border-radius:10px;background:#F2F4F7}
+  .passo b{display:block;font-size:13.5px;color:var(--texto);margin-bottom:2px}
+  .passo.feito{background:#e8f5ec;color:#1b6b38}.passo.feito b{color:#1b6b38}
+  .passo.agora{background:#fdf0d8;color:#92600a}.passo.agora b{color:#92600a}
+  .item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #eef0f4;align-items:center}
+  .tag{font-size:11.5px;padding:3px 9px;border-radius:20px;background:#F2F4F7;color:var(--suave);white-space:nowrap}
+  .tag.v{background:#e8f5ec;color:#1b6b38}
+  @media (max-width:720px){
+    .grade{grid-template-columns:1fr}
+    thead{display:none}
+    table,tbody,tr,td{display:block}
+    tr{border:1px solid var(--borda);border-radius:12px;margin-bottom:12px;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+    td{border:0;padding:0;width:auto!important}
+    td.c-p,td.c-m,td.c-l{grid-column:1 / -1}
+    td.c-x{grid-column:1 / -1;text-align:right}
+    .rot{display:block;font-size:10.5px;font-weight:700;color:var(--suave);text-transform:uppercase;margin:0 0 3px}
+    input,textarea{font-size:16px}
+  }
+</style>
+</head>
+<body>
+<div class="topo"><b>Igreja Adventista UNASP EC</b><span>Pedido de compra (Mercado Livre)</span></div>
+<div class="wrap">
+
+  <!-- ===== formulario ===== -->
+  <div id="telaForm">
+    <div class="card">
+      <h1>Pedido de compra</h1>
+      <p class="dica">Preencha o que você precisa que a igreja compre no Mercado Livre. O pedido passa pela secretaria e
+        depois pela aprovação do pastor. Ao enviar, você recebe um link para acompanhar.</p>
+      <div class="grade">
+        <div><label for="fNome">Seu nome *</label><input id="fNome" autocomplete="name" maxlength="120"></div>
+        <div><label for="fMin">Ministério / departamento</label><input id="fMin" maxlength="120" placeholder="Ex.: EMC, Mídia, Desbravadores"></div>
+        <div><label for="fTel">WhatsApp com DDD *</label><input id="fTel" type="tel" inputmode="tel" autocomplete="tel" maxlength="40" placeholder="(19) 99999-9999"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Produtos</h2>
+      <p class="dica">Um produto por linha. Cole o link do anúncio do Mercado Livre e o valor total daquela linha.</p>
+      <table>
+        <thead><tr><th>Produto *</th><th class="c-q">Quantidade</th><th>Motivo da compra</th><th>Link do anúncio</th><th class="c-v">Valor total (R$)</th><th class="c-x"></th></tr></thead>
+        <tbody id="itens"></tbody>
+      </table>
+      <div class="linha" style="margin-top:10px">
+        <button class="btn s" type="button" onclick="addItem()">+ Adicionar produto</button>
+        <span class="esp"></span>
+        <div class="total"><span>Total:</span><span id="total">R$ 0,00</span></div>
+      </div>
+      <label for="fObs">Observação (opcional)</label>
+      <textarea id="fObs" maxlength="1000" placeholder="Para quando precisa, onde entregar, alguma preferência..."></textarea>
+      <div id="erro" class="aviso hidden"></div>
+      <div class="linha" style="margin-top:14px"><span class="esp"></span>
+        <button class="btn p" id="btnEnviar" onclick="enviar()">Enviar pedido</button></div>
+    </div>
+  </div>
+
+  <!-- ===== enviado ===== -->
+  <div id="telaOk" class="card hidden">
+    <h1>Pedido enviado ✅</h1>
+    <p>Guarde o link abaixo para acompanhar o seu pedido (análise, aprovação do pastor, compra e chegada):</p>
+    <input id="linkAcomp" readonly onclick="this.select()">
+    <div class="linha" style="margin-top:10px">
+      <button class="btn" onclick="copiar()">Copiar link</button>
+      <a class="btn" id="abrirAcomp" href="#">Abrir acompanhamento</a>
+      <span class="esp"></span>
+      <a class="btn" href="/pedido-compra/">Fazer outro pedido</a>
+    </div>
+  </div>
+
+  <!-- ===== acompanhamento ===== -->
+  <div id="telaAcomp" class="hidden">
+    <div class="card">
+      <h1>Acompanhar pedido</h1>
+      <p class="dica" id="aQuem"></p>
+      <div class="passos" id="aPassos"></div>
+      <div id="aMsg"></div>
+    </div>
+    <div class="card">
+      <h2>Produtos</h2>
+      <div id="aItens"></div>
+      <div class="total"><span>Total:</span><span id="aTotal"></span></div>
+    </div>
+    <p class="dica" style="text-align:center"><a href="/pedido-compra/">Fazer um novo pedido</a></p>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sxzvdnwytbdhycwzbxji.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6rOzgGXVgobnNb-sy4rx9A_SGjR3v0r';
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const reais = v => Number(v || 0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+
+async function rpc(nome, corpo){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${nome}`, { method:'POST',
+    headers:{ apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY, 'Content-Type':'application/json' },
+    body: JSON.stringify(corpo) });
+  const t = await r.text();
+  if(!r.ok){ let m = ''; try{ m = JSON.parse(t).message; }catch(e){} throw new Error(m || 'Não foi possível falar com o app. Tente de novo.'); }
+  return t ? JSON.parse(t) : null;
+}
+
+/* ---------- formulario ---------- */
+function numero(txt){ // "1.234,56" / "28,9" / "103.55" -> numero
+  let t = String(txt || '').replace(/[^\d,.]/g, '');
+  if(!t) return null;
+  if(t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  const n = Number(t); return isNaN(n) ? NaN : n;
+}
+function addItem(d){
+  d = d || {};
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="c-p"><span class="rot">Produto *</span><input data-k="produto" maxlength="200" placeholder="Ex.: Toalha de rosto branca"></td>
+    <td class="c-q"><span class="rot">Quantidade</span><input data-k="quantidade" maxlength="60" placeholder="12 unidades"></td>
+    <td class="c-m"><span class="rot">Motivo da compra</span><input data-k="motivo" maxlength="300" placeholder="Para que vai ser usado"></td>
+    <td class="c-l"><span class="rot">Link do anúncio</span><input data-k="link" type="url" maxlength="600" placeholder="https://www.mercadolivre.com.br/..."></td>
+    <td class="c-v"><span class="rot">Valor total (R$)</span><input data-k="valor" inputmode="decimal" placeholder="0,00"></td>
+    <td class="c-x"><button class="btn s" type="button" title="Tirar este produto" onclick="this.closest('tr').remove();somar()">✕</button></td>`;
+  tr.querySelectorAll('input').forEach(i => { if(d[i.dataset.k]) i.value = d[i.dataset.k]; i.addEventListener('input', somar); });
+  $('itens').appendChild(tr);
+  somar();
+}
+function lerItens(){
+  return [...$('itens').querySelectorAll('tr')].map(tr => {
+    const o = {}; tr.querySelectorAll('input').forEach(i => o[i.dataset.k] = i.value.trim()); return o;
+  }).filter(o => o.produto || o.link || o.valor || o.quantidade || o.motivo);
+}
+function somar(){
+  const t = lerItens().reduce((s, o) => s + (numero(o.valor) || 0), 0);
+  $('total').textContent = reais(t);
+}
+async function enviar(){
+  const erro = $('erro'); erro.classList.add('hidden');
+  const itens = lerItens();
+  const falha = msg => { erro.textContent = msg; erro.classList.remove('hidden'); };
+  if($('fNome').value.trim().length < 3) return falha('Preencha seu nome completo.');
+  if($('fTel').value.replace(/\D/g, '').length < 10) return falha('Preencha um WhatsApp válido, com DDD.');
+  if(!itens.length) return falha('Adicione pelo menos um produto.');
+  for(let i = 0; i < itens.length; i++){
+    const o = itens[i];
+    if(!o.produto || o.produto.length < 2) return falha(`Produto ${i+1}: escreva o nome do produto.`);
+    if(o.link && !/^https?:\/\//i.test(o.link)) return falha(`Produto ${i+1}: o link precisa começar com https://`);
+    const v = numero(o.valor);
+    if(o.valor && (isNaN(v) || v < 0)) return falha(`Produto ${i+1}: valor inválido. Use por exemplo 103,55.`);
+    o.valor = v == null ? '' : String(v);
+  }
+  const b = $('btnEnviar'); b.disabled = true; b.textContent = 'Enviando...';
+  try{
+    const cod = await rpc('pedido_compra_enviar', { p: {
+      solicitante: $('fNome').value.trim(), ministerio: $('fMin').value.trim(),
+      contato: $('fTel').value.trim(), observacao: $('fObs').value.trim(), itens } });
+    const link = location.origin + '/pedido-compra/?c=' + cod;
+    try{ localStorage.setItem('ultimoPedidoCompra', cod); }catch(e){}
+    $('linkAcomp').value = link; $('abrirAcomp').href = link;
+    $('telaForm').classList.add('hidden'); $('telaOk').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  }catch(e){ falha(e.message); }
+  finally{ b.disabled = false; b.textContent = 'Enviar pedido'; }
+}
+async function copiar(){
+  try{ await navigator.clipboard.writeText($('linkAcomp').value); alert('Link copiado.'); }
+  catch(e){ $('linkAcomp').select(); }
+}
+
+/* ---------- acompanhamento ---------- */
+const PASSOS = [
+  ['analise', 'Em análise', 'Secretaria conferindo'],
+  ['pastor', 'Com o pastor', 'Aguardando aprovação'],
+  ['aprovado', 'Aprovado', 'Vai ser comprado'],
+  ['comprado', 'Comprado', 'A caminho'],
+  ['chegou', 'Chegou', 'Pronto para retirar'],
+  ['entregue', 'Entregue', ''],
+];
+async function acompanhar(cod){
+  $('telaForm').classList.add('hidden'); $('telaAcomp').classList.remove('hidden');
+  try{
+    const p = await rpc('pedido_compra_status', { p_codigo: cod });
+    if(!p){ $('aQuem').textContent = 'Pedido não encontrado. Confira o link.'; return; }
+    $('aQuem').textContent = `${p.solicitante}${p.ministerio ? ' · ' + p.ministerio : ''} · enviado em ${new Date(p.criado_em).toLocaleDateString('pt-BR')}`;
+    const st = p.status === 'ajuste' ? 'analise' : p.status;
+    const idx = PASSOS.findIndex(x => x[0] === st);
+    $('aPassos').innerHTML = p.status === 'recusado'
+      ? '<div class="passo agora" style="background:#fdecea;color:#a12"><b style="color:#a12">Pedido recusado</b></div>'
+      : PASSOS.map((x, i) => `<div class="passo ${i < idx || (i === idx && x[0] === 'entregue') ? 'feito' : i === idx ? 'agora' : ''}"><b>${x[1]}</b>${i === idx ? x[2] : ''}</div>`).join('');
+    let msg = '';
+    if(p.status === 'ajuste') msg = `<div class="aviso">O pedido precisa de ajuste: <b>${esc(p.mensagem)}</b><br>Fale com a secretaria pelo WhatsApp.</div>`;
+    else if(p.status === 'recusado') msg = `<div class="aviso">${esc(p.mensagem || 'O pedido não foi aprovado.')}</div>`;
+    else if(p.status === 'chegou') msg = `<div class="aviso ok">Sua compra chegou! Procure a secretaria para retirar.</div>`;
+    else if(p.status === 'entregue') msg = `<div class="aviso ok">Entregue${p.entregue_a ? ' para ' + esc(p.entregue_a) : ''} em ${new Date(p.entregue_em).toLocaleDateString('pt-BR')}.</div>`;
+    $('aMsg').innerHTML = msg;
+    $('aItens').innerHTML = (p.itens || []).map(i => `<div class="item"><div class="esp"><b>${esc(i.produto)}</b>${i.quantidade ? '<div class="dica">' + esc(i.quantidade) + '</div>' : ''}</div>
+      <div>${i.valor != null ? reais(i.valor) : ''}</div>${i.comprado ? '<span class="tag v">comprado</span>' : ''}</div>`).join('');
+    $('aTotal').textContent = reais(p.total);
+  }catch(e){ $('aQuem').textContent = e.message; }
+}
+
+const cod = new URLSearchParams(location.search).get('c');
+if(cod) acompanhar(cod); else { addItem(); addItem(); }
+</script>
+</body>
+</html>

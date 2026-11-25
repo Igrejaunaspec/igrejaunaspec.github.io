@@ -171,6 +171,18 @@
   .cmp-pill.amarelo{background:#fdf0d8;color:#92600a;}
   .cmp-pill.cinza{background:#f0f1f4;color:var(--muted);}
   .btn.cmp-ok{background:#e3f4e8;color:#1e6b34;border-color:#bfe3c9;}
+  .pc-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
+  .pc-filtro{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:20px;padding:5px 12px;cursor:pointer;}
+  .pc-filtro.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .pc-tag{font-size:12px;padding:3px 10px;border-radius:20px;white-space:nowrap;background:#f0f1f4;color:var(--muted);}
+  .pc-tag.pc-pastor,.pc-tag.pc-ajuste{background:#fdf0d8;color:#92600a;}
+  .pc-tag.pc-aprovado,.pc-tag.pc-comprado{background:#e0edff;color:#1d4ed8;}
+  .pc-tag.pc-chegou,.pc-tag.pc-entregue{background:#e3f4e8;color:#1e6b34;}
+  .pc-tag.pc-recusado{background:#fdecea;color:#a12;}
+  .pc-tabela{width:100%;border-collapse:collapse;margin:14px 0 8px;font-size:14px;}
+  .pc-tabela th{font-size:11px;color:var(--muted);text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);text-transform:uppercase;}
+  .pc-tabela td{padding:8px 6px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .pc-tabela input{width:100%;min-width:70px;}
   @media (max-width:640px){ .cmp-item{flex-wrap:wrap;} .cmp-nota{width:100%;justify-content:flex-start;min-width:0;} }
 
   /* ---------- pastas na lista de roteiros ---------- */
@@ -1934,6 +1946,22 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       <div id="listaYoutube"></div>
     </div>
 
+    <!-- ---------- Pedidos de compra (Mercado Livre) ---------- -->
+    <div id="paginaPedidosCompra" class="hidden">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <h2>Pedidos de compra</h2>
+            <p class="hint" style="margin:4px 0 0;">Pedidos feitos pelo link público. A secretaria analisa, o pastor aprova, a compra é feita no Mercado Livre e entregue a quem pediu.</p>
+          </div>
+          <button class="btn" id="pcBtnLink" onclick="copiarTexto(location.origin + '/pedido-compra/')">🔗 Copiar link do formulário</button>
+          <button class="btn" onclick="carregarPedidosCompra()">↻ Atualizar</button>
+        </div>
+        <div id="pcFiltros" class="pc-filtros"></div>
+      </div>
+      <div id="pcLista"></div>
+    </div>
+
     <!-- ---------- Compras do Mercado Livre ---------- -->
     <div id="paginaCompras" class="hidden">
       <div class="card">
@@ -2047,6 +2075,10 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
 </div>
 
 <!-- ---------- modal: gerenciar roteiros liberados para um visualizador ---------- -->
+<div id="modalPedidoCompra" class="modal-fundo hidden" onclick="if(event.target===this) fecharPedidoCompra()">
+  <div class="modal-caixa grande" id="pcCaixa"></div>
+</div>
+
 <div id="modalCompra" class="modal-fundo hidden" onclick="if(event.target===this) fecharModalCompra()">
   <div class="modal-caixa">
     <h3>Editar compra</h3>
@@ -3261,7 +3293,7 @@ async function api(caminho, opcoes){
 /* ---------- registro de atividade (aba Pessoas: último acesso e última aba alterada) ---------- */
 const NOMES_ABA_ATIVIDADE = { sexta:'Culto de Sexta', sabado:'Roteiros', homiletico:'Homilético', escala:'Escala',
   calendario:'Calendário', agendamentos:'Agendamentos', pastoral:'Agenda Pastoral', minhaagenda:'Minha agenda', agenda:'Artes', medicos:'Médicos em Missão',
-  youtube:'YouTube', compras:'Compras', passador:'Passador', sorteio:'Sorteio de quartetos', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
+  youtube:'YouTube', pedidoscompra:'Pedidos de compra', compras:'Compras', passador:'Passador', sorteio:'Sorteio de quartetos', ajustes:'Pedidos de ajuste', pessoas:'Pessoas', visualizadores:'Visualizadores', visitantes:'Visitantes', votacao:'Comissão', compartilhar:'Compartilhar' };
 let atividadeUltimoEnvio = 0, atividadeUltimaAba = '', atividadeUltimaAbaEm = 0;
 function nomeAbaAtividade(caminho){
   if(/^formulario_schema/.test(caminho || '')){
@@ -4801,7 +4833,7 @@ const GRUPOS_MENU = [
   ['Início', ['inicio', 'ajustes']],
   ['Culto', ['sexta', 'sabado', 'homiletico', 'escala', 'teleprompter']],
   ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'minhaagenda', 'agenda']],
-  ['Comunidade', ['medicos', 'youtube', 'compras', 'passador', 'sorteio']],
+  ['Comunidade', ['medicos', 'youtube', 'pedidoscompra', 'compras', 'passador', 'sorteio']],
   ['Acessos', ['pessoas', 'visualizadores', 'visitantes', 'votacao', 'compartilhar']],
 ];
 
@@ -4821,6 +4853,7 @@ const ICONES_MENU_SVG = {
   sorteio:'<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>',
   medicos:'<path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>',
   youtube:'<rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>',
+  pedidoscompra:'<path d="M9 3h6l1 2h3v16H5V5h3z"/><path d="M9 11h6M9 15h4"/>',
   compras:'<path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/>',
   pessoas:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
   visualizadores:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
@@ -5740,6 +5773,17 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
+  // Pedidos de compra (link publico -> secretaria -> pastor -> compra -> entrega).
+  // Secretaria (Compras), pastor (Pastor agenda) e admin.
+  if(perfil.admin || perfil.acesso_compras || perfil.acesso_pastoral){
+    const b = document.createElement('button');
+    b.textContent = 'Pedidos de compra';
+    b.title = 'Pedidos de compra: análise, aprovação do pastor, compra e entrega';
+    b.onclick = () => abrirPedidosCompra();
+    b.dataset.culto = 'pedidoscompra';
+    abas.appendChild(b);
+  }
+
   // Compras do Mercado Livre (entram sozinhas pelos e-mails; notas fiscais).
   // So aparece pra quem tem acesso liberado (aba Pessoas) ou e admin.
   if(perfil.admin || perfil.acesso_compras){
@@ -6530,6 +6574,7 @@ function mostrarPaginaSemEfeito(qual){
   document.getElementById('paginaAgendaEditor').classList.toggle('hidden',   qual !== 'agendaEditor');
   document.getElementById('paginaYoutube').classList.toggle('hidden',       qual !== 'youtube');
   document.getElementById('paginaCompras').classList.toggle('hidden',       qual !== 'compras');
+  document.getElementById('paginaPedidosCompra').classList.toggle('hidden', qual !== 'pedidosCompra');
   document.getElementById('paginaAgendamentos').classList.toggle('hidden', qual !== 'agendamentos');
   document.getElementById('paginaCalendario').classList.toggle('hidden',   qual !== 'calendario');
   document.getElementById('paginaHomiletico').classList.toggle('hidden',   qual !== 'homiletico');
@@ -7448,6 +7493,245 @@ function dataLocalISO(d){ // "AAAA-MM-DD" no fuso do aparelho
 const CMP_BUCKET = 'compras-notas';
 let cmpMes = (() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; })();
 let cmpItens = [], cmpEditando = null, cmpAnexarEm = null;
+
+/* =====================================================================
+   PEDIDOS DE COMPRA (Mercado Livre)
+   Quem precisa preenche o link publico /pedido-compra/ (funcao
+   pedido_compra_enviar). Etapas: analise -> pastor -> aprovado ->
+   comprado -> chegou -> entregue (ou ajuste / recusado).
+   Secretaria (acesso "Compras" ou admin) mexe em tudo; o pastor
+   (acesso "Pastor (agenda)") decide pela funcao pedido_compra_decidir.
+   Cada item pode ser ligado a uma compra que entrou sozinha (compras_ml),
+   e a nota fiscal daquela compra aparece no pedido.
+===================================================================== */
+const PC_ETAPAS = [
+  ['analise',  'Em análise'],
+  ['ajuste',   'Precisa de ajuste'],
+  ['pastor',   'Com o pastor'],
+  ['aprovado', 'Aprovados'],
+  ['comprado', 'Comprados'],
+  ['chegou',   'Chegaram'],
+  ['entregue', 'Entregues'],
+  ['recusado', 'Recusados'],
+];
+const PC_NOME = { analise:'Em análise', ajuste:'Precisa de ajuste', pastor:'Com o pastor', aprovado:'Aprovado',
+  comprado:'Comprado', chegou:'Chegou', entregue:'Entregue', recusado:'Recusado' };
+let pcPedidos = [], pcFiltro = null, pcAberto = null, pcItens = [], pcComprasML = [];
+const pcSecretaria = () => perfil && (perfil.admin || perfil.acesso_compras);
+const pcPastor = () => perfil && (perfil.acesso_pastoral || perfil.admin);
+
+async function abrirPedidosCompra(){
+  cultoAtual = 'pedidoscompra';
+  marcarAba('pedidoscompra');
+  mostrarPagina('pedidosCompra');
+  if(!pcFiltro) pcFiltro = (pcSecretaria() ? 'analise' : 'pastor');
+  document.getElementById('pcBtnLink').classList.toggle('hidden', !pcSecretaria());
+  await carregarPedidosCompra();
+}
+async function carregarPedidosCompra(){
+  const el = document.getElementById('pcLista');
+  if(!pcPedidos.length) el.innerHTML = '<div class="card"><div class="vazio">Carregando...</div></div>';
+  try{
+    pcPedidos = await api('pedidos_compra?select=*,itens:pedidos_compra_itens(count)&order=criado_em.desc&limit=300') || [];
+    desenharPedidosCompra();
+  }catch(e){ el.innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; }
+}
+function desenharPedidosCompra(){
+  const cont = {}; pcPedidos.forEach(p => cont[p.status] = (cont[p.status] || 0) + 1);
+  document.getElementById('pcFiltros').innerHTML = PC_ETAPAS
+    .filter(([k]) => pcSecretaria() || ['pastor','aprovado','recusado'].includes(k))
+    .map(([k, t]) => `<button class="pc-filtro ${pcFiltro === k ? 'on' : ''}" onclick="pcFiltro='${k}';desenharPedidosCompra()">${t}${cont[k] ? ' (' + cont[k] + ')' : ''}</button>`).join('');
+  const lista = pcPedidos.filter(p => p.status === pcFiltro);
+  const el = document.getElementById('pcLista');
+  if(!lista.length){ el.innerHTML = `<div class="card"><div class="vazio">Nenhum pedido em "${escapar(PC_NOME[pcFiltro] || '')}".</div></div>`; return; }
+  el.innerHTML = lista.map(p => {
+    const n = (p.itens && p.itens[0] && p.itens[0].count) || 0;
+    return `<div class="lista-item" style="cursor:pointer;" onclick="abrirPedidoCompra('${p.id}')">
+      <div style="flex:1;min-width:0;">
+        <div class="nome">${escapar(p.ministerio || p.solicitante)}</div>
+        <div class="meta">Pedido por ${escapar(p.solicitante)} · ${new Date(p.criado_em).toLocaleDateString('pt-BR')} · ${n} ${n === 1 ? 'item' : 'itens'}</div>
+      </div>
+      <div class="cmp-valor">${cmpReais(p.total)}</div>
+      <span class="pc-tag pc-${p.status}">${PC_NOME[p.status]}</span>
+    </div>`;
+  }).join('');
+}
+
+async function abrirPedidoCompra(id){
+  pcAberto = pcPedidos.find(p => p.id === id);
+  if(!pcAberto) return;
+  document.getElementById('modalPedidoCompra').classList.remove('hidden');
+  document.getElementById('pcCaixa').innerHTML = '<div class="vazio">Carregando...</div>';
+  try{
+    pcItens = await api(`pedidos_compra_itens?select=*,compra:compras_ml(id,produto,valor,nota_path,data_compra)&pedido_id=eq.${id}&order=ordem.asc`) || [];
+    if(pcSecretaria() && ['aprovado','comprado'].includes(pcAberto.status)){
+      const desde = new Date(Date.now() - 90 * 864e5).toISOString();
+      pcComprasML = await api(`compras_ml?select=id,produto,valor,data_compra&teste=eq.false&data_compra=gte.${desde}&order=data_compra.desc`) || [];
+    }
+    desenharPedidoCompra();
+  }catch(e){ document.getElementById('pcCaixa').innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; }
+}
+function fecharPedidoCompra(){ document.getElementById('modalPedidoCompra').classList.add('hidden'); pcAberto = null; }
+
+function desenharPedidoCompra(){
+  const p = pcAberto, sec = pcSecretaria();
+  const editavel = sec && ['analise','ajuste'].includes(p.status);
+  const ligar = sec && ['aprovado','comprado'].includes(p.status);
+  const zap = String(p.contato || '').replace(/\D/g, '');
+  const zapLink = zap ? `https://wa.me/${zap.length <= 11 ? '55' + zap : zap}` : '';
+  const linhas = pcItens.map((it, i) => {
+    let compra = '';
+    if(it.compra){
+      compra = `<span class="cmp-pill" style="background:#e3f4e8;color:#1e6b34;">Comprado</span>` +
+        (it.compra.nota_path ? ` <button class="btn small cmp-ok" onclick="pcVerNota(${i})">📄 Nota</button>` : ' <span class="cmp-pill amarelo">Sem nota ainda</span>');
+      if(ligar) compra += ` <button class="btn small" onclick="pcLigar(${i}, null)" title="Desligar desta compra">✕</button>`;
+    }else if(ligar){
+      compra = `<select onchange="pcLigar(${i}, this.value)" style="max-width:220px;"><option value="">Ligar à compra do ML...</option>${pcComprasML.map(c =>
+        `<option value="${c.id}">${new Date(c.data_compra).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })} · ${escapar((c.produto || '').slice(0, 40))} · ${cmpReais(c.valor)}</option>`).join('')}</select>`;
+    }
+    if(editavel) return `<tr>
+      <td><input data-i="${i}" data-k="produto" value="${escapar(it.produto)}"></td>
+      <td><input data-i="${i}" data-k="quantidade" value="${escapar(it.quantidade || '')}"></td>
+      <td><input data-i="${i}" data-k="motivo" value="${escapar(it.motivo || '')}"></td>
+      <td><input data-i="${i}" data-k="link" value="${escapar(it.link || '')}"></td>
+      <td><input data-i="${i}" data-k="valor" inputmode="decimal" value="${it.valor == null ? '' : Number(it.valor).toFixed(2).replace('.', ',')}" style="width:90px;"></td>
+      <td><button class="btn small" title="Tirar este produto" onclick="pcTirarItem(${i})">✕</button></td></tr>`;
+    return `<tr>
+      <td><b>${escapar(it.produto)}</b>${it.link ? ` <a href="${escapar(it.link)}" target="_blank" rel="noopener" title="Abrir anúncio">↗</a>` : ''}${it.motivo ? `<div class="meta">${escapar(it.motivo)}</div>` : ''}</td>
+      <td>${escapar(it.quantidade || '')}</td>
+      <td style="text-align:right;white-space:nowrap;">${cmpReais(it.valor)}</td>
+      <td style="text-align:right;">${compra}</td></tr>`;
+  }).join('');
+  const cab = editavel
+    ? '<tr><th>Produto</th><th>Quantidade</th><th>Motivo</th><th>Link</th><th>Valor (R$)</th><th></th></tr>'
+    : '<tr><th>Produto</th><th>Quantidade</th><th style="text-align:right;">Valor</th><th></th></tr>';
+  let botoes = '';
+  const b = (txt, fn, cls) => `<button class="btn ${cls || ''}" onclick="${fn}">${txt}</button>`;
+  if(sec){
+    if(editavel) botoes = b('Recusar', "pcMudar('recusado', true)", 'danger') + b('Pedir ajuste', "pcMudar('ajuste', true)") + b('Salvar itens', 'pcSalvarItens()') + b('Enviar ao pastor', 'pcEnviarPastor()', 'primary');
+    else if(p.status === 'pastor') botoes = b('Voltar para análise', "pcMudar('analise')");
+    else if(p.status === 'aprovado') botoes = b('Marcar como comprado', "pcMudar('comprado')", 'primary');
+    else if(p.status === 'comprado') botoes = b('Voltar para aprovado', "pcMudar('aprovado')") + b('Chegou', "pcMudar('chegou')", 'primary');
+    else if(p.status === 'chegou') botoes = b('Entregar', 'pcEntregar()', 'primary');
+    else if(p.status === 'recusado') botoes = b('Reabrir', "pcMudar('analise')");
+  }
+  if(pcPastor() && p.status === 'pastor')
+    botoes += b('Recusar', "pcDecidir('recusar')", 'danger') + b('Pedir ajuste', "pcDecidir('ajuste')") + b('Aprovar', "pcDecidir('aprovar')", 'primary');
+  const datas = [['Aprovação', p.decidido_em], ['Compra', p.comprado_em], ['Chegada', p.chegou_em], ['Entrega', p.entregue_em]]
+    .filter(d => d[1]).map(d => `${d[0]}: ${new Date(d[1]).toLocaleDateString('pt-BR')}`).join(' · ');
+  document.getElementById('pcCaixa').innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <h3 style="margin:0;">${escapar(p.ministerio || 'Pedido de compra')}</h3>
+        <p class="hint" style="margin:4px 0 0;">${escapar(p.solicitante)}${p.contato ? ' · ' + (zapLink ? `<a href="${zapLink}" target="_blank" rel="noopener">${escapar(p.contato)}</a>` : escapar(p.contato)) : ''} · pedido em ${new Date(p.criado_em).toLocaleDateString('pt-BR')}</p>
+      </div>
+      <span class="pc-tag pc-${p.status}">${PC_NOME[p.status]}</span>
+    </div>
+    ${p.observacao ? `<p style="margin:12px 0 0;"><b>Observação:</b> ${escapar(p.observacao)}</p>` : ''}
+    ${p.mensagem && ['ajuste','recusado'].includes(p.status) ? `<div class="aviso" style="margin-top:10px;">Recado para quem pediu: ${escapar(p.mensagem)}</div>` : ''}
+    ${p.entregue_a ? `<p class="hint">Entregue para <b>${escapar(p.entregue_a)}</b></p>` : ''}
+    <div style="overflow-x:auto;"><table class="pc-tabela">${cab}${linhas}</table></div>
+    ${editavel ? '<button class="btn small" onclick="pcNovoItem()">+ Adicionar produto</button>' : ''}
+    <div style="display:flex;justify-content:space-between;font-weight:650;margin:12px 0;"><span>Total</span><span>${cmpReais(pcItens.reduce((s, i) => s + (Number(i.valor) || 0), 0))}</span></div>
+    ${datas ? `<p class="hint" style="margin:0 0 6px;">${datas}</p>` : ''}
+    <p class="hint" style="margin:0;">Link de acompanhamento de quem pediu: <a href="/pedido-compra/?c=${escapar(p.codigo)}" target="_blank" rel="noopener">abrir</a> ·
+      <a href="#" onclick="event.preventDefault();copiarTexto(location.origin + '/pedido-compra/?c=${escapar(p.codigo)}')">copiar</a></p>
+    <div class="modal-botoes"><button class="btn" onclick="fecharPedidoCompra()">Fechar</button><span style="flex:1"></span>${botoes}</div>`;
+}
+
+function pcLerItensEditados(){
+  document.querySelectorAll('#pcCaixa input[data-i]').forEach(inp => {
+    const it = pcItens[+inp.dataset.i]; if(!it) return;
+    if(inp.dataset.k === 'valor'){
+      const t = inp.value.trim();
+      it.valor = t ? Number(t.replace(/[^\d,.]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.')) : null;
+    } else it[inp.dataset.k] = inp.value.trim();
+  });
+}
+function pcNovoItem(){ pcLerItensEditados(); pcItens.push({ produto:'', quantidade:'', motivo:'', link:'', valor:null, _novo:true }); desenharPedidoCompra(); }
+function pcTirarItem(i){ pcLerItensEditados(); const it = pcItens.splice(i, 1)[0]; if(it && it.id) (pcItens._apagar = pcItens._apagar || []).push(it.id); desenharPedidoCompra(); }
+
+async function pcSalvarItens(silencioso){
+  pcLerItensEditados();
+  const p = pcAberto;
+  if(pcItens.some(i => !i.produto)) { toast('Todo produto precisa de nome.', 'erro'); throw new Error('sem nome'); }
+  if(pcItens.some(i => i.valor != null && isNaN(i.valor))) { toast('Tem um valor inválido. Use por exemplo 103,55.', 'erro'); throw new Error('valor'); }
+  for(const id of (pcItens._apagar || [])) await api(`pedidos_compra_itens?id=eq.${id}`, { method:'DELETE', prefer:'return=minimal' });
+  pcItens._apagar = [];
+  for(let n = 0; n < pcItens.length; n++){
+    const it = pcItens[n];
+    const corpo = { ordem: n + 1, produto: it.produto, quantidade: it.quantidade || null, motivo: it.motivo || null, link: it.link || null, valor: it.valor };
+    if(it.id) await api(`pedidos_compra_itens?id=eq.${it.id}`, { method:'PATCH', body: corpo, prefer:'return=minimal' });
+    else { const r = await api('pedidos_compra_itens', { method:'POST', body: Object.assign({ pedido_id: p.id }, corpo) }); it.id = r[0].id; delete it._novo; }
+  }
+  const total = pcItens.reduce((s, i) => s + (Number(i.valor) || 0), 0);
+  await api(`pedidos_compra?id=eq.${p.id}`, { method:'PATCH', body:{ total, atualizado_em: new Date().toISOString() }, prefer:'return=minimal' });
+  p.total = total;
+  if(!silencioso) toast('Itens salvos.', 'ok');
+}
+async function pcEnviarPastor(){
+  try{ await pcSalvarItens(true); }catch(e){ if(e.message !== 'sem nome' && e.message !== 'valor') toast(e.message, 'erro'); return; }
+  await pcMudar('pastor');
+}
+async function pcMudar(status, pedirMsg){
+  const p = pcAberto; if(!p) return;
+  const corpo = { status, atualizado_em: new Date().toISOString() };
+  if(pedirMsg){
+    const m = prompt(status === 'recusado' ? 'Motivo da recusa (quem pediu vai ver no link de acompanhamento):' : 'O que precisa ajustar? (quem pediu vai ver no link de acompanhamento)', p.mensagem || '');
+    if(m == null) return;
+    if(m.trim().length < 3){ toast('Escreva o motivo para quem pediu.', 'erro'); return; }
+    corpo.mensagem = m.trim();
+  }
+  if(status === 'comprado') corpo.comprado_em = new Date().toISOString();
+  if(status === 'chegou') corpo.chegou_em = new Date().toISOString();
+  try{
+    await api(`pedidos_compra?id=eq.${p.id}`, { method:'PATCH', body: corpo, prefer:'return=minimal' });
+    Object.assign(p, corpo);
+    toast('Pedido atualizado: ' + PC_NOME[status] + '.', 'ok');
+    fecharPedidoCompra(); pcFiltro = status; carregarPedidosCompra();
+  }catch(e){ toast(e.message, 'erro'); }
+}
+async function pcEntregar(){
+  const p = pcAberto; if(!p) return;
+  const quem = prompt('Entregue para quem?', p.solicitante || '');
+  if(quem == null || !quem.trim()) return;
+  try{
+    await api(`pedidos_compra?id=eq.${p.id}`, { method:'PATCH', prefer:'return=minimal',
+      body:{ status:'entregue', entregue_a: quem.trim(), entregue_em: new Date().toISOString(), atualizado_em: new Date().toISOString() } });
+    toast('Entrega registrada.', 'ok');
+    fecharPedidoCompra(); pcFiltro = 'entregue'; carregarPedidosCompra();
+  }catch(e){ toast(e.message, 'erro'); }
+}
+async function pcDecidir(decisao){
+  const p = pcAberto; if(!p) return;
+  let obs = '';
+  if(decisao !== 'aprovar'){
+    obs = prompt(decisao === 'recusar' ? 'Motivo da recusa (quem pediu vai ver):' : 'O que precisa ajustar? (quem pediu vai ver)');
+    if(obs == null) return;
+  }
+  try{
+    await api('rpc/pedido_compra_decidir', { method:'POST', body:{ p_id: p.id, p_decisao: decisao, p_obs: obs } });
+    toast(decisao === 'aprovar' ? 'Pedido aprovado.' : decisao === 'recusar' ? 'Pedido recusado.' : 'Pedido devolvido para ajuste.', 'ok');
+    fecharPedidoCompra(); carregarPedidosCompra();
+  }catch(e){ toast(e.message, 'erro'); }
+}
+async function pcLigar(i, compraId){
+  const it = pcItens[i]; if(!it) return;
+  try{
+    await api(`pedidos_compra_itens?id=eq.${it.id}`, { method:'PATCH', body:{ compra_ml_id: compraId || null }, prefer:'return=minimal' });
+    toast(compraId ? 'Item ligado à compra.' : 'Item desligado da compra.', 'ok');
+    abrirPedidoCompra(pcAberto.id);
+  }catch(e){ toast(e.message, 'erro'); }
+}
+async function pcVerNota(i){
+  const c = pcItens[i] && pcItens[i].compra; if(!c || !c.nota_path) return;
+  const aba = window.open('', '_blank');
+  try{
+    const r = await ajStorage('object/sign/' + CMP_BUCKET + '/' + c.nota_path, { headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ expiresIn: 600 }) });
+    const url = SUPABASE_URL + '/storage/v1' + r.signedURL;
+    if(aba) aba.location = url; else window.open(url, '_blank');
+  }catch(e){ if(aba) aba.close(); toast(e.message, 'erro'); }
+}
 
 async function abrirCompras(){
   cultoAtual = 'compras';
