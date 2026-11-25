@@ -2099,6 +2099,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
       <div class="field" style="flex:1;"><label for="cmpData">Data da compra</label><input type="date" id="cmpData"></div>
       <div class="field" style="flex:1;"><label for="cmpValor">Valor (R$)</label><input type="text" id="cmpValor" inputmode="decimal" placeholder="0,00"></div>
     </div>
+    <div class="field"><label for="cmpEntregue">Chegou em <span class="hint" style="font-weight:400;">(preenche sozinho com o e-mail de entrega do Mercado Livre)</span></label><input type="date" id="cmpEntregue"></div>
     <div class="field"><label for="cmpObs">Observação</label><input type="text" id="cmpObs" placeholder="Para que foi comprado, quem pediu..."></div>
     <label class="chk" style="margin:4px 0 10px;"><input type="checkbox" id="cmpSemNota"> Esta compra não tem nota fiscal (o vendedor não emite)</label>
     <div id="cmpEmailOrig" class="hint"></div>
@@ -7566,7 +7567,7 @@ async function abrirPedidoCompra(id){
   document.getElementById('modalPedidoCompra').classList.remove('hidden');
   document.getElementById('pcCaixa').innerHTML = '<div class="vazio">Carregando...</div>';
   try{
-    pcItens = await api(`pedidos_compra_itens?select=*,compra:compras_ml(id,produto,valor,nota_path,data_compra)&pedido_id=eq.${id}&order=ordem.asc`) || [];
+    pcItens = await api(`pedidos_compra_itens?select=*,compra:compras_ml(id,produto,valor,nota_path,data_compra,entregue_em)&pedido_id=eq.${id}&order=ordem.asc`) || [];
     if(pcSecretaria() && ['aprovado','comprado'].includes(pcAberto.status)){
       const desde = new Date(Date.now() - 90 * 864e5).toISOString();
       pcComprasML = await api(`compras_ml?select=id,produto,valor,data_compra&teste=eq.false&data_compra=gte.${desde}&order=data_compra.desc`) || [];
@@ -7585,7 +7586,9 @@ function desenharPedidoCompra(){
   const linhas = pcItens.map((it, i) => {
     let compra = '';
     if(it.compra){
-      compra = `<span class="cmp-pill" style="background:#e3f4e8;color:#1e6b34;">Comprado</span>` +
+      compra = (it.compra.entregue_em
+          ? `<span class="cmp-pill" style="background:#e3f4e8;color:#1e6b34;">Chegou ${new Date(it.compra.entregue_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })}</span>`
+          : `<span class="cmp-pill" style="background:#e0edff;color:#1d4ed8;">Comprado</span>`) +
         (it.compra.nota_path ? ` <button class="btn small cmp-ok" onclick="pcVerNota(${i})">📄 Nota</button>` : ' <span class="cmp-pill amarelo">Sem nota ainda</span>');
       if(ligar) compra += ` <button class="btn small" onclick="pcLigar(${i}, null)" title="Desligar desta compra">✕</button>`;
     }else if(ligar){
@@ -7635,6 +7638,7 @@ function desenharPedidoCompra(){
     ${p.entregue_a ? `<p class="hint">Entregue para <b>${escapar(p.entregue_a)}</b></p>` : ''}
     <div style="overflow-x:auto;"><table class="pc-tabela">${cab}${linhas}</table></div>
     ${editavel ? '<button class="btn small" onclick="pcNovoItem()">+ Adicionar produto</button>' : ''}
+    ${ligar ? '<p class="hint" style="margin:4px 0 0;">Ligue cada item à compra do Mercado Livre: quando todos estiverem ligados, o pedido vira <b>Comprado</b> sozinho; quando todas as compras chegarem, vira <b>Chegou</b>.</p>' : ''}
     <div style="display:flex;justify-content:space-between;font-weight:650;margin:12px 0;"><span>Total</span><span>${cmpReais(pcItens.reduce((s, i) => s + (Number(i.valor) || 0), 0))}</span></div>
     ${datas ? `<p class="hint" style="margin:0 0 6px;">${datas}</p>` : ''}
     <p class="hint" style="margin:0;">Link de acompanhamento de quem pediu: <a href="/pedido-compra/?c=${escapar(p.codigo)}" target="_blank" rel="noopener">abrir</a> ·
@@ -7723,7 +7727,11 @@ async function pcLigar(i, compraId){
   try{
     await api(`pedidos_compra_itens?id=eq.${it.id}`, { method:'PATCH', body:{ compra_ml_id: compraId || null }, prefer:'return=minimal' });
     toast(compraId ? 'Item ligado à compra.' : 'Item desligado da compra.', 'ok');
-    abrirPedidoCompra(pcAberto.id);
+    const id = pcAberto.id;
+    await carregarPedidosCompra();                       // o status pode ter mudado sozinho
+    const p = pcPedidos.find(x => x.id === id);
+    if(p && p.status !== pcAberto.status){ toast('Pedido passou para: ' + PC_NOME[p.status] + '.', 'ok'); pcFiltro = p.status; desenharPedidosCompra(); }
+    abrirPedidoCompra(id);
   }catch(e){ toast(e.message, 'erro'); }
 }
 async function pcVerNota(i){
@@ -7788,7 +7796,7 @@ function desenharCompras(){
       <div class="cmp-data">${data}</div>
       <div style="flex:1;min-width:0;">
         <div class="nome" style="overflow:hidden;text-overflow:ellipsis;">${escapar(c.produto || '(sem descrição)')} ${c.teste ? '<span class="badge rascunho">TESTE</span>' : ''}</div>
-        <div class="meta">${escapar(c.vendedor || 'Loja não identificada')}${c.pedido ? ' · Pedido ' + escapar(c.pedido) : ''}${c.observacao ? ' · ' + escapar(c.observacao) : ''}</div>
+        <div class="meta">${escapar(c.vendedor || 'Loja não identificada')}${c.pedido ? ' · Pedido ' + escapar(c.pedido) : ''}${c.entregue_em ? ' · <b style="color:#1e6b34;">Chegou ' + new Date(c.entregue_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }) + '</b>' : ''}${c.observacao ? ' · ' + escapar(c.observacao) : ''}</div>
       </div>
       <div class="cmp-valor">${cmpReais(c.valor)}</div>
       <div class="cmp-nota">${nota}</div>
@@ -7833,6 +7841,7 @@ async function abrirModalCompra(i){
   document.getElementById('cmpData').value = c.data_compra ? dataLocalISO(new Date(c.data_compra)) : '';
   document.getElementById('cmpValor').value = c.valor == null ? '' : Number(c.valor).toFixed(2).replace('.', ',');
   document.getElementById('cmpObs').value = c.observacao || '';
+  document.getElementById('cmpEntregue').value = c.entregue_em ? dataLocalISO(new Date(c.entregue_em)) : '';
   document.getElementById('cmpSemNota').checked = !!c.sem_nota;
   const orig = document.getElementById('cmpEmailOrig');
   orig.textContent = '';
@@ -7858,6 +7867,7 @@ async function salvarCompra(){
       observacao: document.getElementById('cmpObs').value.trim() || null,
       data_compra: d ? new Date(d + 'T12:00:00').toISOString() : c.data_compra,
       valor, sem_nota: document.getElementById('cmpSemNota').checked,
+      entregue_em: (v => v ? new Date(v + 'T12:00:00').toISOString() : null)(document.getElementById('cmpEntregue').value),
       atualizado_em: new Date().toISOString()
     }});
     toast('Compra salva.', 'ok');
