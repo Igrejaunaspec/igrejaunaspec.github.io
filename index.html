@@ -171,6 +171,9 @@
   .cmp-pill.amarelo{background:#fdf0d8;color:#92600a;}
   .cmp-pill.cinza{background:#f0f1f4;color:var(--muted);}
   .btn.cmp-ok{background:#e3f4e8;color:#1e6b34;border-color:#bfe3c9;}
+  .cmp-lados{display:inline-flex;background:var(--panel2);border-radius:10px;padding:3px;margin-bottom:14px;}
+  .cmp-lados button{font:inherit;font-size:13.5px;font-weight:600;border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:8px;cursor:pointer;}
+  .cmp-lados button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08);}
   .pc-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
   .pc-filtro{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:20px;padding:5px 12px;cursor:pointer;}
   .pc-filtro.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
@@ -1949,9 +1952,13 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <!-- ---------- Pedidos de compra (Mercado Livre) ---------- -->
     <div id="paginaPedidosCompra" class="hidden">
       <div class="card">
+        <div class="cmp-lados" data-so-secretaria="1">
+          <button class="on" onclick="abrirPedidosCompra()">Pedidos</button>
+          <button class="" onclick="abrirCompras()">Compras do Mercado Livre</button>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
-            <h2>Pedidos de compra</h2>
+            <h2>Compras · Pedidos</h2>
             <p class="hint" style="margin:4px 0 0;">Pedidos feitos pelo link público. A secretaria analisa, o pastor aprova, a compra é feita no Mercado Livre e entregue a quem pediu.</p>
           </div>
           <button class="btn" id="pcBtnLink" onclick="copiarTexto(location.origin + '/pedido-compra/')">🔗 Copiar link do formulário</button>
@@ -1965,9 +1972,13 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <!-- ---------- Compras do Mercado Livre ---------- -->
     <div id="paginaCompras" class="hidden">
       <div class="card">
+        <div class="cmp-lados" data-so-secretaria="1">
+          <button class="" onclick="abrirPedidosCompra()">Pedidos</button>
+          <button class="on" onclick="abrirCompras()">Compras do Mercado Livre</button>
+        </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
-            <h2>Compras do Mercado Livre</h2>
+            <h2>Compras · Mercado Livre</h2>
             <p class="hint" style="margin:4px 0 0;">
               As compras entram sozinhas pelos e-mails do Mercado Livre. A nota fiscal aparece quando o vendedor emitir;
               se não vier, use <b>Anexar nota</b>.
@@ -4833,7 +4844,7 @@ const GRUPOS_MENU = [
   ['Início', ['inicio', 'ajustes']],
   ['Culto', ['sexta', 'sabado', 'homiletico', 'escala', 'teleprompter']],
   ['Agenda da igreja', ['calendario', 'agendamentos', 'pastoral', 'minhaagenda', 'agenda']],
-  ['Comunidade', ['medicos', 'youtube', 'pedidoscompra', 'compras', 'passador', 'sorteio']],
+  ['Comunidade', ['medicos', 'youtube', 'compras', 'passador', 'sorteio']],
   ['Acessos', ['pessoas', 'visualizadores', 'visitantes', 'votacao', 'compartilhar']],
 ];
 
@@ -5773,24 +5784,15 @@ function montarAbas(){
     abas.appendChild(b);
   }
 
-  // Pedidos de compra (link publico -> secretaria -> pastor -> compra -> entrega).
-  // Secretaria (Compras), pastor (Pastor agenda) e admin.
+  // Compras: dois lados na mesma aba -> "Pedidos" (link publico -> secretaria ->
+  // pastor -> compra -> entrega) e "Mercado Livre" (compras que entram sozinhas
+  // pelos e-mails, com as notas). Secretaria (Compras) e admin veem os dois;
+  // o pastor (Pastor agenda) ve so os Pedidos, para aprovar.
   if(perfil.admin || perfil.acesso_compras || perfil.acesso_pastoral){
     const b = document.createElement('button');
-    b.textContent = 'Pedidos de compra';
-    b.title = 'Pedidos de compra: análise, aprovação do pastor, compra e entrega';
-    b.onclick = () => abrirPedidosCompra();
-    b.dataset.culto = 'pedidoscompra';
-    abas.appendChild(b);
-  }
-
-  // Compras do Mercado Livre (entram sozinhas pelos e-mails; notas fiscais).
-  // So aparece pra quem tem acesso liberado (aba Pessoas) ou e admin.
-  if(perfil.admin || perfil.acesso_compras){
-    const b = document.createElement('button');
     b.textContent = 'Compras';
-    b.title = 'Compras do Mercado Livre e notas fiscais';
-    b.onclick = () => abrirCompras();
+    b.title = 'Pedidos de compra e compras do Mercado Livre';
+    b.onclick = () => abrirPedidosCompra();
     b.dataset.culto = 'compras';
     abas.appendChild(b);
   }
@@ -7521,11 +7523,12 @@ const pcSecretaria = () => perfil && (perfil.admin || perfil.acesso_compras);
 const pcPastor = () => perfil && (perfil.acesso_pastoral || perfil.admin);
 
 async function abrirPedidosCompra(){
-  cultoAtual = 'pedidoscompra';
-  marcarAba('pedidoscompra');
+  cultoAtual = 'compras';
+  marcarAba('compras');
   mostrarPagina('pedidosCompra');
   if(!pcFiltro) pcFiltro = (pcSecretaria() ? 'analise' : 'pastor');
   document.getElementById('pcBtnLink').classList.toggle('hidden', !pcSecretaria());
+  document.querySelectorAll('.cmp-lados').forEach(el => el.classList.toggle('hidden', !pcSecretaria()));
   await carregarPedidosCompra();
 }
 async function carregarPedidosCompra(){
@@ -7734,6 +7737,7 @@ async function pcVerNota(i){
 }
 
 async function abrirCompras(){
+  if(!pcSecretaria()) return abrirPedidosCompra();   // pastor ve so os pedidos
   cultoAtual = 'compras';
   marcarAba('compras');
   mostrarPagina('compras');
