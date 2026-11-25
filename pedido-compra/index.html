@@ -36,6 +36,7 @@
   .aviso{background:#fdecea;color:#a12;border-radius:8px;padding:10px 12px;font-size:13.5px;margin-top:12px}
   .ok{background:#e8f5ec;color:#1b6b38}
   .hidden{display:none!important}
+  .prazo{background:#eef4fb;color:#1D3A5C;border-radius:8px;padding:9px 12px;font-size:13.5px;margin-top:12px}
   .linha{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .esp{flex:1}
   /* acompanhamento */
@@ -70,6 +71,7 @@
       <h1>Pedido de compra</h1>
       <p class="dica">Preencha o que você precisa que a igreja compre no Mercado Livre. O pedido passa pela secretaria e
         depois pela aprovação do pastor. Ao enviar, você recebe um link para acompanhar.</p>
+      <div class="prazo">🕒 Depois de aprovado pelo pastor, a compra é feita em <b>até 5 dias úteis</b>.</div>
       <div class="grade">
         <div><label for="fNome">Seu nome *</label><input id="fNome" autocomplete="name" maxlength="120"></div>
         <div><label for="fMin">Ministério / departamento</label><input id="fMin" maxlength="120" placeholder="Ex.: EMC, Mídia, Desbravadores"></div>
@@ -90,7 +92,7 @@
         <div class="total"><span>Total:</span><span id="total">R$ 0,00</span></div>
       </div>
       <label for="fObs">Observação (opcional)</label>
-      <textarea id="fObs" maxlength="1000" placeholder="Para quando precisa, onde entregar, alguma preferência..."></textarea>
+      <textarea id="fObs" maxlength="1000" placeholder="Para quando precisa, alguma preferência..."></textarea>
       <div id="erro" class="aviso hidden"></div>
       <div class="linha" style="margin-top:14px"><span class="esp"></span>
         <button class="btn p" id="btnEnviar" onclick="enviar()">Enviar pedido</button></div>
@@ -101,6 +103,7 @@
   <div id="telaOk" class="card hidden">
     <h1>Pedido enviado ✅</h1>
     <p>Guarde o link abaixo para acompanhar o seu pedido (análise, aprovação do pastor, compra e chegada):</p>
+    <div class="prazo" style="margin:0 0 12px;">🕒 Depois de aprovado pelo pastor, a compra é feita em <b>até 5 dias úteis</b>.</div>
     <input id="linkAcomp" readonly onclick="this.select()">
     <div class="linha" style="margin-top:10px">
       <button class="btn" onclick="copiar()">Copiar link</button>
@@ -210,7 +213,7 @@ async function copiar(){
 const PASSOS = [
   ['analise', 'Em análise', 'Secretaria conferindo'],
   ['pastor', 'Com o pastor', 'Aguardando aprovação'],
-  ['aprovado', 'Aprovado', 'Vai ser comprado'],
+  ['aprovado', 'Aprovado', 'Compra em até 5 dias úteis'],
   ['comprado', 'Comprado', 'A caminho'],
   ['chegou', 'Chegou', 'Pronto para retirar'],
   ['entregue', 'Entregue', ''],
