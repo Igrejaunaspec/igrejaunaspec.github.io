@@ -123,7 +123,7 @@ a{color:inherit}
 .zItem .n{width:28px;height:28px;border-radius:50%;background:#3a3f47;display:grid;place-items:center;font:800 14px Archivo,sans-serif}
 .zItem.on{border-color:var(--red)}.zItem.on .n{background:var(--red)}
 .zItem b{display:block;font-size:16px}
-.zItem span.t{display:none;color:#cfd4da;font-size:15px;margin-top:4px}
+.zItem span.t{display:block;color:#cfd4da;font-size:15px;line-height:1.5;margin-top:6px}
 .zItem.on span.t{display:block}
 @media(max-width:820px){.txPainel{grid-template-columns:1fr}}
 .aFig{display:block;width:100%;max-width:1060px;margin-top:22px;border-radius:14px;border:1px solid var(--line);background:#fff}
@@ -257,7 +257,7 @@ a{color:inherit}
         <p class="note" id="txOnde"></p>
       </div>
       <div class="zonas">
-        <p class="zonaDica">Toque em uma parte para ver para que serve.</p>
+        <p class="zonaDica">O que é cada parte (toque para marcar na foto):</p>
         <div id="txZonas"></div>
       </div>
     </div>
@@ -433,10 +433,10 @@ const TUT={
 };
 const TX=[
  {id:'extreme',nome:'ATEM Extreme ISO',v:'/manual/video/atem-extreme-iso-4.mp4',img:'/manual/img/atem-extreme-iso.jpg',onde:'Fica do lado esquerdo da sala. Liga depois da Web Presenter (passo 6 da aba Culto).',zonas:[
-  ['Câmeras (botões 1 a 8)','Cada botão é uma entrada: uma câmera ou um computador. O botão aceso em vermelho é a imagem que está no ar.',[5,77,58,12]],
-  ['CUT, AUTO e FTB','CUT troca na hora para a imagem escolhida. AUTO troca com uma passagem suave. FTB escurece tudo; use só no fim.',[73,77,23,12]],
-  ['Gravar e transmitir','REC grava. ON AIR, em STREAM, mostra se a transmissão está saindo.',[87,21,8,14]],
-  ['Som','Liga, desliga e regula o volume dos microfones e de cada entrada.',[5,21,22,14]]
+  ['Câmeras (botões 1 a 8)','É a fileira de baixo, com os números 1 a 8. Cada número é uma entrada de imagem: uma câmera ou um computador ligado na ATEM. O botão aceso em vermelho é o que está indo para a live agora; o aceso em verde é o próximo, que entra quando você apertar CUT ou AUTO. Para mudar a imagem, aperte o número da câmera que você quer.',[5,77,58,12]],
+  ['CUT, AUTO e FTB','Ficam à direita dos números. CUT troca a imagem na hora, de uma vez. AUTO troca com uma passagem suave, uma imagem se misturando na outra. FTB (Fade to Black) escurece tudo até ficar preto: a live fica sem imagem. Use FTB só no fim do culto; para voltar a imagem, aperte FTB de novo.',[73,77,23,12]],
+  ['Gravar e transmitir','Ficam no canto de cima, à direita. RECORD (REC) começa a gravar o culto no disco ligado na ATEM, e STOP para a gravação; aceso em vermelho quer dizer que está gravando. STREAM (ON AIR/OFF) é a transmissão feita pela própria ATEM. Nesta sala, a live vai para o YouTube pela Web Presenter (aba ao lado), com o botão ON AIR dela.',[87,21,8,14]],
+  ['Som','É a parte de cima, à esquerda, e as colunas em cima de cada número. MIC 1 e MIC 2 são as entradas de microfone: ON liga, OFF desliga e as setas ▲▼ sobem e descem o volume. HEADPHONE regula o fone de ouvido, e MUTE corta o som do fone. Em cada entrada, ON deixa o som sempre ligado, OFF desliga e AFV faz o som entrar só quando aquela imagem está no ar. O som da live vem da mesa de som: não mexa aqui sem combinar com quem está no áudio.',[5,21,22,14]]
  ]},
  {id:'webpresenter',nome:'Web Presenter',v:'/manual/video/web-presenter-4.mp4',img:'/manual/img/web-presenter.jpg',onde:'Fica atrás da ATEM Extreme ISO. Liga antes da Extreme ISO (passo 5 da aba Culto).',aviso:'Aperte o botão ON AIR para mandar a imagem para o Castr.',prog:{t:'Programa da Web Presenter no computador',img:'/manual/img/web-presenter-live-stream.svg',itens:['Platform: precisa estar em Castr, que é para onde a imagem vai.','ON AIR: faz o mesmo que o botão ON AIR da frente do aparelho. OFF para o envio.'],obs:'Tudo fica na aba Live Stream do programa.'},zonas:[
   ['Botão ON AIR','Começa e para o envio da imagem para o Castr. Aceso em vermelho: está transmitindo.',[20,16,10,22]],
