@@ -174,6 +174,8 @@
   .cmp-lados{display:inline-flex;background:var(--panel2);border-radius:10px;padding:3px;margin-bottom:14px;}
   .cmp-lados button{font:inherit;font-size:13.5px;font-weight:600;border:0;background:transparent;color:var(--muted);padding:7px 14px;border-radius:8px;cursor:pointer;}
   .cmp-lados button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+  .pc-codigo{display:flex;gap:12px;align-items:center;background:#eef4fb;border-radius:10px;padding:10px 12px;margin-top:12px;}
+  .pc-codigo b{font-size:17px;letter-spacing:.5px;}
   .pc-filtros{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
   .pc-filtro{font:inherit;font-size:13px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:20px;padding:5px 12px;cursor:pointer;}
   .pc-filtro.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
@@ -7575,6 +7577,9 @@ async function abrirPedidoCompra(id){
     desenharPedidoCompra();
   }catch(e){ document.getElementById('pcCaixa').innerHTML = `<div class="aviso erro">${escapar(e.message)}</div>`; }
 }
+// Codigo curto (cabe nos 18 caracteres do campo "pedido de compra" do Mercado Livre).
+// A funcao compras-ml-receber procura esse codigo nos e-mails e na nota (XML).
+function pcCodigoML(p){ return 'PC-' + String(p.codigo || '').slice(0, 8).toUpperCase(); }
 function fecharPedidoCompra(){ document.getElementById('modalPedidoCompra').classList.add('hidden'); pcAberto = null; }
 
 function desenharPedidoCompra(){
@@ -7633,6 +7638,10 @@ function desenharPedidoCompra(){
       </div>
       <span class="pc-tag pc-${p.status}">${PC_NOME[p.status]}</span>
     </div>
+    ${sec && !['analise','ajuste','recusado'].includes(p.status) ? `<div class="pc-codigo">
+      <div style="flex:1;min-width:0;"><span class="hint">Código para o Mercado Livre</span><br><b>${pcCodigoML(p)}</b>
+        <div class="hint" style="margin-top:2px;">Ao pagar, cole em <b>"Adicionar pedido de compra"</b>. Quando o e-mail ou a nota chegar com ele, a compra é ligada a este pedido sozinha.</div></div>
+      <button class="btn small" onclick="copiarTexto('${pcCodigoML(p)}')">Copiar</button></div>` : ''}
     ${p.observacao ? `<p style="margin:12px 0 0;"><b>Observação:</b> ${escapar(p.observacao)}</p>` : ''}
     ${p.mensagem && ['ajuste','recusado'].includes(p.status) ? `<div class="aviso" style="margin-top:10px;">Recado para quem pediu: ${escapar(p.mensagem)}</div>` : ''}
     ${p.entregue_a ? `<p class="hint">Entregue para <b>${escapar(p.entregue_a)}</b></p>` : ''}
