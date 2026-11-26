@@ -1726,9 +1726,7 @@ body:not(.pode-editar-form) .so-adm-secretaria{display:none!important}
     <div id="paginaVotacao" class="hidden">
       <div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <div style="flex:1;min-width:200px;"><h2 style="margin:0;">Comissão de Nomeações</h2>
-          <p class="hint" style="margin:4px 0 0;">Celulares: <b id="votLinkTxt">igrejaunaspec.com/votacao</b> · só quem tem o acesso Comissão controla a votação.</p></div>
-        <div style="display:flex;gap:6px;"><button class="btn" id="votCanal1" onclick="trocarCanalVotacao('votacao')">Link 1</button><button class="btn" id="votCanal2" onclick="trocarCanalVotacao('ec26')">Link 2</button></div>
-        <a class="btn" id="votLinkTV" href="/votacao/?tv" target="_blank" rel="noopener">Abrir tela da TV</a>
+          <p class="hint" style="margin:4px 0 0;">Cada votação tem o próprio link para os celulares (aparece no controle abaixo) · só quem tem o acesso Comissão controla a votação.</p></div>
       </div>
       <iframe id="quadroVotacao" title="Controle da votação" style="width:100%;height:calc(100vh - 210px);min-height:600px;border:1px solid var(--border);border-radius:14px;background:#fff;"></iframe>
     </div>
@@ -10369,17 +10367,7 @@ function abrirVotacao(){
   sujo = false; clearTimeout(autoSalvarTimer);
   cultoAtual = 'votacao'; marcarAba('votacao'); mostrarPagina('votacao');
   const f = document.getElementById('quadroVotacao');
-  if(!f.src) trocarCanalVotacao(localStorage.getItem('vot.canal') || 'votacao');
-}
-// Dois links de votação que podem rodar ao mesmo tempo: Link 1 = /votacao, Link 2 = /ec26
-function trocarCanalVotacao(canal){
-  try{ localStorage.setItem('vot.canal', canal); }catch(e){}
-  document.getElementById('quadroVotacao').src = '/' + canal + '/?admin&app=1';
-  document.getElementById('votLinkTxt').textContent = 'igrejaunaspec.com/' + canal;
-  document.getElementById('votLinkTV').href = '/' + canal + '/?tv';
-  const um = canal === 'votacao';
-  document.getElementById('votCanal1').classList.toggle('primary', um);
-  document.getElementById('votCanal2').classList.toggle('primary', !um);
+  if(!f.src) f.src = '/votacao/?admin&app=1';
 }
 
 /* ---------- Visitantes: admin vê (só leitura) os roteiros feitos na área de visitante ---------- */

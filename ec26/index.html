@@ -175,7 +175,7 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
       <div class="abas-adm"><button class="btn s on" id="abCargos" onclick="verAba('cargos')">Itens</button><button class="btn s" id="abEmp" onclick="verAba('empates')">Empates <span id="nEmp"></span></button></div>
       <div class="lista-cargos" id="admCargos"></div><div id="admEmp" class="hidden"></div>
       <div class="dica" style="margin-top:12px;">
-        Celulares: <b class="linkVoto">igrejaunaspec.com/votacao</b><br>
+        Link desta votação: <b class="linkVoto">igrejaunaspec.com/votacao</b> <button class="btn s linkCopiar" onclick="copiarLinkVoto(this)">Copiar</button><br>
         TV: <a class="linkTV" href="/votacao/?tv" target="_blank" rel="noopener">abrir tela da TV</a>
       </div>
       <button class="btn r so-edit" style="width:100%;margin-top:16px;background:#c0392b;color:#fff;border-color:#c0392b;font-weight:800" onclick="zerarTudo()" title="Apaga os votos, coletas, escrutínios e escolhidos DESTA votação. Mantém os itens e as opções.">Zerar esta votação</button>
@@ -188,10 +188,10 @@ var QRCode;!function(){function a(a){this.mode=c.MODE_8BIT_BYTE,this.data=a,this
 const SUPABASE_URL = 'https://sxzvdnwytbdhycwzbxji.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6rOzgGXVgobnNb-sy4rx9A_SGjR3v0r';
 const CHAVE_SESSAO = 'roteiroEditor.sessao';
-// Cada link é um "canal" separado (pode rodar ao mesmo tempo): /votacao e /ec26
+// Cada votação tem o próprio link (igrejaunaspec.com/<código>). Links que não são pasta do site chegam pelo 404.html (cópia desta página).
 const PRIMEIRA_PASTA = (location.pathname.split('/').filter(Boolean)[0] || 'votacao').toLowerCase();
-const CANAL = PRIMEIRA_PASTA === 'apuracao' ? (new URLSearchParams(location.search).get('c') || 'votacao') : PRIMEIRA_PASTA;
-const LINK_VOTO = 'igrejaunaspec.com/' + CANAL;
+let CANAL = PRIMEIRA_PASTA === 'apuracao' ? (new URLSearchParams(location.search).get('c') || 'votacao') : PRIMEIRA_PASTA;
+let LINK_VOTO = 'igrejaunaspec.com/' + CANAL;
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const FASE_NOME = { aguardando:'Aguardando', indicacao:'Coleta de sugestões', observacoes:'Observações', votacao:'Votação', encerrado:'Encerrado' };
@@ -214,6 +214,7 @@ let est = null, escolha = null, chaveTela = '';
 
 async function atualizarVoto(){
   try{ est = await rpc('vot_publico', { p_canal: CANAL }); }catch(e){ return; }
+  if(est && est.ok === false && est.erro === 'link'){ if(chaveTela !== 'semlink'){ chaveTela = 'semlink'; $('celTitulo').textContent = 'Link não encontrado'; $('voto').innerHTML = '<p class="dica" style="text-align:center;padding:30px 10px">Este link de votação não existe. Confira o endereço com quem está conduzindo a votação.</p>'; } return; }
   if(est && est.titulo){ $('celTitulo').textContent = est.titulo; document.title = est.titulo + ' · IASD UNASP EC'; }
   const c = est.cargo;
   const chave = c ? [c.id, c.rodada, c.fase, c.max, c.outros, JSON.stringify(c.candidatos), JSON.stringify(est.resultado || null), c.eleito || ''].join('|') : 'nada';
@@ -377,7 +378,7 @@ function tvLogin(m){
   if(m) $('lgMsg').textContent = m;
 }
 /* ================= ADMIN ================= */
-let sessao = null, cargos = [], estado = null, respostas = [], selId = null, votacoes = [], votId = ls.get('vot.adm.votacao.' + CANAL);
+let sessao = null, cargos = [], estado = null, respostas = [], selId = null, votacoes = [], votId = ls.get('vot.adm.votacao');
 const votAtual = () => votacoes.find(v => v.id === votId);
 const arquivada = () => !!(votAtual() && votAtual().arquivada);
 const regraDe = c => c.regra === 'maioria' || c.regra === 'mais_votados' ? c.regra : ((c.max_escolhas || 1) > 1 ? 'mais_votados' : 'maioria');
@@ -428,12 +429,14 @@ async function admEntrar(){
 }
 async function carregarAdmin(){
   try{
-    const [vs, cs, es] = await Promise.all([ api('vot_votacoes?select=*&order=arquivada,ordem.desc,criado_em.desc'), api('vot_cargos?select=*&order=ordem,nome'), api(`vot_estado?codigo=eq.${CANAL}&select=*`) ]);
-    votacoes = vs || []; estado = (es || [])[0] || { cargo_atual: null, mostrar_resultado: false };
-    if(!votacoes.some(v => v.id === votId)){
-      const naTela = (cs || []).find(x => x.id === estado.cargo_atual);
-      votId = (naTela && naTela.votacao_id) || (votacoes[0] && votacoes[0].id) || null;
-    }
+    const [vs, cs, es] = await Promise.all([ api('vot_votacoes?select=*&order=arquivada,ordem.desc,criado_em.desc'), api('vot_cargos?select=*&order=ordem,nome'), api('vot_estado?select=*') ]);
+    votacoes = vs || [];
+    if(!votacoes.some(v => v.id === votId)) votId = (votacoes[0] && votacoes[0].id) || null;
+    estado = (es || []).find(e => e.votacao_id === votId) || { cargo_atual: null, mostrar_resultado: false, codigo: null };
+    if(estado.codigo){ CANAL = estado.codigo; LINK_VOTO = 'igrejaunaspec.com/' + CANAL; }
+    document.querySelectorAll('.linkVoto').forEach(el => el.textContent = estado.codigo ? LINK_VOTO : '—');
+    document.querySelectorAll('.linkTV').forEach(el => el.href = '/' + CANAL + '/?tv');
+    document.querySelectorAll('.linkCopiar').forEach(el => el.classList.toggle('hidden', !estado.codigo));
     cargos = (cs || []).filter(c => c.votacao_id === votId);
     if(!cargos.some(c => c.id === selId)) selId = (cargos.find(c => c.id === estado.cargo_atual) || cargos[0] || {}).id || null;
     const c = cargos.find(x => x.id === selId);
@@ -550,7 +553,7 @@ async function patchCargo(body){
   try{ await api(`vot_cargos?id=eq.${selId}`, { method:'PATCH', body }); }catch(e){ alert('Não consegui salvar: ' + e.message); }
   forcarDesenho = true; await carregarAdmin();
 }
-async function patchEstado(body){ await api(`vot_estado?codigo=eq.${CANAL}`, { method:'PATCH', body: Object.assign({ atualizado_em: new Date().toISOString() }, body) }); await carregarAdmin(); }
+async function patchEstado(body){ if(!estado.id){ alert('Esta votação ainda não tem link. Recarregue a página.'); return; } await api(`vot_estado?id=eq.${estado.id}`, { method:'PATCH', body: Object.assign({ atualizado_em: new Date().toISOString() }, body) }); await carregarAdmin(); }
 function colocarNaTela(){ patchEstado({ cargo_atual: selId, mostrar_resultado: false }); }
 function mostrarResultado(v){ patchEstado({ mostrar_resultado: v }); }
 async function mudarFase(f){
@@ -717,7 +720,8 @@ async function apagarCargo(){
   try{ await api(`vot_cargos?id=eq.${c.id}`, { method:'DELETE', prefer:'return=minimal' }); }catch(e){ alert(e.message); }
   selId = null; forcarDesenho = true; carregarAdmin();
 }
-/* ===== VOTAÇÕES (cada uma com seus itens) ===== */
+/* ===== VOTAÇÕES (cada uma com seus itens e o próprio link) ===== */
+async function copiarLinkVoto(b){ try{ await navigator.clipboard.writeText('https://' + LINK_VOTO); b.textContent = 'Copiado!'; }catch(e){ prompt('Copie o link:', 'https://' + LINK_VOTO); } setTimeout(() => b.textContent = 'Copiar', 1500); }
 function desenharVotacoes(){
   const sel = $('admVot'); if(!sel) return;
   const opts = votacoes.map(v => `<option value="${v.id}">${v.arquivada ? '🔒 ' : ''}${esc(v.nome)}</option>`).join('') || '<option value="">Nenhuma votação</option>';
@@ -729,7 +733,7 @@ function desenharVotacoes(){
   $('avisoArq').classList.toggle('hidden', !arq);
   $('modoAdmin').classList.toggle('ro', arq);
 }
-function trocarVotacao(id){ votId = id; ls.set('vot.adm.votacao.' + CANAL, id); selId = null; document.activeElement.blur(); forcarDesenho = true; carregarAdmin(); }
+function trocarVotacao(id){ votId = id; ls.set('vot.adm.votacao', id); selId = null; document.activeElement.blur(); forcarDesenho = true; carregarAdmin(); }
 async function novaVotacao(){
   const n = prompt('Nome da nova votação (ex.: Assembleia 2027, Escolha do tema):'); if(!n || !n.trim()) return;
   try{
@@ -747,7 +751,7 @@ async function arquivarVotacao(){
   const v = votAtual(); if(!v) return;
   if(!v.arquivada){
     if(!confirm(`Arquivar "${v.nome}"?\n\nOs dados ficam guardados e travados (só leitura). Dá para desarquivar depois.`)) return;
-    if(cargos.some(c => c.id === estado.cargo_atual)) await api(`vot_estado?codigo=eq.${CANAL}`, { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false, atualizado_em: new Date().toISOString() } });
+    if(cargos.some(c => c.id === estado.cargo_atual)) await api(`vot_estado?id=eq.${estado.id}`, { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false, atualizado_em: new Date().toISOString() } });
   } else if(!confirm(`Desarquivar "${v.nome}"?\n\nOs itens voltam a poder ser alterados e apagados.`)) return;
   try{ await api(`vot_votacoes?id=eq.${v.id}`, { method:'PATCH', body:{ arquivada: !v.arquivada } }); }catch(e){ alert(e.message); }
   forcarDesenho = true; carregarAdmin();
@@ -757,7 +761,7 @@ async function apagarVotacao(){
   if(!confirm(`Apagar a votação "${v.nome}" com todos os itens e votos?`)) return;
   if((prompt('Para confirmar, digite APAGAR') || '').trim().toUpperCase() !== 'APAGAR') return alert('Nada foi apagado.');
   try{
-    if(cargos.some(c => c.id === estado.cargo_atual)) await api(`vot_estado?codigo=eq.${CANAL}`, { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false } });
+    if(cargos.some(c => c.id === estado.cargo_atual)) await api(`vot_estado?id=eq.${estado.id}`, { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false } });
     await api(`vot_cargos?votacao_id=eq.${v.id}`, { method:'DELETE', prefer:'return=minimal' });
     await api(`vot_votacoes?id=eq.${v.id}`, { method:'DELETE', prefer:'return=minimal' });
     votId = null;
@@ -782,7 +786,7 @@ async function zerarTudo(){
     await api(`vot_respostas?cargo_id=in.(${ids})`, { method:'DELETE', prefer:'return=minimal' });
     for(const c of cargos) await api(`vot_cargos?id=eq.${c.id}`, { method:'PATCH', prefer:'return=minimal',
       body: tipoDe(c) === 'fixas' ? { fase: 'aguardando', rodada: 1, eleito: null } : { fase: 'aguardando', rodada: 1, candidatos: [], eleito: null, permite_outros: true } });
-    if(cargos.some(c => c.id === estado.cargo_atual)) await api(`vot_estado?codigo=eq.${CANAL}`, { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false, atualizado_em: new Date().toISOString() } });
+    if(cargos.some(c => c.id === estado.cargo_atual)) await api(`vot_estado?id=eq.${estado.id}`, { method:'PATCH', body:{ cargo_atual: null, mostrar_resultado: false, atualizado_em: new Date().toISOString() } });
     alert('Pronto: votação zerada. Itens e opções mantidos.');
   }catch(e){ alert('Não consegui zerar tudo: ' + e.message); }
   carregarAdmin();
