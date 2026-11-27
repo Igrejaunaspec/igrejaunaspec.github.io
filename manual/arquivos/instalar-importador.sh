@@ -4,6 +4,8 @@
 set -e
 APP="$HOME/Applications/Importador de Letras.app"
 mkdir -p "$HOME/Applications"
+PLIST="$HOME/Library/LaunchAgents/com.igrejaunaspec.importador-letras.plist"
+launchctl bootout gui/$(id -u) "$PLIST" 2>/dev/null || true
 pkill -f "Importador de Letras.app" 2>/dev/null || true
 cat > /tmp/importador.applescript <<'AS'
 on run
@@ -108,6 +110,19 @@ exit 0
 SH
 /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$APP/Contents/Info.plist" 2>/dev/null || true
 codesign --force --deep -s - "$APP"
-osascript -e 'tell application "System Events" to if not (exists login item "Importador de Letras") then make login item at end with properties {path:(POSIX path of (path to home folder)) & "Applications/Importador de Letras.app", hidden:true}' >/dev/null || true
-open "$APP"
+# Liga sozinho quando o Mac inicia e volta a ligar se fechar
+osascript -e 'tell application "System Events" to delete (every login item whose name is "Importador de Letras")' >/dev/null 2>&1 || true
+mkdir -p "$HOME/Library/LaunchAgents"
+cat > "$PLIST" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>com.igrejaunaspec.importador-letras</string>
+<key>ProgramArguments</key><array><string>$APP/Contents/MacOS/applet</string></array>
+<key>RunAtLoad</key><true/>
+<key>KeepAlive</key><true/>
+</dict></plist>
+PL
+launchctl bootstrap gui/$(id -u) "$PLIST"
+sleep 2
 echo "PRONTO: Importador de Letras instalado e ligado"
